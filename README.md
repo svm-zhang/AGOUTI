@@ -1,6 +1,6 @@
 Annotated Genome Optimization Using Transcriptome Information (AGOUTI)
 
-AGOUTI v0.1 
+AGOUTI v0.1
 
 Description
 =======================
@@ -10,19 +10,6 @@ AGOUTI is comprised of two part:
     i)  RNAseq guided scaffolding using SSPACE
     ii) Update gene model based on scaffolding result(this feature is not 
         included in AGOUTI v0.1)
-
-############################
-NOTE to Simo:
-The included script and sample data are for part i) only. Part ii) is still 
-under development. You can refere to the slides I sent you last time for the 
-idea Matt proposed to achieve part ii). It's quite challenging because after 
-contigs are scaffolded, contig-based gene annotation file become incompatible
-with the new scaffold (coordinate are changed). I need to figure out a better
-way to transfer the .gtf or .gff file from contig.fasta to scaffold.fasta. 
-
-Do you have any suggestions?]
-#############################
-
 
 Implementation requirement
 ==========================
@@ -43,10 +30,10 @@ AGOUTI can take single-end read mapped bam file as the input.
 
 Running AGOUTI
 ==========================
-e.g. python agouti_bash_generator.py -contig contig.fa  -bam RNAseq.bam   -out outDir   -sspacePATH path/to/SSPACE  -agoutiPATH path/to/AGOUTI  > agouti.job
+e.g. python agouti_starter.py -contig contig.fa  -bam RNAseq.bam   -out outDir   -sspacePATH path/to/SSPACE  -agoutiPATH path/to/AGOUTI  > agouti.job
 
 
-Usage: agouti_bash_generator.py [-h] -contig CONTIGFA -bam INBAM -out OUTDIR
+Usage: agouti_starter.py [-h] -contig CONTIGFA -bam INBAM -out OUTDIR
                                 [-sampleID SAMPLEID] [-isSE]
                                 [-sspacePATH SSPACEPATH]
                                 [-agoutiPATH AGOUTIPATH]
