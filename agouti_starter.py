@@ -43,17 +43,16 @@ def main():
 	# get inter-contig discordant read pairs or split-reads from input Bam
 	if isPE:
 		getDiscdtReads = get_discdt_pe(inBam,tmpDir,sampleID,agoutiPATH) 
-
 	else :
 		getDiscdtReads = get_discdt_se(inBam,tmpDir,sampleID,agoutiPATH)
 
 	# to-do: load the configuration file, such as settings for sspace program
 	# perfrom RNAseq-guided scaffolding using SSPACE(STANDARD version)
 	runSSPACE = run_sspace(contigFA,agoutiPATH,sspacePATH)
-	
+
 	# now parse SSPACE output since this program is desgined for DNAseq-guided scaffolding
 	parseSSPACE = parse_sspace(outDir)
-	
+
 	# to-do: create an output .bash file, might add PBS header if necessary
 
 ####################################### END MAIN
@@ -124,7 +123,6 @@ echo start extracting discordantly mapped read pairs from input bam file...
 
 # extract inter-contig discordant read pairs, make sure that bam file has been sorted by read name
 samtools view -F 268 -q 5  $inBam |awk '{ if($7!="*" && $7!="=") print $0}'> $tmp/$prefix.q5.aln
-
 
 # remove singletons
 python $agoutiPATH/getDiscdtPE.py  $tmp/$prefix.q5.aln  $tmp/$prefix.discdt.q5.aln
