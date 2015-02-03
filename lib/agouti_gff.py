@@ -32,6 +32,10 @@ class AGOUTI_GFF(object):
 	def setStartCodon(self):
 		self.startCodon = 1
 
+	def missStartStop(self):
+		if not self.startCodon and not self.stopCodon:
+			return True
+
 	def setStrand(self, strand):
 		self.strand = strand
 
