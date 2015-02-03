@@ -3,10 +3,14 @@ import sys
 import collections
 import shlex
 import subprocess
-from scipy import stats
-import numpy as np
+#from scipy import stats
+#import numpy as np
 
-from agouti_gff import AGOUTI_GFF
+parpath = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
+if os.path.exists(os.path.join(parpath, "lib", "__init__.py")):
+	sys.path.insert(0, parpath)
+
+from lib import agouti_gff as agff
 
 class SZ_ContigPair(object):
 	def __init__(self):
@@ -35,12 +39,6 @@ class SZ_ContigPair(object):
 		self.exonIndexA = exonIndexA
 		self.exonIndexB = exonIndexB
 
-class SZ_GenePair(object):
-	def __init__(self):
-		self.geneA = ""
-		self.geneB = ""
-		self.nlink = 0
-
 	def setID(self, geneA, geneB):
 		self.geneA = geneA
 		self.geneB = geneB
@@ -54,7 +52,7 @@ def func_getGFF(iGeneModel):
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					nGene += 1
-		lobj_GeneModels = [AGOUTI_GFF() for i in xrange(nGene)]
+		lobj_GeneModels = [agff.AGOUTI_GFF() for i in xrange(nGene)]
 		geneIndex = -1
 		fIN.seek(0)
 		for line in fIN:
@@ -65,12 +63,12 @@ def func_getGFF(iGeneModel):
 					if geneIndex == 0:
 						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
 														   int(tmp_line[3]),
-														   int(tmp_line[4]))
+														   int(tmp_line[4]), 0)
 					else:
 						dGFFs[lobj_GeneModels[geneIndex-1].ctgID].append(lobj_GeneModels[geneIndex-1])
 						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
 														   int(tmp_line[3]),
-														   int(tmp_line[4]))
+														   int(tmp_line[4]), 0)
 					lobj_GeneModels[geneIndex].setProgram(tmp_line[1])
 					lobj_GeneModels[geneIndex].setContigID(tmp_line[0])
 					lobj_GeneModels[geneIndex].setStrand(tmp_line[6])
@@ -119,7 +117,12 @@ def func_ctgPair2genePair(iContigPair, dGFFs):
 						# model A and B must be complementary to each other
 						# Both of them cannot have either start or stop codon at the same time
 						if ((obj_GeneModelA.startCodon and obj_GeneModelB.stopCodon) or
-							(obj_GeneModelA.stopCodon and obj_GeneModelB.startCodon)):
+							(obj_GeneModelA.startCodon and obj_GeneModelB.missStartStop()) or
+							(obj_GeneModelA.missStartStop() and obj_GeneModelB.stopCodon) or
+							(obj_GeneModelA.stopCodon and obj_GeneModelB.startCodon) or
+							(obj_GeneModelA.stopCodon and obj_GeneModelB.missStartStop()) or
+							(obj_GeneModelA.missStartStop() and obj_GeneModelB.startCodon) or
+							(obj_GeneModelA.missStartStop() and obj_GeneModelB.missStartStop()):
 							obj_ContigPair.setContigID(tmp_line[0], tmp_line[3])
 							obj_ContigPair.setInterval((tmp_line[1], tmp_line[2]), (tmp_line[4], tmp_line[5]))
 							obj_ContigPair.setGene(obj_GeneModelA.geneID, obj_GeneModelB.geneID)
@@ -138,28 +141,7 @@ def func_ctgPair2genePair(iContigPair, dGFFs):
 										break
 								if not exist:
 									dGenePairsLinked[obj_GeneModelA.geneID] += [(obj_GeneModelB.geneID, 1, obj_GeneModelA.lcds, obj_GeneModelB.lcds)]
-							print line.strip()
-
-#								if obj_GeneModelB.geneID in dGenePairsLinked:
-#									v = dGenePairsLinked[obj_GeneModelB.geneID]
-#									for i in range(len(v)):
-#										if obj_GeneModelA.geneID == v[i][0]:
-#											v[i] = (obj_GeneModelA.geneID, v[i][1] + 1, obj_GeneModelB.lcds, obj_GeneModelA.lcds)
-#											exist = 1
-#											break
-#									if not exist:
-#										dGenePairsLinked[obj_GeneModelB.geneID] += [(obj_GeneModelA.geneID, 1, obj_GeneModelB.lcds, obj_GeneModelA.lcds)]
-#								else:
-#									dGenePairsLinked[obj_GeneModelA.geneID] += [(obj_GeneModelB.geneID, 1, obj_GeneModelA.lcds, obj_GeneModelB.lcds)]
-#							else:
-#									exist = 0
-#									v = dGenePairsLinked[obj_GeneModelA.geneID]
-#									for i in range(len(v)):
-#										if obj_GeneModelB.geneID == v[i][1].geneID:
-#											v[i] = (obj_GeneModelA, obj_GeneModelB, v[i][2] + 1)
-#											exist = 1
-#									if not exist:
-#										dGenePairsLinked[obj_GeneModelA.geneID] += [(obj_GeneModelA, obj_GeneModelB, 1)]
+#							print line.strip()
 	print len(dGenePairsLinked)
 	print len(lobj_ctgPairs)
 	return dGenePairsLinked, lobj_ctgPairs
@@ -174,7 +156,7 @@ def func_filterByLinkNum(dGenePairsLinked, lobj_ctgPairs):
 			for j in range(len(v)):
 				if lobj_ctgPairs[i].geneB == v[j][0]:
 					print lobj_ctgPairs[i].ctgA, lobj_ctgPairs[i].ctgB, lobj_ctgPairs[i].geneA, lobj_ctgPairs[i].geneB, v[j][1]
-					if v[j][1] < 5:
+					if v[j][1] < 2:
 						nLinkFailed += 1
 						v.pop(j)
 						lobj_filter.append(i)
