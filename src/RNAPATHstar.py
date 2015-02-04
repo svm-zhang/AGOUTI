@@ -78,23 +78,8 @@ def main(argv=None):
 	rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 			outcontigfilename)
 
-# def getParser(usage):
-    # parser = optparse.OptionParser(usage=usage)
-    # parser.add_option("--prefix", dest="pathPrefix")
-    # parser.add_option("--overlap", type="int", dest="overlap")
-
-    # configParser = getConfigParser()
-    # section = "RNAPATH"
-    # pathPrefix = getConfigOption(configParser, section, "pathPrefix", "RNAPATH")
-    # overlap = getConfigIntOption(configParser, section, "overlap", 30)
-
-    # parser.set_defaults(pathPrefix=pathPrefix, overlap=overlap)
-
-    # return parser
-
-
 def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
-            outcontigfilename, pathPrefix="RNAPATH", overlap=30):
+			outcontigfilename, pathPrefix="RNAPATH", overlap=30):
 
 	outpathfile = open(outpathfilename, "w")
 
@@ -114,7 +99,7 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 	outcontigfile = open(outcontigfilename, "w")
 	for path in pathList:
 		pathID += 1
-                # pathPrefix by default "RNAPATH"
+		# pathPrefix by default "RNAPATH"
 		outpathfile.write("%s%d: %s\n" % (pathPrefix, pathID, str(path)))
 		vertexNameList = []
 		for vertex in path:
@@ -155,7 +140,7 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 				sense2 = "-"
 				assemblyList = ((assemblyList, "+"), (nextVertex, "+"))
 				seqleft = sequence[-20:]
-                                # overlap by default: 30
+				# overlap by default: 30
 				seqright = contigDict[nextVertex][:overlap]
 				if seqleft in seqright:
 					pos = seqright.index(seqleft)
@@ -258,30 +243,29 @@ def calculateN50(sizeList, referenceMean=None):
 # Here is the modified version of getContigsFromFile() added in RNAPATH*, original version fails to load the last sequence
 # this reading function still requires further cleaning
 def getContigsFromFile(contigFileName):
-	nameList = []
-	origSize = []
-	contigNum = 0 
-	contigDict = {}
-	seq = ""
 	try:
 		incontigfile = open(contigFileName)
 	except IOError:
 		print "Error opening contig file: %s" % contigFileName
-		#return contigNum, nameList, contigDict, origSize
 
+	seq = ""
+	contigNum = 0
+	nameList = []
+	origSize = []
+	contigDict = {}
 	with open(contigFileName, 'r') as incontigfile:
 		for line in incontigfile:
 			if line.startswith('>'):
-				if "\r" in line:
-					line = line.strip("\n")
-				chrom = line[1:-1]
-				nameList.append(chrom)
-				contigNum += 1
-				if seq:
-					prevChrom = nameList[contigNum-2]
-					contigDict[contigNum-2]=seq
+				if seq != "":
+#					prevChrom = nameList[contigNum-2]
+					contigDict[contigNum] = seq
 					origSize.append(len(seq))
-					seq=""
+					contigNum += 1
+					seq = ""
+#				if "\r" in line:
+#					line = line.strip("\n")
+				chrom = line.strip()[1:-1]
+				nameList.append(chrom)
 			else:
 				seq += line.strip()
 
@@ -302,8 +286,8 @@ def getPath(contigNum, distalPairsfile, nameList):
 	print "processing distal pairs"
 	verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = processDistalPairsFile(distalPairsfile, edgeMatrix, nameList)
 
-#print "notSoloDict",notSoloDict #added
-#print "verticesWithEdges",verticesWithEdges #added
+#	print "notSoloDict",notSoloDict #added
+#	print "verticesWithEdges",verticesWithEdges #added
 
 	willVisitList = verticesWithEdges.keys()
 	willVisitList.sort() #willVisitList before [0, 1, 2, 3, 4, 5, 6]
@@ -311,9 +295,9 @@ def getPath(contigNum, distalPairsfile, nameList):
 
 	print "cleaning up graph of edges with weight 1"
 	verticesToDelete = []
-#print "edgeMatrix before", edgeMatrix.edgeArray #added
+#	print "edgeMatrix before", edgeMatrix.edgeArray #added
 
-#print "vertexEdges",vertexEdges #added, vertexEdges {0: [3, 4, 5, 6], 1: [2], 2: [1], 3: [0], 4: [0], 5: [0], 6: [0]}
+#	print "vertexEdges",vertexEdges #added, vertexEdges {0: [3, 4, 5, 6], 1: [2], 2: [1], 3: [0], 4: [0], 5: [0], 6: [0]}
 
 	for rindex in willVisitList: # if a contig is not in notSoloDict, it means that all connections to/from this contig have weight < 1(cutoff), and those weight will be converted to Zero in edgeMatrix.edgeArray
 		if rindex not in notSoloDict:
@@ -321,7 +305,7 @@ def getPath(contigNum, distalPairsfile, nameList):
 			edgeMatrix.edgeArray[rindex][cindex] = 0
 			edgeMatrix.edgeArray[cindex][rindex] = 0
 			verticesToDelete.append(rindex)
-#print "edgeMatrix.edgeArray after 1", edgeMatrix.edgeArray
+#	print "edgeMatrix.edgeArray after 1", edgeMatrix.edgeArray
 
 	for vertex in verticesToDelete:
 		willVisitList.remove(vertex)   
@@ -331,7 +315,7 @@ def getPath(contigNum, distalPairsfile, nameList):
 	print "visiting %d vertices" % len(willVisitList)
 
 	leafList = []
-#print "willVisitList after",willVisitList
+#	print "willVisitList after",willVisitList
 	print "picking top 2 edges per vertex - zero out others"
 	for rindex in willVisitList:
 		vertices = vertexEdges[rindex]
@@ -347,16 +331,17 @@ def getPath(contigNum, distalPairsfile, nameList):
 			for (weight, cindex) in rEdges[2:]:
 				edgeMatrix.edgeArray[rindex][cindex] = 0  #further zero out the non-top2-weight edges
 				edgeMatrix.edgeArray[cindex][rindex] = 0
+			# this is not necessary
 #			leafList.append(rindex) #added in RNAPATH*
 		elif len(rEdges) == 1:
 			if edgeMatrix.edgeArray[rindex][rEdges[0][1]] > 1:
 				leafList.append(rindex)
-                # I don't think this is right
+		# I don't think this is right
 #		else:
 #			leafList.append(rindex) #added in RNAPATH*
 
-#print "leafList", leafList #added
-#print "edgeMatrix.edgeArray",edgeMatrix.edgeArray #added
+#	print "leafList", leafList #added
+#	print "edgeMatrix.edgeArray",edgeMatrix.edgeArray #added
 
 	print "zeroed out %d lower-weight edges at vertices with degree > 2" % zeroedEdge
 	pathList, visitedDict = traverseGraph(leafList, edgeMatrix)
@@ -373,14 +358,13 @@ def traverseGraph(leafList, edgeMatrix):
 			pass
 		else:
 			path = edgeMatrix.visitLink(rindex) # orig
-                        # same as original line
+			# same as original line
 #			path = edgeMatrix.visitLink(rindex,visitedDict.keys()) #added
 			if len(path) > 1:
 				for vertex in path:
 					visitedDict[vertex] = ""
 				print path
 				pathList.append(path)
-
 	return pathList, visitedDict
 
 def processDistalPairsFile(distalPairsfilename, edgeMatrix, nameList):
@@ -470,7 +454,7 @@ class EdgeMatrix:
 				toVertex.append(toindex)
 
 		for vertex in toVertex:
-                        # this is the base case where no further extension can be found
+			# this is the base case where no further extension can be found
 			if sum(self.edgeArray[vertex]) == self.edgeArray[fromVertex][vertex]:
 				self.edgeArray[fromVertex][vertex] = 0
 				self.edgeArray[vertex][fromVertex] = 0
