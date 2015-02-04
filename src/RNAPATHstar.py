@@ -11,38 +11,35 @@ def compNT(nt):
 	""" returns the complementary basepair to base nt
 	"""
 	compDict = { "A": "T",
-				 "T": "A",
-				 "G": "C",
-				 "C": "G",
-				 "S": "S",
-				 "W": "W",
-				 "R": "Y",
-				 "Y": "R",
-				 "M": "K",
-				 "K": "M",
-				 "H": "D",
-				 "D": "H",
-				 "B": "V",
-				 "V": "B",
-				 "N": "N",
-				 "a": "t",
-				 "t": "a",
-				 "g": "c",
-				 "c": "g",
-				 "n": "n",
-				 "z": "z"
+			 "T": "A",
+			 "G": "C",
+			 "C": "G",
+			 "S": "S",
+			 "W": "W",
+			 "R": "Y",
+			 "Y": "R",
+			 "M": "K",
+			 "K": "M",
+			 "H": "D",
+			 "D": "H",
+			 "B": "V",
+			 "V": "B",
+			 "N": "N",
+			 "a": "t",
+			 "t": "a",
+			 "g": "c",
+			 "c": "g",
+			 "n": "n",
+			 "z": "z"
 	}
 
 	return compDict.get(nt, "N")
-
 
 def complement(sequence, length=-1):
 	""" returns the complement of the sequence.
 	"""
 	newSeq = ""
-
 	seqLength = len(sequence)
-
 	if length == seqLength or length < 0:
 		seqList = list(sequence)
 		seqList.reverse()
@@ -59,7 +56,6 @@ def complement(sequence, length=-1):
 			newSeq += "N"
 
 	return newSeq
-
 
 def main(argv=None):
 	if not argv:
@@ -81,7 +77,6 @@ def main(argv=None):
 
 	rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 			outcontigfilename)
-
 
 # def getParser(usage):
     # parser = optparse.OptionParser(usage=usage)
@@ -119,7 +114,8 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 	outcontigfile = open(outcontigfilename, "w")
 	for path in pathList:
 		pathID += 1
-		outpathfile.write("%s%d: %s\n" % (pathPrefix, pathID, str(path))) 
+                # pathPrefix by default "RNAPATH"
+		outpathfile.write("%s%d: %s\n" % (pathPrefix, pathID, str(path)))
 		vertexNameList = []
 		for vertex in path:
 			vertexNameList.append(nameList[vertex])
@@ -137,12 +133,13 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 				RF = senseList.count(("-", "+"))
 			else:
 				senseList = edgeSenseDict[nextVertex, currentVertex]
-				# flip
+				# flip because the from and end vertices fliped
 				FR = senseList.count(("-", "+"))
 				RF = senseList.count(("+", "-"))
 
 			FF = senseList.count(("+", "+"))
 			RR = senseList.count(("-", "-"))
+
 			if currentSense == "-":
 				# we had flipped the upstream piece! Must flip again
 				temp1 = FR
@@ -158,6 +155,7 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 				sense2 = "-"
 				assemblyList = ((assemblyList, "+"), (nextVertex, "+"))
 				seqleft = sequence[-20:]
+                                # overlap by default: 30
 				seqright = contigDict[nextVertex][:overlap]
 				if seqleft in seqright:
 					pos = seqright.index(seqleft)
@@ -168,7 +166,6 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 					sequence += contigDict[nextVertex][offset:]
 				else:
 					sequence += "NN" + contigDict[nextVertex]
-
 				currentSense = "+"
 			elif FF >= RR and FF >= RF:
 				# we have FF - flip seqright
@@ -186,7 +183,6 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 					sequence += complement(contigDict[nextVertex])[offset:]
 				else:
 					sequence += "NN" + complement(contigDict[nextVertex])
-
 				currentSense = "-"
 			elif RR >= RF:
 				# we have RR - flip seqleft
@@ -204,7 +200,6 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 					sequence = complement(sequence) + contigDict[nextVertex][offset:]
 				else:
 					sequence = complement(sequence) + "NN" + contigDict[nextVertex]
-
 				currentSense = "+"
 			else:
 				# we have RF - flip both
@@ -222,7 +217,6 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 					sequence = complement(sequence) + complement(contigDict[nextVertex])[offset:]
 				else:
 					sequence = complement(sequence) + "NN" + complement(contigDict[nextVertex])
-
 				currentSense = "-"
 
 			outstring = "(%d, %d): FF %d RR %d RF %d FR %d : %s %s\t%s" % (currentVertex, nextVertex, FF, RR, RF, FR, sense1, sense2, str(assemblyList))
@@ -239,7 +233,6 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 
 		newSizeList.append(len(contigDict[vertex]))
 		outcontigfile.write(">%s\n%s\n" % (nameList[vertex], contigDict[vertex]))
-
 	calculateN50(newSizeList, referenceMean=halfSize)
 
 def calculateN50(sizeList, referenceMean=None):
@@ -262,39 +255,8 @@ def calculateN50(sizeList, referenceMean=None):
 
 	return referenceMean
 
-
-# def getContigsFromFile(contigFileName):
-    # nameList = []
-    # origSize = []
-    # contigNum = 0
-    # currentChrom = ""
-    # seq = ""
-    # contigDict = {}
-
-    # try:
-        # incontigfile = open(contigFileName)
-    # except IOError:
-        # print "Error opening contig file: %s" % contigFileName
-        # return contigNum, nameList, contigDict, origSize
-
-    # for line in incontigfile:
-        # if ">" in line:
-            # if currentChrom !="":
-                # nameList.append(currentChrom)
-                # contigDict[contigNum] = seq
-                # origSize.append(len(seq))
-                # contigNum += 1
-
-            # currentChrom = line.strip().split()[0][1:]
-            # seq = ""
-        # else:
-            # seq += line.strip()
-
-    # incontigfile.close()
-
-    # return contigNum, nameList, contigDict, origSize
-
 # Here is the modified version of getContigsFromFile() added in RNAPATH*, original version fails to load the last sequence
+# this reading function still requires further cleaning
 def getContigsFromFile(contigFileName):
 	nameList = []
 	origSize = []
@@ -309,13 +271,13 @@ def getContigsFromFile(contigFileName):
 
 	with open(contigFileName, 'r') as incontigfile:
 		for line in incontigfile:
-			if ">" in line:
+			if line.startswith('>'):
 				if "\r" in line:
 					line = line.strip("\n")
 				chrom = line[1:-1]
 				nameList.append(chrom)
 				contigNum += 1
-				if seq :
+				if seq:
 					prevChrom = nameList[contigNum-2]
 					contigDict[contigNum-2]=seq
 					origSize.append(len(seq))
@@ -361,10 +323,8 @@ def getPath(contigNum, distalPairsfile, nameList):
 			verticesToDelete.append(rindex)
 #print "edgeMatrix.edgeArray after 1", edgeMatrix.edgeArray
 
-
 	for vertex in verticesToDelete:
 		willVisitList.remove(vertex)   
-		
 	print "%d 1-edges zeroed out" % len(verticesToDelete)
 
 	zeroedEdge = 0
@@ -381,20 +341,20 @@ def getPath(contigNum, distalPairsfile, nameList):
 				rEdges.append((edgeMatrix.edgeArray[rindex][avertex], avertex))
 
 		if len(rEdges) > 2:
-			rEdges.sort()
-			rEdges.reverse()
+			rEdges.sort(reverse=True)
+#			rEdges.reverse()
 			zeroedEdge += len(rEdges[2:])
 			for (weight, cindex) in rEdges[2:]:
 				edgeMatrix.edgeArray[rindex][cindex] = 0  #further zero out the non-top2-weight edges
 				edgeMatrix.edgeArray[cindex][rindex] = 0
-			leafList.append(rindex) #added in RNAPATH*
+#			leafList.append(rindex) #added in RNAPATH*
 		elif len(rEdges) == 1:
 			if edgeMatrix.edgeArray[rindex][rEdges[0][1]] > 1:
 				leafList.append(rindex)
-		else:
-			leafList.append(rindex) #added in RNAPATH*
+                # I don't think this is right
+#		else:
+#			leafList.append(rindex) #added in RNAPATH*
 
-			
 #print "leafList", leafList #added
 #print "edgeMatrix.edgeArray",edgeMatrix.edgeArray #added
 
@@ -412,12 +372,12 @@ def traverseGraph(leafList, edgeMatrix):
 		if visitedDict.has_key(rindex):
 			pass
 		else:
-			#path = edgeMatrix.visitLink(rindex)# orig
-			path = edgeMatrix.visitLink(rindex,visitedDict.keys()) #added
+			path = edgeMatrix.visitLink(rindex) # orig
+                        # same as original line
+#			path = edgeMatrix.visitLink(rindex,visitedDict.keys()) #added
 			if len(path) > 1:
 				for vertex in path:
 					visitedDict[vertex] = ""
-
 				print path
 				pathList.append(path)
 
@@ -510,6 +470,7 @@ class EdgeMatrix:
 				toVertex.append(toindex)
 
 		for vertex in toVertex:
+                        # this is the base case where no further extension can be found
 			if sum(self.edgeArray[vertex]) == self.edgeArray[fromVertex][vertex]:
 				self.edgeArray[fromVertex][vertex] = 0
 				self.edgeArray[vertex][fromVertex] = 0
