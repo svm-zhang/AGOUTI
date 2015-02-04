@@ -75,7 +75,7 @@ def getMappedRegionOnContigs(start, alnLen, flags):
 	else:
 		return start+alnLen, start
 
-def getContigPairs(isam, min_nLinks):
+def sam2CtgPairs(isam, min_nLinks):
 	dContigPairs = collections.defaultdict(list)
 	minFracOvl = 0.8
 	maxFracMismatch = 0.1
@@ -144,7 +144,7 @@ def getContigPairs(isam, min_nLinks):
 	sys.stderr.write("Number of Pairs of Contigs: %d\n" %(nCtgPairs))
 	return dContigPairs
 
-def getGeneModels(igff):
+def gff2GeneModels(igff):
 	dGFFs = collections.defaultdict(list)
 	nGene = 0
 	with open(igff, 'r') as fIN:
@@ -195,12 +195,23 @@ def matchGene(geneModels, start, stop):
 		geneModel = geneModels[i]
 		# interval hits the gene
 		if start >= geneModel.geneStart and stop <= geneModel.geneStop:
-			return geneModel
+			geneIndex = i
+			return geneModel, geneIndex
 		# interval spans the gene
 		elif ((start >= geneModel.geneStart and start < geneModel.geneStop and
 			  stop > geneModel.geneStop) or (start < geneModel.geneStart and
 			  stop <= geneModel.geneStop and stop > geneModel.geneStart)):
-			return geneModel
+			geneIndex = i
+			return geneModel, geneIndex
+		# interval in between two genes
+		# this need to work on more
+		elif ((stop <= geneModel.geneStop and i == 0) or
+			  (start >= geneModel.geneStop and i == len(geneModels)-1) or
+			  (stop <= geneModel.geneStop and i == len(geneModels)-1) or
+			  (i > 0 and i < len(geneModels)-1 and
+			   start >= geneModels[i-1].geneStop and stop <= geneModel.geneStart)):
+			geneIndex = len(geneModels) - i - 1 + 1
+			return None, geneIndex
 #		for j in range(0, len(geneModel.lcds), 2):
 #			if start >= geneModel.lcds[j] and stop <= geneModel.lcds[j+1]:
 #				exonIndex = (j + 2) / 2
@@ -212,7 +223,9 @@ def matchGene(geneModels, start, stop):
 #			elif (start > geneModel.lcds[j+1] and		# cases where the interval
 #				  stop < geneModel.lcds[j+2]):			# spans exon/intron junctions
 #				return geneModel, exonIndex
-	return None
+	print start, stop
+	sys.exit()
+	return None, -1
 
 def contigPairToGenePair():
 	pass
@@ -230,18 +243,19 @@ def cleanContigPairs(dContigPairs, dGFFs):
 			stopB = pairInfo[i][3]
 			senseA = pairInfo[i][4]
 			senseB = pairInfo[i][5]
-			geneModelA = None
-			geneModelB = None
-			print pairInfo[i]
+			geneModelA, geneIndexA = None, -1
+			geneModelB, geneIndexB = None, -1
 			if ctgA in dGFFs:
-				geneModelA = matchGene(dGFFs[ctgA], startA, stopA)
+				print pairInfo[i]
+				geneModelA, geneIndexA = matchGene(dGFFs[ctgA], startA, stopA)
 			if ctgB in dGFFs:
-				geneModelB = matchGene(dGFFs[ctgB], startB, stopB)
+				geneModelB, geneIndexB = matchGene(dGFFs[ctgB], startB, stopB)
+			# case where gene models were found for a given pair of contigs
 			if geneModelA is not None and geneModelB is not None:
-				nGeneToRightA = len(dGFFs[ctgA]) - dGFFs[ctgA].index(geneModelA)
-				nGeneToLeftA = dGFFs[ctgA].index(geneModelA)
-				nGeneToLeftB = dGFFs[ctgB].index(geneModelB) - 0
-				nGeneToRightB = len(dGFFs[ctgB]) - dGFFs[ctgB].index(geneModelB)
+				nGeneToRightA = len(dGFFs[ctgA]) - geneIndexA
+				nGeneToLeftA = geneIndexA
+				nGeneToLeftB = geneModelB
+				nGeneToRightB = len(dGFFs[ctgB]) - geneIndexB
 				# the following could be used as how to connect contigs
 				if nGeneToLeftA <= nGeneToRightA:
 					geneARelativePos = 5
@@ -255,16 +269,23 @@ def cleanContigPairs(dContigPairs, dGFFs):
 				else:
 					geneBRelativePos = 3
 					nGeneSpannedB = nGeneToRightB
-				print "\t", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneSpannedA, geneARelativePos, nGeneSpannedB, geneBRelativePos
+				if nGeneSpannedA+nGeneSpannedB <= 1:
+					pass
+#					print "\t", "both", pairInfo[i]
+#					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneSpannedA, geneARelativePos, nGeneSpannedB, geneBRelativePos
+			# case where gene models were not found for a given pair of contigs
+			elif geneModelA is None and geneModelB is None:
+				print "\t", "none", pairInfo[i], geneIndexA, geneIndexB
+				pass
+			# case where either contig was found to match a gene model
+			# either geneModelA or geneModelB found a match
+			else:
+				pass
 		print
 
 	# I need to further filter contig pairs by the number of gene pairs supported by a minimum number of reads
 	# I need to figure out the orientation stuff
 	# for contig pairs do not hit gene models, I need to create them and find their position
-
-
-
-
 
 
 #		sys.exit()
@@ -316,8 +337,8 @@ def main():
 	parser.add_argument("sam", nargs='?', help="reads mapping in SAM format")
 	args = parser.parse_args()
 
-	dGFFs = getGeneModels(args.igff)
-	dContigPairs = getContigPairs(args.sam, args.min_nLinks)
+	dGFFs = gff2GeneModels(args.igff)
+	dContigPairs = sam2CtgPairs(args.sam, args.min_nLinks)
 	cleanContigPairs(dContigPairs, dGFFs)
 
 if __name__ == "__main__":
