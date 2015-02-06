@@ -1,9 +1,19 @@
 #!/usr/bin/python
 
 import sys
+import os
 import optparse
 import string
+import collections
+import math
 from numpy import zeros, int16
+
+parpath = os.path.abspath(os.path.join(os.path.dirname(sys.argv[0]), os.pardir))
+if os.path.exists(os.path.join(parpath, "lib", "__init__.py")):
+	sys.path.insert(0, parpath)
+
+from lib import agouti_gff as agff
+from lib import agouti_sam as asam
 
 versionString = "RNAPATH*" # modified from RNAPATH by luting zhuo
 
@@ -66,19 +76,264 @@ def main(argv=None):
 	# parser = getParser(usage)
 	# (options, args) = parser.parse_args(argv[1:])
 
-	if len(argv) < 4:
+	if len(argv) < 5:
 		print usage
 		sys.exit(0)
 
-	incontigfilename = argv[1]
-	distalPairsfile = argv[2]
-	outpathfilename = argv[3]
-	outcontigfilename = argv[4]
+	icontig = argv[1]
+#	distalPairsfile = argv[2]
+	isam = argv[2]
+	igff = argv[3]
+	outpathfilename = argv[4]
+	outcontigfilename = argv[5]
 
-	rnaPath(incontigfilename, distalPairsfile, outpathfilename,
+	rnaPath(icontig, isam, igff, outpathfilename,
 			outcontigfilename)
 
-def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
+def gff2GeneModels(igff):
+	dGFFs = collections.defaultdict(list)
+	nGene = 0
+	with open(igff, 'r') as fIN:
+		for line in fIN:
+			if not line.startswith('#'):
+				tmp_line = line.strip().split("\t")
+				if tmp_line[2] == "gene":
+					nGene += 1
+		lobj_GeneModels = [agff.AGOUTI_GFF() for i in xrange(nGene)]
+		geneIndex = -1
+		fIN.seek(0)
+		for line in fIN:
+			if not line.startswith('#'):
+				tmp_line = line.strip().split("\t")
+				if tmp_line[2] == "gene":
+					geneIndex += 1
+					if geneIndex == 0:
+						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
+														   int(tmp_line[3]),
+														   int(tmp_line[4]), 0)
+					else:
+						preCtgID = lobj_GeneModels[geneIndex-1].ctgID
+						preGeneID = lobj_GeneModels[geneIndex-1].geneID
+						dGFFs[preCtgID].append(lobj_GeneModels[geneIndex-1])
+						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
+														   int(tmp_line[3]),
+														   int(tmp_line[4]), 0)
+					lobj_GeneModels[geneIndex].setProgram(tmp_line[1])
+					lobj_GeneModels[geneIndex].setContigID(tmp_line[0])
+					lobj_GeneModels[geneIndex].setStrand(tmp_line[6])
+				elif tmp_line[2] == "stop_codon":
+					lobj_GeneModels[geneIndex].setStopCodon()
+				elif tmp_line[2] == "start_codon":
+					lobj_GeneModels[geneIndex].setStartCodon()
+				elif tmp_line[2] == "CDS":
+					lobj_GeneModels[geneIndex].updateCDS(int(tmp_line[3]), int(tmp_line[4]))
+		dGFFs[lobj_GeneModels[geneIndex].ctgID].append(lobj_GeneModels[geneIndex])
+
+	nGeneModels = 0
+	for k, v in sorted(dGFFs.items()):
+		nGeneModels += len(v)
+	sys.stderr.write("Number of Gene Models parsed: %d\n" %(nGeneModels))
+	return dGFFs
+
+def matchGene(geneModels, start, stop):
+	for i in xrange(0, len(geneModels)):
+		curGeneModel = geneModels[i]
+		if i == 0 and i == len(geneModels) - 1:
+			# interval hits the gene
+			if start >= curGeneModel.geneStart and stop <= curGeneModel.geneStop:
+#				print "last gene hit"
+				return curGeneModel, i
+			# interval spans the gene
+			elif ((start < curGeneModel.geneStart and stop > curGeneModel.geneStart) or
+				   start < curGeneModel.geneStop and stop > curGeneModel.geneStop):
+#				print "span the last gene"
+				return curGeneModel, i
+			else:
+				if stop < curGeneModel.geneStart:
+#					print "before the first gene"
+					return curGeneModel, 0
+				elif start > curGeneModel.geneStop:
+#					print "after the last gene"
+					return curGeneModel, i+1
+		elif i == 0:
+			# interval hits the gene
+			if start >= curGeneModel.geneStart and stop <= curGeneModel.geneStop:
+#				print "first gene hit"
+				return curGeneModel, i
+			# interval spans the gene
+			elif ((start < curGeneModel.geneStart and stop > curGeneModel.geneStart) or
+				   start < curGeneModel.geneStop and stop > curGeneModel.geneStop):
+#				print "span the first gene"
+				return curGeneModel, i
+			else:
+				# interval before the first gene
+				if stop < curGeneModel.geneStart:
+#					print "before the first gene"
+					return curGeneModel, 0
+		elif i == len(geneModels)-1:
+			# interval hits the gene
+			if start >= curGeneModel.geneStart and stop <= curGeneModel.geneStop:
+#				print "last gene hit"
+				return curGeneModel, i
+			# interval spans the gene
+			elif ((start < curGeneModel.geneStart and stop > curGeneModel.geneStart) or
+				   start < curGeneModel.geneStop and stop > curGeneModel.geneStop):
+#				print "span the last gene"
+				return curGeneModel, i
+			else:
+				# interval after the last gene
+				if start > curGeneModel.geneStop:
+#					print "after the last gene"
+					return curGeneModel, i+1
+				# intergenic region before the last gene
+				elif stop <= curGeneModel.geneStart and start >= preGeneModel.geneStop:
+#					print "intergenic"
+					return curGeneModel, i
+		else:
+			# interval hits the gene
+			if start >= curGeneModel.geneStart and stop <= curGeneModel.geneStop:
+#				print "hit gene in the middle"
+				return curGeneModel, i
+			# interval spans the gene
+			elif ((start < curGeneModel.geneStart and stop > curGeneModel.geneStart) or
+				   start < curGeneModel.geneStop and stop > curGeneModel.geneStop):
+#				print "spans gene in the middle"
+				return curGeneModel, i
+			# interval in between two genes
+			else:
+				if stop <= curGeneModel.geneStart and start >= preGeneModel.geneStop:
+#					print "intergenic"
+					return curGeneModel, i
+		preGeneModel = curGeneModel
+#	all of the above conditions should include every cases,
+#	alway return this if there is a bug
+	return None, -2
+
+def cleanContigPairs(dContigPairs, dGFFs):
+	distalPairsfile = "test.pair"
+	fOUT = open(distalPairsfile, 'w')
+	for ctgPair, pairInfo in dContigPairs.items():
+		ctgA = ctgPair[0]
+		ctgB = ctgPair[1]
+		keep = []
+		print ">", ctgA, ctgB
+		for i in xrange(len(pairInfo)):
+			startA = pairInfo[i][0]
+			stopA = pairInfo[i][2]
+			startB = pairInfo[i][1]
+			stopB = pairInfo[i][3]
+			senseA = pairInfo[i][4]
+			senseB = pairInfo[i][5]
+			readID = pairInfo[i][-1]
+			geneModelA, geneIndexA = None, -1
+			geneModelB, geneIndexB = None, -1
+			if ctgA in dGFFs:
+				geneModelA, geneIndexA = matchGene(dGFFs[ctgA], startA, stopA)
+			if ctgB in dGFFs:
+				geneModelB, geneIndexB = matchGene(dGFFs[ctgB], startB, stopB)
+
+			# use geneIndex as check conditions
+			if geneIndexA != -1 and geneIndexB != -1:
+				nGeneToLeftA = geneIndexA
+				nGeneToRightA = len(dGFFs[ctgA]) - geneIndexA
+				nGeneToLeftB = geneIndexB
+				nGeneToRightB = len(dGFFs[ctgB]) - geneIndexB
+				# case where RR with 55
+				if (senseA == senseB and senseA == '-' and
+					nGeneToLeftA < nGeneToRightA and
+					nGeneToLeftB < nGeneToRightB and
+					nGeneToLeftA + nGeneToLeftB <= 1):
+					print "\t", "both", pairInfo[i]
+					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == senseB and senseA == '+' and
+					nGeneToLeftA > nGeneToRightA and
+					nGeneToLeftB > nGeneToRightB and
+					nGeneToRightA + nGeneToRightB <= 1):
+					print "\t", "both", pairInfo[i]
+					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, geneIndexA, len(dGFFs[ctgA]), geneIndexB, len(dGFFs[ctgB]), nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == '+' and senseA == '-' and
+					nGeneToLeftA > nGeneToRightA and
+					nGeneToLeftB < nGeneToRightB and
+					nGeneToRightA + nGeneToLeftB <= 1):
+					print "\t", "both", pairInfo[i]
+					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == '-' and senseA == '+' and
+					nGeneToLeftA < nGeneToRightA and
+					nGeneToLeftB > nGeneToRightB and
+					nGeneToRightB + nGeneToLeftA <= 1):
+					print "\t", "both", pairInfo[i]
+					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+			elif geneIndexA == -1 and geneIndexB != -1:
+				nGeneToLeftB = geneIndexB
+				nGeneToRightB = len(dGFFs[ctgB]) - geneIndexB
+				if (senseA == '+' and senseB == '-' and
+					nGeneToLeftB < nGeneToRightB and
+					nGeneToLeftB <= 1):
+					print "\t", "EitherA", pairInfo[i]
+					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == '-' and senseB == '+' and
+					  nGeneToLeftB > nGeneToRightB and
+					  nGeneToRightB <= 1):
+					print "\t", "EitherA", pairInfo[i]
+					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == senseB and senseA == '+' and
+					  nGeneToLeftB > nGeneToRightB and
+					  nGeneToRightB <= 1):
+					print "\t", "EitherA", pairInfo[i]
+					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == senseB and senseA == '-' and
+					  nGeneToLeftB < nGeneToRightB and
+					  nGeneToLeftB <= 1):
+					print "\t", "EitherA", pairInfo[i]
+					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+			elif geneIndexA != -1 and geneIndexB == -1:
+				nGeneToLeftA = geneIndexA
+				nGeneToRightA = len(dGFFs[ctgA]) - geneIndexA
+				if (senseA == '+' and senseB == '-' and
+					nGeneToLeftA > nGeneToRightA and
+					nGeneToRightA <= 1):
+					print "\t", "EitherB", pairInfo[i]
+					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == '-' and senseB == '+' and
+					  nGeneToLeftA < nGeneToRightA and
+					  nGeneToLeftA <= 1):
+					print "\t", "EitherB", pairInfo[i]
+					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == senseB and senseA == '+' and
+					  nGeneToLeftA > nGeneToRightA and
+					  nGeneToRightA <= 1):
+					print "\t", "EitherB", pairInfo[i]
+					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				elif (senseA == senseB and senseA == '-' and
+					  nGeneToLeftA < nGeneToRightA and
+					  nGeneToLeftA <= 1):
+					print "\t", "EitherB", pairInfo[i]
+					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+			elif geneIndexA == -1 and geneIndexB == -1:
+				print "\t", "None", pairInfo[i]
+				print "\t", "None", ctgA, ctgB, "None", "None", "N/A", "N/A", "N/A", "N/A", senseA, senseB
+				fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+			elif geneIndexA == -2 or geneIndexB == -2:
+				sys.stderr.write("%s\n" %(str(pairInfo[i])))
+				sys.stderr.write("ding ding ding! check is in emergency!")
+				sys.exit(1)
+		print
+	fOUT.close()
+	return distalPairsfile
+
+def rnaPath(icontig, isam, igff, outpathfilename,
 			outcontigfilename, pathPrefix="RNAPATH", overlap=30):
 
 	outpathfile = open(outpathfilename, "w")
@@ -87,12 +342,15 @@ def rnaPath(incontigfilename, distalPairsfile, outpathfilename,
 	print outheader
 	print >> outpathfile, outheader
 
-	contigNum, nameList, contigDict, origSize = getContigsFromFile(incontigfilename)
+	contigNum, nameList, contigDict, origSize = getContigsFromFile(icontig)
 	halfSize = calculateN50(origSize)
+	dGFFs = gff2GeneModels(igff)
+	dContigPairs = asam.sam2CtgPairs(isam, 5)
+	distalPairsfile = cleanContigPairs(dContigPairs, dGFFs)
 	print "building the adjacency graph"
 	pathList, edgeSenseDict, visitedDict = getPath(contigNum, distalPairsfile, nameList)
 
-	print "found %d paths" % len(pathList)            
+	print "found %d paths" % len(pathList)
 
 	newSizeList = []
 	pathID = 0
@@ -236,12 +494,11 @@ def calculateN50(sizeList, referenceMean=None):
 
 		currentTotalLength += size
 
-	print sizeList[:50]
+#	print sizeList[:50]
 
 	return referenceMean
 
 # Here is the modified version of getContigsFromFile() added in RNAPATH*, original version fails to load the last sequence
-# this reading function still requires further cleaning
 def getContigsFromFile(contigFileName):
 	try:
 		incontigfile = open(contigFileName)
@@ -257,14 +514,11 @@ def getContigsFromFile(contigFileName):
 		for line in incontigfile:
 			if line.startswith('>'):
 				if seq != "":
-#					prevChrom = nameList[contigNum-2]
 					contigDict[contigNum] = seq
 					origSize.append(len(seq))
 					contigNum += 1
 					seq = ""
-#				if "\r" in line:
-#					line = line.strip("\n")
-				chrom = line.strip()[1:-1]
+				chrom = line.strip()[1:]
 				nameList.append(chrom)
 			else:
 				seq += line.strip()
@@ -332,13 +586,13 @@ def getPath(contigNum, distalPairsfile, nameList):
 				edgeMatrix.edgeArray[rindex][cindex] = 0  #further zero out the non-top2-weight edges
 				edgeMatrix.edgeArray[cindex][rindex] = 0
 			# this is not necessary
-#			leafList.append(rindex) #added in RNAPATH*
+			leafList.append(rindex) #added in RNAPATH*
 		elif len(rEdges) == 1:
 			if edgeMatrix.edgeArray[rindex][rEdges[0][1]] > 1:
 				leafList.append(rindex)
 		# I don't think this is right
-#		else:
-#			leafList.append(rindex) #added in RNAPATH*
+		else:
+			leafList.append(rindex) #added in RNAPATH*
 
 #	print "leafList", leafList #added
 #	print "edgeMatrix.edgeArray",edgeMatrix.edgeArray #added
