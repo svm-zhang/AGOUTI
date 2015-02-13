@@ -73,9 +73,6 @@ def main(argv=None):
 
 	usage = "python %prog incontigfile distalPairs outpathfile outcontigfile [--prefix string] [--overlap bp]"
 
-	# parser = getParser(usage)
-	# (options, args) = parser.parse_args(argv[1:])
-
 	if len(argv) < 5:
 		print usage
 		sys.exit(0)
@@ -134,6 +131,63 @@ def gff2GeneModels(igff):
 		nGeneModels += len(v)
 	sys.stderr.write("Number of Gene Models parsed: %d\n" %(nGeneModels))
 	return dGFFs
+
+def addGeneModel(ctg, daddedModels, start, stop):
+	if ctg not in daddedModels:
+		geneModel = agff.AGOUTI_GFF()
+		geneModel.lcds = [start, stop]
+		geneModel.setContigID = ctg
+		geneModel.setProgram("AGOUTI")
+		daddedModels[ctg] = [geneModel]
+		return geneModel, daddedModels
+	else:
+		for i in range(len(daddedModels[ctg])):
+			tmpModel = daddedModels[ctg][i]
+			print tmpModel.lcds
+			# make another gene
+			if ((start < stop and tmpModel.lcds[0] - stop >= 10000) or
+				(start < stop and start - tmpModel.lcds[-1] >= 10000)):
+				geneModel = agff.AGOUTI_GFF()
+				geneModel.lcds = [start, stop]
+				geneModel.setContigID = ctg
+				geneModel.setProgram("AGOUTI")
+				daddedModels[ctg].append(geneModel)
+				return geneModel, daddedModels
+			for j in range(0, len(tmpModel.lcds), 2):
+				print tmpModel.lcds[j], tmpModel.lcds[j+1]
+				# outside exon
+				if (start < stop and tmpModel.lcds[j] > stop):
+					# add before the first exon
+					if j == 0:
+						tmpModel.lcds = [start, stop] + tmpModel.lcds
+						return tmpModel, daddedModels
+					# squeeze in a new exon
+					else:
+						tmpModel.lcds = tmpModel.lcds[:j] + [start, stop] + tmpModel.lcds[j:]
+						return tmpModel, daddedModels
+				# 3' to the last exon
+				elif (j == len(tmpModel.lcds)-2 and start < stop and start > tmpModel.lcds[j+1]):
+					tmpModel.lcds += [start, stop]
+					return tmpModel, daddedModels
+				# overlap exon
+				elif (start < tmpModel.lcds[j] and stop <= tmpModel.lcds[j+1] and stop > tmpModel.lcds[j]):
+					tmpModel.lcds[j] = start
+					return tmpModel, daddedModels
+				# overlap exon
+				elif (start < tmpModel.lcds[j+1] and start >= tmpModel.lcds[j] and stop > tmpModel.lcds[j+1]):
+					tmpModel.lcds[j+1] = stop
+					return tmpModel, daddedModels
+				# within exon
+				elif (start >= tmpModel.lcds[j] and stop <= tmpModel.lcds[j+1]):
+					return tmpModel, daddedModels
+				# span exon
+				elif (start < tmpModel.lcds[j] and stop > tmpModel.lcds[j+1]):
+					tmpModel.lcds[j] = start
+					tmpModel.lcds[j+1] = stop
+					return tmpModel, daddedModels
+				else:
+					if j == len(tmpModel.lcds)-2:
+						print "This should not happen; debug!", ctg, start, stop
 
 def matchGene(geneModels, start, stop):
 	for i in xrange(0, len(geneModels)):
@@ -210,13 +264,15 @@ def matchGene(geneModels, start, stop):
 	return None, -2
 
 def cleanContigPairs(dContigPairs, dGFFs):
-	distalPairsfile = "test.pair"
+	distalPairsfile = "trial2.pair"
+	dGenePairs = collections.defaultdict()
+	daddedModels = collections.defaultdict(list)
 	fOUT = open(distalPairsfile, 'w')
 	for ctgPair, pairInfo in dContigPairs.items():
 		ctgA = ctgPair[0]
 		ctgB = ctgPair[1]
-		keep = []
 		print ">", ctgA, ctgB
+		pairToRemove = []
 		for i in xrange(len(pairInfo)):
 			startA = pairInfo[i][0]
 			stopA = pairInfo[i][2]
@@ -245,6 +301,8 @@ def cleanContigPairs(dContigPairs, dGFFs):
 					nGeneToLeftA + nGeneToLeftB <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 				elif (senseA == senseB and senseA == '+' and
 					nGeneToLeftA > nGeneToRightA and
@@ -252,21 +310,31 @@ def cleanContigPairs(dContigPairs, dGFFs):
 					nGeneToRightA + nGeneToRightB <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, geneIndexA, len(dGFFs[ctgA]), geneIndexB, len(dGFFs[ctgB]), nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == '+' and senseA == '-' and
+				elif (senseA == '+' and senseB == '-' and
 					nGeneToLeftA > nGeneToRightA and
 					nGeneToLeftB < nGeneToRightB and
 					nGeneToRightA + nGeneToLeftB <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == '-' and senseA == '+' and
+				elif (senseA == '-' and senseB == '+' and
 					nGeneToLeftA < nGeneToRightA and
 					nGeneToLeftB > nGeneToRightB and
 					nGeneToRightB + nGeneToLeftA <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				else:
+#					print "\t", "both", pairInfo[i], geneIndexA, geneIndexB, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
+#					print "\t", "both", nGeneToRightA + nGeneToLeftB, nGeneToLeftA > nGeneToRightA, nGeneToLeftB < nGeneToRightB
+					pairToRemove.append(i)
 			elif geneIndexA == -1 and geneIndexB != -1:
 				nGeneToLeftB = geneIndexB
 				nGeneToRightB = len(dGFFs[ctgB]) - geneIndexB
@@ -275,25 +343,43 @@ def cleanContigPairs(dContigPairs, dGFFs):
 					nGeneToLeftB <= 1):
 					print "\t", "EitherA", pairInfo[i]
 					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 				elif (senseA == '-' and senseB == '+' and
 					  nGeneToLeftB > nGeneToRightB and
 					  nGeneToRightB <= 1):
 					print "\t", "EitherA", pairInfo[i]
 					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 				elif (senseA == senseB and senseA == '+' and
 					  nGeneToLeftB > nGeneToRightB and
 					  nGeneToRightB <= 1):
 					print "\t", "EitherA", pairInfo[i]
 					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 				elif (senseA == senseB and senseA == '-' and
 					  nGeneToLeftB < nGeneToRightB and
 					  nGeneToLeftB <= 1):
 					print "\t", "EitherA", pairInfo[i]
 					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+					if (geneModelA, geneModelB) not in dGenePairs:
+						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				else:
+					pairToRemove.append(i)
 			elif geneIndexA != -1 and geneIndexB == -1:
 				nGeneToLeftA = geneIndexA
 				nGeneToRightA = len(dGFFs[ctgA]) - geneIndexA
@@ -321,6 +407,8 @@ def cleanContigPairs(dContigPairs, dGFFs):
 					print "\t", "EitherB", pairInfo[i]
 					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+				else:
+					pairToRemove.append(i)
 			elif geneIndexA == -1 and geneIndexB == -1:
 				print "\t", "None", pairInfo[i]
 				print "\t", "None", ctgA, ctgB, "None", "None", "N/A", "N/A", "N/A", "N/A", senseA, senseB
@@ -329,7 +417,20 @@ def cleanContigPairs(dContigPairs, dGFFs):
 				sys.stderr.write("%s\n" %(str(pairInfo[i])))
 				sys.stderr.write("ding ding ding! check is in emergency!")
 				sys.exit(1)
-		print
+		if len(pairInfo) - len(pairToRemove) < 3:			# 5 (number of links) is a magical number, provide an argument in command line
+			del dContigPairs[ctgPair]
+			print "\t", "remove enitre pair"
+		else:
+			print len(pairToRemove)
+			print len(pairInfo)
+			# here I need to update the daddedModels
+			tmp = []
+			for i in xrange(len(pairInfo)):
+				if i not in pairToRemove:
+					tmp.append(pairInfo[i])
+				else:
+					pairToRemove.remove(i)
+			dContigPairs[ctgPair] = tmp
 	fOUT.close()
 	return distalPairsfile
 
@@ -344,12 +445,18 @@ def rnaPath(icontig, isam, igff, outpathfilename,
 
 	contigNum, nameList, contigDict, origSize = getContigsFromFile(icontig)
 	halfSize = calculateN50(origSize)
+	print "Getting Gene models ..."
 	dGFFs = gff2GeneModels(igff)
+	print "Getting discordant contig pairs from SAM ..."
 	dContigPairs = asam.sam2CtgPairs(isam, 5)
+
 	distalPairsfile = cleanContigPairs(dContigPairs, dGFFs)
+	sys.exit()
 	print "building the adjacency graph"
+
 	pathList, edgeSenseDict, visitedDict = getPath(contigNum, distalPairsfile, nameList)
 
+	print pathList
 	print "found %d paths" % len(pathList)
 
 	newSizeList = []
@@ -498,7 +605,6 @@ def calculateN50(sizeList, referenceMean=None):
 
 	return referenceMean
 
-# Here is the modified version of getContigsFromFile() added in RNAPATH*, original version fails to load the last sequence
 def getContigsFromFile(contigFileName):
 	try:
 		incontigfile = open(contigFileName)
