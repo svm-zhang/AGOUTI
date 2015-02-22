@@ -202,99 +202,116 @@ def createNewGenes(geneModels, index, ctg, start, stop):		# index is 0-based
 		geneModels = geneModels.append(geneModel)
 	else:
 		geneModels = geneModels[0:index] + [geneModel] + geneModels[index:]
+#	print geneModels[index].geneID, geneModels[index].lcds, ctg
+	return geneModels
 
 def matchGene(geneModels, start, stop):
 	ctg = geneModels[0].ctgID
-	# only one gene on this contig
-	# interval hits the gene
-	if start >= geneModels[0].geneStart and stop <= geneModels[0].geneStop:
-		return 0
-#		return geneModels[0], 0
-	# interval spans the gene
-	elif ((start < geneModels[0].geneStart and stop > geneModels[0].geneStart) or
-		  (start >= geneModels[0].geneStart and stop > geneModels[0].geneStop) or
-		  (start < geneModels[0].geneStart and stop <= geneModels[0].geneStop)):
-		return 0
-#		return geneModels[0], 0
-	# outside the gene, require create new gene model
-	else:
-		if stop < geneModels[0].geneStart:
-			createNewGenes(geneModels, 0, ctg, start, stop)
-			return 0
+	if len(geneModels) == 1:
+		# only one gene on this contig
+		# interval hits the gene
+		if start >= geneModels[0].geneStart and stop <= geneModels[0].geneStop:
+			print "only gene hit", ctg, geneModels[0].geneStart, geneModels[0].geneStop, start, stop
+			return geneModels, 0
 #			return geneModels[0], 0
-		elif start > geneModels[0].geneStop:
-			createNewGenes(geneModels, len(geneModels)-1, ctg, start, stop)
-			return len(geneModels)-1
-#			return geneModels[0], len(geneModels[0])-1
+		# interval spans the gene
+		elif ((start < geneModels[0].geneStart and stop > geneModels[0].geneStart) or
+			  (start >= geneModels[0].geneStart and start <= geneModels[0].geneStop and stop > geneModels[0].geneStop) or
+			  (start < geneModels[0].geneStart and stop >= geneModels[0].geneStart and stop <= geneModels[0].geneStop)):
+			print "only gene span", ctg, geneModels[0].geneStart, geneModels[0].geneStop, start, stop
+			return geneModels, 0
+#			return geneModels[0], 0
+		# outside the gene, require create new gene model
+		else:
+			if stop < geneModels[0].geneStart:
+				createNewGenes(geneModels, 0, ctg, start, stop)
+				print "only gene before", ctg, geneModels[0].geneStart, geneModels[0].geneStop, start, stop
+				return geneModels, 0
+#				return geneModels[0], 0
+			elif start > geneModels[0].geneStop:
+				createNewGenes(geneModels, len(geneModels)-1, ctg, start, stop)
+				print "only gene after", ctg, geneModels[0].geneStart, geneModels[0].geneStop, start, stop
+				return geneModels, len(geneModels)-1
+#				return geneModels[0], len(geneModels[0])-1
 	for i in xrange(0, len(geneModels)):
 		curGeneModel = geneModels[i]
-#		if i == 0 and i == len(geneModels) - 1:
 		# first gene
 		if i == 0:
 			# interval hits the gene
 			if start >= curGeneModel.geneStart and stop <= curGeneModel.geneStop:
-				return i
+				print "first hit", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
+				return geneModels, i
 #				return curGeneModel, i
 			# interval spans the gene
 			elif ((start < curGeneModel.geneStart and stop > curGeneModel.geneStart) or
-				  (start >= curGeneModel.geneStart and stop > curGeneModel.geneStop) or
-				  (start < curGeneModel.geneStart and stop <= curGeneModel.geneStop)):
-				return i
+				  (start >= curGeneModel.geneStart and start <= curGeneModel.geneStop and stop > curGeneModel.geneStop) or
+				  (start < curGeneModel.geneStart and stop >= curGeneModel.geneStart and stop <= curGeneModel.geneStop)):
+				print "first span", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
+				return geneModels, i
 #				return curGeneModel, i
 			else:
 				# interval before the first gene
 				if stop < curGeneModel.geneStart:
+					print "first before", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
 					createNewGenes(geneModels, 0, ctg, start, stop)
-					return 0
+					return geneModels, 0
 #					return curGeneModel, 0
 		# last gene
 		elif i == len(geneModels)-1:
 			# interval hits the gene
 			if start >= curGeneModel.geneStart and stop <= curGeneModel.geneStop:
-				return i
+				print "last hit", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
+				return geneModels, i
 #				return curGeneModel, i
 			# interval spans the gene
 			elif ((start < curGeneModel.geneStart and stop > curGeneModel.geneStart) or
-				  (start >= curGeneModel.geneStart and stop > curGeneModel.geneStop) or
-				  (start < curGeneModel.geneStart and stop <= curGeneModel.geneStop)):
-				return i
+				  (start >= curGeneModel.geneStart and start <= curGeneModel.geneStop and stop > curGeneModel.geneStop) or
+				  (start < curGeneModel.geneStart and stop >= curGeneModel.geneStart and stop <= curGeneModel.geneStop)):
+				print "last span", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
+				return geneModels, i
 #				return curGeneModel, i
 			else:
 				# interval after the last gene
 				if start > curGeneModel.geneStop:
+					print "last after", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
 					createNewGenes(geneModels, len(geneModels)-1, ctg, start, stop)
-					return i
+					return geneModels, i
 #					return curGeneModel, -1
 				# intergenic region before the last gene
 				elif stop <= curGeneModel.geneStart and start >= preGeneModel.geneStop:
+					print "last before", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
 					createNewGenes(geneModels, len(geneModels)-2, ctg, start, stop)
-					return i-1
+					return geneModels, i-1
 #					return curGeneModel, i-1
 		else:
 			# interval hits the gene
 			if start >= curGeneModel.geneStart and stop <= curGeneModel.geneStop:
-				return i
+				print "internal hit", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
+				return geneModels, i
 #				return curGeneModel, i
 			# interval spans the gene
 			elif ((start < curGeneModel.geneStart and stop > curGeneModel.geneStart) or
-				  (start >= curGeneModel.geneStart and stop > curGeneModel.geneStop) or
-				  (start < curGeneModel.geneStart and stop <= curGeneModel.geneStop)):
-				return i
+				  (start >= curGeneModel.geneStart and start <= curGeneModel.geneStop and stop > curGeneModel.geneStop) or
+				  (start < curGeneModel.geneStart and stop >= curGeneModel.geneStart and stop <= curGeneModel.geneStop)):
+				print "internal span", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
+				return geneModels, i
 #				return curGeneModel, i
 			# interval in between two genes
 			else:
-				if stop <= curGeneModel.geneStart and start >= preGeneModel.geneStop:
-					return i
+				if stop < curGeneModel.geneStart and start > preGeneModel.geneStop:
+					print "intergenic", ctg, geneModels[i].geneStart, geneModels[i].geneStop, start, stop
+					createNewGenes(geneModels, i, ctg, start, stop)
+					return geneModels, i
 #					return curGeneModel, i
 		preGeneModel = curGeneModel
 #	all of the above conditions should include every cases,
 #	alway return this if there is a bug
-	return -2			# -2 encodes cases that failed to consider
+	return geneModels, -2			# -2 encodes cases that failed to consider
 #	return None, -2
 
 def cleanContigPairs(dContigPairs, dGFFs):
 	distalPairsfile = "trial2.pair"
-	dGenePairs = collections.defaultdict()
+	dCtgPair2GenePair = collections.defaultdict()
 	daddedModels = collections.defaultdict(list)
 	fOUT = open(distalPairsfile, 'w')
 	for ctgPair, pairInfo in dContigPairs.items():
@@ -310,15 +327,22 @@ def cleanContigPairs(dContigPairs, dGFFs):
 			senseA = pairInfo[i][4]
 			senseB = pairInfo[i][5]
 			readID = pairInfo[i][-1]
-			geneModelA, geneIndexA = None, -1
-			geneModelB, geneIndexB = None, -1
+			geneIndexA, geneIndexB = -1, -1
 			if ctgA in dGFFs:
-				geneIndexA = matchGene(dGFFs[ctgA], startA, stopA)
+				dGFFs[ctgA], geneIndexA = matchGene(dGFFs[ctgA], startA, stopA)
 #				geneModelA, geneIndexA = matchGene(dGFFs[ctgA], startA, stopA)
+			else:
+				dGFFs[ctgA] = createNewGenes(dGFFs[ctgA], 0, ctgA, startA, stopA)
+				geneIndexA = 0
 			if ctgB in dGFFs:
-				geneIndexB = matchGene(dGFFs[ctgB], startB, stopB)
+				dGFFs[ctgB], geneIndexB = matchGene(dGFFs[ctgB], startB, stopB)
 #				geneModelB, geneIndexB = matchGene(dGFFs[ctgB], startB, stopB)
+			else:
+				dGFFs[ctgB] = createNewGenes(dGFFs[ctgB], 0, ctgB, startB, stopB)
+				geneIndexB = 0
 
+			geneModelA = dGFFs[ctgA][geneIndexA]
+			geneModelB = dGFFs[ctgB][geneIndexB]
 			nGeneToLeftA, nGeneToRightA = -1, -1
 			nGeneToLeftB, nGeneToRightB = -1, -1
 			# use geneIndex as check conditions
@@ -327,6 +351,7 @@ def cleanContigPairs(dContigPairs, dGFFs):
 				nGeneToRightA = len(dGFFs[ctgA]) - 1 - geneIndexA
 				nGeneToLeftB = geneIndexB
 				nGeneToRightB = len(dGFFs[ctgB]) - 1 - geneIndexB
+				print pairInfo[0], geneIndexA, nGeneToLeftA, nGeneToRightA, len(dGFFs[ctgA]), geneIndexB, nGeneToLeftB, nGeneToRightB, len(dGFFs[ctgB])
 				# case where RR with 55
 				if (senseA == senseB and senseA == '-' and
 					nGeneToLeftA <= nGeneToRightA and
@@ -334,135 +359,42 @@ def cleanContigPairs(dContigPairs, dGFFs):
 					nGeneToLeftA + nGeneToLeftB <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, geneIndexA, len(dGFFs[ctgA]), geneIndexB, len(dGFFs[ctgB]), nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+					if (ctgA, ctgB) not in dCtgPair2GenePair:
+						dCtgPair2GenePair[ctgA, ctgB] = [geneModelA, geneModelB]
 				elif (senseA == senseB and senseA == '+' and
 					nGeneToLeftA >= nGeneToRightA and
 					nGeneToLeftB >= nGeneToRightB and
 					nGeneToRightA + nGeneToRightB <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, geneIndexA, len(dGFFs[ctgA]), geneIndexB, len(dGFFs[ctgB]), nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+					if (ctgA, ctgB) not in dCtgPair2GenePair:
+						dCtgPair2GenePair[ctgA, ctgB] = [geneModelA, geneModelB]
 				elif (senseA == '+' and senseB == '-' and
 					nGeneToLeftA >= nGeneToRightA and
 					nGeneToLeftB <= nGeneToRightB and
 					nGeneToRightA + nGeneToLeftB <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+					if (ctgA, ctgB) not in dCtgPair2GenePair:
+						dCtgPair2GenePair[ctgA, ctgB] = [geneModelA, geneModelB]
 				elif (senseA == '-' and senseB == '+' and
 					nGeneToLeftA <= nGeneToRightA and
 					nGeneToLeftB >= nGeneToRightB and
 					nGeneToRightB + nGeneToLeftA <= 1):
 					print "\t", "both", pairInfo[i]
 					print "\t", "both", ctgA, ctgB, geneModelA.geneID, geneModelB.geneID, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
 					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+					if (ctgA, ctgB) not in dCtgPair2GenePair:
+						dCtgPair2GenePair[ctgA, ctgB] = [geneModelA, geneModelB]
 				else:
 					print "\t", "both else", pairInfo[i], geneIndexA, geneIndexB, nGeneToLeftA, nGeneToRightA, nGeneToLeftB, nGeneToRightB, senseA, senseB
 					print "\t", "both else", nGeneToLeftA + nGeneToRightB, nGeneToLeftA <= nGeneToRightA, nGeneToLeftB >= nGeneToRightB
 					pairToRemove.append(i)
-			elif geneIndexA == -1 and geneIndexB != -1:
-				nGeneToLeftB = geneIndexB
-				nGeneToRightB = len(dGFFs[ctgB]) - 1 - geneIndexB
-				if (senseA == '+' and senseB == '-' and
-					nGeneToLeftB <= nGeneToRightB and
-					nGeneToLeftB <= 1):
-					print "\t", "EitherA", pairInfo[i]
-					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
-#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == '-' and senseB == '+' and
-					  nGeneToLeftB >= nGeneToRightB and
-					  nGeneToRightB <= 1):
-					print "\t", "EitherA", pairInfo[i]
-					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
-#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == senseB and senseA == '+' and
-					  nGeneToLeftB > nGeneToRightB and
-					  nGeneToRightB <= 1):
-					print "\t", "EitherA", pairInfo[i]
-					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
-#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == senseB and senseA == '-' and
-					  nGeneToLeftB < nGeneToRightB and
-					  nGeneToLeftB <= 1):
-					print "\t", "EitherA", pairInfo[i]
-					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
-#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
-#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				else:
-					print "\t", "Either A else", pairInfo[i], geneIndexA, geneIndexB, nGeneToLeftB, nGeneToRightB, senseA, senseB
-					print "\t", "Either A else", nGeneToLeftB <= nGeneToRightB, nGeneToRightB
-					pairToRemove.append(i)
-			elif geneIndexA != -1 and geneIndexB == -1:
-				nGeneToLeftA = geneIndexA
-				nGeneToRightA = len(dGFFs[ctgA]) - 1 - geneIndexA
-				if (senseA == '+' and senseB == '-' and
-					nGeneToLeftA >= nGeneToRightA and
-					nGeneToRightA <= 1):
-					print "\t", "EitherB", pairInfo[i]
-					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
-#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
-#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == '-' and senseB == '+' and
-					  nGeneToLeftA <= nGeneToRightA and
-					  nGeneToLeftA <= 1):
-					print "\t", "EitherB", pairInfo[i]
-					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
-#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
-#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == senseB and senseA == '+' and
-					  nGeneToLeftA > nGeneToRightA and
-					  nGeneToRightA <= 1):
-					print "\t", "EitherB", pairInfo[i]
-					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
-#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
-#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				elif (senseA == senseB and senseA == '-' and
-					  nGeneToLeftA < nGeneToRightA and
-					  nGeneToLeftA <= 1):
-					print "\t", "EitherB", pairInfo[i]
-					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
-#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
-#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
-#					if (geneModelA, geneModelB) not in dGenePairs:
-#						dGenePairs[geneModelA, geneModelB] = 1
-					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
-				else:
-					print "\t", "Either B else", pairInfo[i], geneIndexA, geneIndexB, nGeneToLeftA, nGeneToRightA, senseA, senseB
-					print "\t", "Either B else", nGeneToLeftA > nGeneToRightA, nGeneToRightA
-					pairToRemove.append(i)
 			elif geneIndexA == -1 and geneIndexB == -1:
+				# this case should not happen
 				print "\t", "None", pairInfo[i]
 				print "\t", "None", ctgA, ctgB, "None", "None", "N/A", "N/A", "N/A", "N/A", senseA, senseB
 				fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
@@ -474,10 +406,8 @@ def cleanContigPairs(dContigPairs, dGFFs):
 			del dContigPairs[ctgPair]
 			print "\t", "remove enitre pair"
 		else:
-			print len(pairToRemove)
-			print len(pairInfo)
-			# here I need to update the daddedModels
-			# to get rid of overlapping exons
+			print "### removed links: ", len(pairToRemove)
+			print "### links in total: ", len(pairInfo), "\n"
 			tmp = []
 			for i in xrange(len(pairInfo)):
 				if i not in pairToRemove:
@@ -486,7 +416,102 @@ def cleanContigPairs(dContigPairs, dGFFs):
 					pairToRemove.remove(i)
 			dContigPairs[ctgPair] = tmp
 	fOUT.close()
-	return distalPairsfile
+	return distalPairsfile, dCtgPair2GenePair
+
+#			elif geneIndexA == -1 and geneIndexB != -1:
+#				nGeneToLeftB = geneIndexB
+#				nGeneToRightB = len(dGFFs[ctgB]) - 1 - geneIndexB
+#				if (senseA == '+' and senseB == '-' and
+#					nGeneToLeftB <= nGeneToRightB and
+#					nGeneToLeftB <= 1):
+#					print "\t", "EitherA", pairInfo[i]
+#					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				elif (senseA == '-' and senseB == '+' and
+#					  nGeneToLeftB >= nGeneToRightB and
+#					  nGeneToRightB <= 1):
+#					print "\t", "EitherA", pairInfo[i]
+#					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				elif (senseA == senseB and senseA == '+' and
+#					  nGeneToLeftB > nGeneToRightB and
+#					  nGeneToRightB <= 1):
+#					print "\t", "EitherA", pairInfo[i]
+#					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				elif (senseA == senseB and senseA == '-' and
+#					  nGeneToLeftB < nGeneToRightB and
+#					  nGeneToLeftB <= 1):
+#					print "\t", "EitherA", pairInfo[i]
+#					print "\t", "EitherA", ctgA, ctgB, "None", geneModelB.geneID, "N/A", "N/A", nGeneToLeftB, nGeneToRightB, senseA, senseB
+#					geneModelA, daddedModels = addGeneModel(ctgA, daddedModels, startA, stopA)
+#					print geneModelA.lcds, daddedModels[ctgA][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				else:
+#					print "\t", "Either A else", pairInfo[i], geneIndexA, geneIndexB, nGeneToLeftB, nGeneToRightB, senseA, senseB
+#					print "\t", "Either A else", nGeneToLeftB <= nGeneToRightB, nGeneToRightB
+#					pairToRemove.append(i)
+#			elif geneIndexA != -1 and geneIndexB == -1:
+#				nGeneToLeftA = geneIndexA
+#				nGeneToRightA = len(dGFFs[ctgA]) - 1 - geneIndexA
+#				if (senseA == '+' and senseB == '-' and
+#					nGeneToLeftA >= nGeneToRightA and
+#					nGeneToRightA <= 1):
+#					print "\t", "EitherB", pairInfo[i]
+#					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
+#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				elif (senseA == '-' and senseB == '+' and
+#					  nGeneToLeftA <= nGeneToRightA and
+#					  nGeneToLeftA <= 1):
+#					print "\t", "EitherB", pairInfo[i]
+#					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
+#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				elif (senseA == senseB and senseA == '+' and
+#					  nGeneToLeftA > nGeneToRightA and
+#					  nGeneToRightA <= 1):
+#					print "\t", "EitherB", pairInfo[i]
+#					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
+#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				elif (senseA == senseB and senseA == '-' and
+#					  nGeneToLeftA < nGeneToRightA and
+#					  nGeneToLeftA <= 1):
+#					print "\t", "EitherB", pairInfo[i]
+#					print "\t", "EitherB", ctgA, ctgB, geneModelA.geneID, "None", nGeneToLeftA, nGeneToRightA, "N/A", "N/A", senseA, senseB
+#					geneModelB, daddedModels = addGeneModel(ctgB, daddedModels, startB, stopB)
+#					print geneModelB.lcds, daddedModels[ctgB][0].lcds
+#					if (geneModelA, geneModelB) not in dCtgPair2GenePair:
+#						dCtgPair2GenePair[geneModelA, geneModelB] = 1
+#					fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+#				else:
+#					print "\t", "Either B else", pairInfo[i], geneIndexA, geneIndexB, nGeneToLeftA, nGeneToRightA, senseA, senseB
+#					print "\t", "Either B else", nGeneToLeftA > nGeneToRightA, nGeneToRightA
+#					pairToRemove.append(i)
 
 def rnaPath(icontig, isam, igff, outpathfilename,
 			outcontigfilename, pathPrefix="RNAPATH", overlap=30):
@@ -504,8 +529,7 @@ def rnaPath(icontig, isam, igff, outpathfilename,
 	print "Getting discordant contig pairs from SAM ..."
 	dContigPairs = asam.sam2CtgPairs(isam, 5)
 
-	distalPairsfile = cleanContigPairs(dContigPairs, dGFFs)
-	sys.exit()
+	distalPairsfile, dCtgPair2GenePair = cleanContigPairs(dContigPairs, dGFFs)
 	print "building the adjacency graph"
 
 	pathList, edgeSenseDict, visitedDict = getPath(contigNum, distalPairsfile, nameList)
@@ -528,9 +552,48 @@ def rnaPath(icontig, isam, igff, outpathfilename,
 		print >> outpathfile, pathDescription
 		currentVertex = path[0]
 		currentSense = "+"
+		currentCtg = nameList[currentVertex]
 		assemblyList = currentVertex
+		strandList = []
+		genePath = []
+		preGene = ""
 		sequence = contigDict[currentVertex]
 		for nextVertex in path[1:]:
+			nextCtg = nameList[nextVertex]
+			print path, currentVertex, nextVertex
+			print currentCtg, nextCtg
+			if (currentCtg, nextCtg) in dCtgPair2GenePair:
+				print "leave"
+				if len(genePath) == 0:
+					genePath.append(dCtgPair2GenePair[currentCtg, nextCtg])
+				else:
+					if dCtgPair2GenePair[currentCtg, nextCtg][0].geneID == preGene:
+						print "="
+						genePath = [list(set(genePath[-1]) | set(dCtgPair2GenePair[currentCtg, nextCtg]))]
+					else:
+						genePath.append(dCtgPair2GenePair[currentCtg, nextCtg])
+				preGene = dCtgPair2GenePair[currentCtg, nextCtg][-1].geneID
+			else:
+				if (nextCtg, currentCtg) in dCtgPair2GenePair:
+					print "flip"
+					if len(genePath) == 0:
+						genePath.append(dCtgPair2GenePair[nextCtg, currentCtg][::-1])
+					else:
+						if dCtgPair2GenePair[nextCtg, currentCtg][::-1][0].geneID == preGene:
+							print "="
+							genePath = [list(set(genePath[-1]) | set(dCtgPair2GenePair[nextCtg, currentCtg][::-1]))]
+						else:
+							genePath.append(dCtgPair2GenePair[nextCtg, currentCtg][::-1])
+					preGene = dCtgPair2GenePair[nextCtg, currentCtg][::-1][-1].geneID
+				else:
+					print "contig pairs in the path do not have any gene pairs"
+					print currentCtg, nextCtg
+					sys.exit()
+			print "preGene", preGene
+			for i in range(len(genePath)):
+				for j in range(len(genePath[i])):
+					print " ", genePath[i][j].geneID,
+				print
 			if (currentVertex, nextVertex) in edgeSenseDict:
 				senseList = edgeSenseDict[currentVertex, nextVertex]
 				FR = senseList.count(("+", "-"))
@@ -627,6 +690,7 @@ def rnaPath(icontig, isam, igff, outpathfilename,
 			print outstring
 			print >> outpathfile, outstring
 			currentVertex = nextVertex
+			currentCtg = nameList[currentVertex]
 
 		outcontigfile.write(">%s%d %dbp %s | %s\n%s\n" % (pathPrefix, pathID, len(sequence), pathDescription, str(assemblyList), sequence))
 		newSizeList.append(len(sequence))
