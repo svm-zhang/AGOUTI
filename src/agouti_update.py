@@ -40,27 +40,12 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 #			dProblem.append(i)
 #			flag = 0
 
-#	numVisitedNodes = sum([len(path) for path in pathList])
-#	print "numVisitedNodes", numVisitedNodes
-#	print "visitedDict", len(visitedDict)
-#	twice = {}
-#	for path in pathList:
-#		for node in path:
-#			if node in visitedDict:
-#				if node not in twice:
-#					twice[node] = 1
-#				else:
-#					twice[node] += 1
-#	for k, v in twice.iteritems():
-#		if v == 2:
-#			print k, nameList[k]
-
 	loop2Remove, visitedDict = remove_cycles(pathList, visitedDict)
 
 	print "updating ... "
 	for i in range(len(pathList)):
 		path = pathList[i]
-		if len(path) >= 3 and i not in loop2Remove:
+		if len(path) >= 2 and i not in loop2Remove:
 			tmp = 0
 			scafID += 1
 			scafName = prefix + "_scaf_%d" %(scafID)
