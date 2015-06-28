@@ -49,20 +49,12 @@ python agouti.py | \
 -p agouti > stdout
 ```
 
+Output
+==========================
 ```
 Under test folder, you will find:
-	test.agouti.fasta
-	test.agouti.gff3
-	test.scaff.paths
-	test.join_pairs
+	test.agouti.fasta: scaffolded assembly in FASTA format
+	test.agouti.gff3: updated gene annotations in GFF3 format
+	test.scaff.paths: details on scaffolding paths
+	test.join_pairs: reads pairs used for scaffolding
 ```
-
-Elaboration on each output file
-==========================
-test.agouti.fasta: scaffolded assembly in FASTA format
-
-test.agouti.gff3: updated gene annotations in GFF3 format
-
-test.scaff.paths: details on scaffolding paths
-
-test.join_pairs: reads pairs used for scaffolding
