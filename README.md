@@ -14,11 +14,12 @@ AGOUTI works in the following steps:
 
 Requirement
 ==========================
-	python 2.7 or above
-	SAMtools
+- python 2.7 or above
+- SAMtools
 
 Running AGOUTI
 ==========================
+```
 python agouti.py -h
 usage: agouti.py [-h] -contig FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p STR]
 
@@ -32,6 +33,7 @@ optional arguments:
 	-out DIR      specify the directory to store output files
 	-mnl INT      minimum number of reads supporting a link between a contig pair
 	-p STR        specify the output prefix
+```
 
 Example
 ==========================
@@ -45,11 +47,13 @@ python agouti.py | \
 -p agouti > stdout
 ```
 
+```
 Under test folder, you will find:
 	test.agouti.fasta
 	test.agouti.gff3
 	test.scaff.paths
 	test.join_pairs
+```
 
 Elaboration on each output file
 ==========================
