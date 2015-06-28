@@ -35,13 +35,15 @@ optional arguments:
 
 Example
 ==========================
-samtools view test.bam | \ \n
+```
+samtools view test.bam | \
 python agouti.py | \
 -contig test.fasta | \
 -bam - | \
 -gff test.gff | \
 -out ./test | \
 -p agouti > stdout
+```
 
 Under test folder, you will find:
 	test.agouti.fasta
