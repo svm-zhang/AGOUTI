@@ -6,17 +6,14 @@ import re
 import argparse
 import subprocess
 
-
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
 from lib import agouti_sam as agBAM
-from lib import agouti_filter as agFILTER
+from src import agouti_filter as agFILTER
 from lib import agouti_gff as agGFF
-from lib import agouti_update as agUPDATE
-
+from src import agouti_update as agUPDATE
 from src import agouti_scaffolding as agSCAFF
-
 
 def parse_args():
 	use_message = '''
@@ -113,7 +110,6 @@ def get_initial_assembly(contigFile):
 	return nameList, contigDict, origSize
 
 def main():
-	# get everything from command line #
 	args = parse_args()
 
 	contigFile = args.contigFile
@@ -130,7 +126,6 @@ def main():
 
 	dContigPairs = agBAM.get_joining_pairs(bamFile, args.min_nLinks)
 
-	#!!! require a prefix argument in command line
 	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
 	dCtgPair2GenePair = agFILTER.cleanContigPairs(dContigPairs, dGFFs, joinPairsFile)
 
@@ -138,7 +133,6 @@ def main():
 	agUPDATE.agouti_update(pathList, contigDict, nameList, origSize,
 						   edgeSenseDict, visitedDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix)
-#						   outUpdateAssembly, outScaffPath)
 
 if __name__ == "__main__":
 	main()
