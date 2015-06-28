@@ -1,21 +1,23 @@
 Annotated Genome Optimization Using Transcriptome Information (AGOUTI)
-
+==========================
 AGOUTI v0.1
 
 Description
 =======================
 AGOUTI uses RNAseq reads to guide genome scaffolding and improve gene annotation.
 
+```
 AGOUTI works in the following steps:
 	i) read RNAseq mapping results and get reads pairs uniquely mapped to different contigs
 	ii) filter reads pairs based on their mapped positions and orientations
 	iii) scaffolding based on reads pairs passing step ii filtration, this step uses a modified version of RNAPATH
 	iv) updating assembly and gene annotations
+```
 
 Requirement
 ==========================
-- python 2.7 or above
-- SAMtools
+1. python 2.7 or above
+2. SAMtools
 
 Running AGOUTI
 ==========================
