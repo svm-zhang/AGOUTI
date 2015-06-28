@@ -35,7 +35,7 @@ optional arguments:
 
 Example
 ==========================
-samtools view test.bam | \
+samtools view test.bam | \ \n
 python agouti.py | \
 -contig test.fasta | \
 -bam - | \
