@@ -55,25 +55,6 @@ def parse_args():
 						dest="prefix",
 						default="agouti",
 						help="specify the output prefix")
-#	parser.add_argument("-sampleID",
-#						metavar="STR",
-#						dest="sampleID",
-#						default="agouti",
-#						help="specify the sampleID as the prefix of output files")
-#	parser.add_argument("-isSE",
-#						dest="isSE",
-#						action="store_true",
-#						default=False,
-#						help="turn on this option if input is single-end RNAseq reads")
-#	parser.add_argument("-sspacePATH",
-#						dest="sspacePATH",
-#						default="../SSPACE-STANDARD-3.0_linux-x86_64",
-#						help="specify the path to SSPACE")
-#	parser.add_argument("-agoutiPATH",
-#						dest="agoutiPATH",
-#						default=".",
-#						help="specify the path to AGOUTI")
-	# other possible arguments include "-compressFQ","-doFASTQC","doRSeqQC"
 
 	args = parser.parse_args()
 	return args
@@ -127,7 +108,7 @@ def main():
 	dContigPairs = agBAM.get_joining_pairs(bamFile, args.min_nLinks)
 
 	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
-	dCtgPair2GenePair = agFILTER.cleanContigPairs(dContigPairs, dGFFs, joinPairsFile)
+	dCtgPair2GenePair = agFILTER.cleanContigPairs(dContigPairs, dGFFs, joinPairsFile, args.min_nLinks)
 
 	pathList, edgeSenseDict, visitedDict = agSCAFF.agouti_scaffolding(len(contigDict), nameList, joinPairsFile)
 	agUPDATE.agouti_update(pathList, contigDict, nameList, origSize,
