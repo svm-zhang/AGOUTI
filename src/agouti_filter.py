@@ -8,7 +8,7 @@ def createNewGenes(geneModels, index, ctg, start, stop):		# index is 0-based
 	geneModel = agGFF.AGOUTI_GFF()
 	geneModel.setGene("AGOUTI.%s.%d" %(ctg, len(geneModels)),
 					   -1, -1, 0)
-	geneModel.lcds = [start, stop]
+	geneModel.lcds = [start+1, stop+1]
 	geneModel.setContigID = ctg
 	geneModel.setProgram("AGOUTI")
 	if index == 0:
@@ -130,13 +130,16 @@ def recordGeneIndex(contigs, geneModels):
 		geneModel = geneModels[i]
 		geneID = geneModel.geneID
 
-def cleanContigPairs(dContigPairs, dGFFs, joinPairsFile):
+def cleanContigPairs(dContigPairs, dGFFs, joinPairsFile, mnl):
 	sys.stderr.write("Filtering joining pairs ... \n")
 	dCtgPair2GenePair = collections.defaultdict()
 	dMappedPos = collections.defaultdict()
 	daddedModels = collections.defaultdict(list)
 	fOUT = open(joinPairsFile, 'w')
 	for ctgPair, pairInfo in dContigPairs.items():
+		if len(pairInfo) < mnl:
+			print "!!! insufficient links ", str(ctgPair)
+			continue
 		ctgA = ctgPair[0]
 		ctgB = ctgPair[1]
 		print ">%s %s" %(ctgA, ctgB)
@@ -226,7 +229,7 @@ def cleanContigPairs(dContigPairs, dGFFs, joinPairsFile):
 				sys.stderr.write("%s\n" %(str(pairInfo[i])))
 				sys.stderr.write("ding ding ding! check is in emergency!")
 				sys.exit(1)
-		if len(pairInfo) - len(pairToRemove) < 3:			# 5 (number of links) is a magical number, provide an argument in command line
+		if len(pairInfo) - len(pairToRemove) < 3:			#!!! magic number
 			del dContigPairs[ctgPair]
 			print "\t", "remove enitre pair"
 		else:
