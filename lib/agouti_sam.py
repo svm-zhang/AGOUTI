@@ -101,10 +101,10 @@ def get_joining_pairs(bamFile, min_nLinks):
 			if (min(alnLenA/readLenA, alnLenB/readLenB) >= minFracOvl and				# minimum fraction of overlaps
 				max(nMismatchesA/alnLenA, nMismatchesB/alnLenB) <= maxFracMismatch and	# maximum fraction of mismatches
 				min(mapQA, mapQB) >= minMapQ):				# minimum mapping quality
-				startA = leftMostPosA
-				stopA = startA + int(alnLenA)
-				startB = leftMostPosB
-				stopB = startB + int(alnLenB)
+				startA = leftMostPosA + 1
+				stopA = startA + 1 + int(alnLenA)
+				startB = leftMostPosB + 1
+				stopB = startB + 1 + int(alnLenB)
 #				startA, stopA = getMappedRegionOnContigs(int(pairA[3]), int(alnLenA), flagsA)
 #				startB, stopB = getMappedRegionOnContigs(int(pairB[3]), int(alnLenB), flagsB)
 				if contigA <= contigB:
