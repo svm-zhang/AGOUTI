@@ -4,61 +4,35 @@ import collections
 
 from lib import agouti_gff as agGFF
 
-def agouti_update(pathList, contigDict, nameList, origSize,
+def agouti_update(pathList, contigDict, nameList,
 				  edgeSenseDict, visitedDict, dGFFs,
-				  dCtgPair2GenePair, outDir, prefix,
-				  lenGapFill=1000):
-
+				  dCtgPair2GenePair, outDir, prefix, numNs=1000):
 	sys.stderr.write("Updating gene models ... \n")
 	scafID = 0
-	newSizeList = []
-	scafName = ""
-	outFasta = os.path.join(outDir, "%s.agouti.fasta" %(prefix))
-	outGFF = os.path.join(outDir, "%s.agouti.gff" %(prefix))
-	outScaffPath = os.path.join(outDir, "%s.scaff.paths" %(prefix))
-	fOUTFASTA = open(outFasta, "w")
-	fSCAFFPATH = open(outScaffPath, "w")
-	dUpdateGFFs = collections.defaultdict(list)
-	numMergedGene = 0
-	numScaffolded = 0
-	numSkipped = 0		# pairs of contigs in the path do not exist in dCtgPair2GenePair
-
-#	flag = 0
-#	dProblem = []
-#	print "updating ...\n"
-#	for i in range(len(pathList)):
-#		path = pathList[i]
-#		curNode = path[0]
-#		for node in path[1:]:
-#			if node - curNode > 2:
-#				flag = 1
-#				break
-#			curNode = node
-#
-#		if flag == 1:
-#			dProblem.append(i)
-#			flag = 0
-
-	loop2Remove, visitedDict = remove_cycles(pathList, visitedDict)
 
 	print "updating ... "
+	outScaffPath = os.path.join(outDir, "%s.scaff.paths" %(prefix))
+	fSCAFFPATH = open(outScaffPath, "w")
+	outFasta = os.path.join(outDir, "%s.agouti.fasta" %(prefix))
+	fOUTFASTA = open(outFasta, "w")
+	dUpdateGFFs = collections.defaultdict(list)
+	dMergedGene2Ctgs = collections.defaultdict(list)
+	dMergedGene2Genes = collections.defaultdict(list)
+	numMergedGene = 0
+	nCtgScaffolded = 0
 	for i in range(len(pathList)):
 		path = pathList[i]
-		if len(path) >= 2 and i not in loop2Remove:
+		if len(path) >= 2:
 			tmp = 0
 			scafID += 1
 			scafName = prefix + "_scaf_%d" %(scafID)
-			fSCAFFPATH.write("%s: %s\n" % (scafName, str(path)))
-			vertexNameList = []
-			for vertex in path:
-				vertexNameList.append(nameList[vertex])
-			pathDescription = ",".join(vertexNameList)
+			fSCAFFPATH.write(">%s\n" % (scafName))
 
-			print >> fSCAFFPATH, pathDescription
 			currentVertex = path[0]
 			sequence = contigDict[currentVertex]
 			currentSense = "+"
 			currentCtg = nameList[currentVertex]
+			scafPath = []
 			assemblyList = currentVertex
 			genePath = ()
 			preGeneID, curGeneID = "", ""
@@ -69,7 +43,9 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 			orientation = ""
 			updatedGeneIDs = []
 			excludeGeneIDs = []
+			stopFlag = 0
 			for nextVertex in path[1:]:
+				print "sequence length", len(sequence)
 				nextCtg = nameList[nextVertex]
 
 				if tmp == 0:
@@ -81,7 +57,6 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 				if currentGene is None and nextGene is None:
 					print "%s %s not found in dCtgPair2GenePair" %(currentCtg, nextCtg)
 					#!!! I should not break here, should continue#
-					numSkipped += 1
 					break
 				curGeneID = currentGene.geneID
 				excludeGeneIDs = [preGeneID] + [curGeneID]
@@ -90,17 +65,24 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 				toLeft, toRight = 0, 0
 				if preGeneID != "":
 					if curGeneID != preGeneID:
-						toLeft, toRight = getGeneIndex(dGFFs[currentCtg]+dUpdateGFFs[scafName], curGeneID)
+						if currentSense == "-":
+							tmp = exclude_gene_model(dGFFs[currentCtg], preGeneID)[::-1]
+							print "tmp", " ".join([x.geneID for x in tmp])
+							toLeft, toRight = get_gene_index(dUpdateGFFs[scafName]+tmp, curGeneID)
+						else:
+							toLeft, toRight = get_gene_index(dUpdateGFFs[scafName]+dGFFs[currentCtg], curGeneID)
 					else:
 						# problematic
 #						if len(dGFFs[currentCtg]) == 1:
-						toLeft, toRight = getGeneIndex(dUpdateGFFs[scafName], preMergedGene.geneID)
+						tmp = exclude_gene_model(dGFFs[currentCtg], preGeneID)
+						print "tmp", " ".join([x.geneID for x in tmp])
+						toLeft, toRight = get_gene_index(dUpdateGFFs[scafName]+tmp, preMergedGene.geneID)
 #						else:
-#							toLeft, toRight = getGeneIndex(dGFFs[currentCtg]+dUpdateGFFs[scafName], currentGene.geneID)
+#							toLeft, toRight = get_gene_index(dGFFs[currentCtg]+dUpdateGFFs[scafName], currentGene.geneID)
 				print ">>>>", "toleft", toLeft, "toRight", toRight
 
 				FR, FF, RR, RF = get_orientation_counts(currentVertex, nextVertex, edgeSenseDict)
-				print ">>>>orientation", currentVertex, nextVertex, currentCtg, nextCtg, currentSense, FF, RR, RF, FR
+				print ">>>>orientation", currentVertex, nextVertex, currentCtg, nextCtg, currentSense, "FF", FF, "RR", RR, "RF", RF, "FR", FR
 				if currentSense == "-":
 					# we had flipped the upstream piece! Must flip again
 					temp1 = FR
@@ -111,24 +93,29 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 					RF = temp2
 				orientation = get_scaffolding_orientation(FR, FF, RR, RF)
 
-				print ">>>>orientation", currentVertex, nextVertex, currentCtg, nextCtg, currentSense, FF, RR, RF, FR
+				print ">>>>orientation", currentVertex, nextVertex, currentCtg, nextCtg, currentSense, "FF", FF, "RR", RR, "RF", RF, "FR", FR
 				gapStart = gapStop + 1 + len(contigDict[currentVertex])
-				gapStop = gapStart + lenGapFill - 1
+				gapStop = gapStart + numNs - 1
 				print ">>>>", "offset", offset, "current Contig length", len(contigDict[currentVertex]), "gapstart", gapStart, "gapstop", gapStop+1
 				if orientation == "FR":
 					if curGeneID !=  preGeneID:
 						numMergedGene += 1
 						mergedGene = merge_gene_model(currentGene, nextGene, scafName,
 													  numMergedGene, offset, gapStop)
+						dMergedGene2Ctgs[mergedGene.geneID] += [currentCtg, nextCtg]
+						dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[currentCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
 					else:
 						mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
 													  numMergedGene, 0, gapStop)
+						dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
+						dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 						indexMerged = updatedGeneIDs.index(mergedGene.geneID)
 						dUpdateGFFs[scafName][indexMerged] = mergedGene
+					print "mergedGene", mergedGene.geneID, "dMergedGene2Ctgs", dMergedGene2Ctgs[mergedGene.geneID]
 					preMergedGene = mergedGene
 					assemblyList = ((assemblyList, "+"), (nextVertex, "+"))
-					sequence += 'N'*lenGapFill + contigDict[nextVertex]
+					sequence += 'N'*numNs + contigDict[nextVertex]
 					currentSense = "+"
 				elif orientation == "FF":
 					nextGene = reverse_gene_model(nextGene, len(contigDict[nextVertex]))
@@ -136,34 +123,42 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 						numMergedGene += 1
 						mergedGene = merge_gene_model(currentGene, nextGene, scafName,
 													  numMergedGene, offset, gapStop)
+						dMergedGene2Ctgs[mergedGene.geneID] += [currentCtg, nextCtg]
+						dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[currentCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
 					else:
 						mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
 													  numMergedGene, 0, gapStop)
+						dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
+						dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 						indexMerged = updatedGeneIDs.index(mergedGene.geneID)
 						dUpdateGFFs[scafName][indexMerged] = mergedGene
 					preMergedGene = mergedGene
 					assemblyList = ((assemblyList, "+"), (nextVertex, "-"))
-					sequence += 'N'*lenGapFill + complement(contigDict[nextVertex])
+					sequence += 'N'*numNs + rc_seq(contigDict[nextVertex])
 					currentSense = "-"
 				elif orientation == "RR":
-					if toLeft <= 1:
+					if toLeft < 1:
 						if currentGene.geneID != preGeneID:
 							dGFFs[currentCtg] = reverse_gene_models(dGFFs[currentCtg], len(contigDict[currentVertex]))
 							numMergedGene += 1
 							mergedGene = merge_gene_model(currentGene, nextGene, scafName,
 														  numMergedGene, offset, gapStop)
+							dMergedGene2Ctgs[mergedGene.geneID] += [currentCtg, nextCtg]
+							dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 							dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[currentCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
 						else:
 							dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[currentCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
 							dUpdateGFFs[scafName] = reverse_gene_models(dUpdateGFFs[scafName], gapStart-1)
 							mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
 														  numMergedGene, 0, gapStop)
+							dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
+							dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 							indexMerged = updatedGeneIDs.index(mergedGene.geneID)
 							dUpdateGFFs[scafName][indexMerged] = mergedGene
 						assemblyList = ((assemblyList, "-"), (nextVertex, "+"))
-						sequence = complement(contigDict[currentVertex]) + \
-								   'N'*lenGapFill + contigDict[nextVertex]
+						sequence = rc_seq(sequence) + \
+								   'N'*numNs + contigDict[nextVertex]
 						preMergedGene = mergedGene
 						print ">>>> RR zone preMergedGene", preMergedGene.geneID, preMergedGene.geneStart, preMergedGene.geneStop
 					else:
@@ -173,7 +168,9 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 							currentCtg = nextCtg
 							currentSense = "+"
 							assemblyList = currentVertex
-							scafID += 1
+							print "delete before", " ".join([x.geneID for x in dUpdateGFFs[scafName]])
+							del dUpdateGFFs[scafName]
+							scafPath = []
 							scafName = prefix + "_scaf_%d" %(scafID)
 							gapStart, gapStop = 0, 0
 							offset = 0
@@ -181,29 +178,35 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 							updatedGeneIDs = []
 							excludeGeneIDs = []
 							preGeneID = ""
+							continue
 						else:
+							print "RR", "here is a stop"
 							break
 					currentSense = "+"
 				elif orientation == "RF":
-					if toLeft <= 1:
+					if toLeft < 1:
 						if currentGene.geneID != preGeneID:
 							dGFFs[currentCtg] = reverse_gene_models(dGFFs[currentCtg], len(contigDict[currentVertex]))
 							nextGene = reverse_gene_model(nextGene, len(contigDict[nextVertex]))
 							numMergedGene += 1
 							mergedGene = merge_gene_model(currentGene, nextGene, scafName,
 														  numMergedGene, offset, gapStop)
+							dMergedGene2Ctgs[mergedGene.geneID] += [currentCtg, nextCtg]
+							dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 							dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[currentCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
 						else:
 							dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[currentCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
 							dUpdateGFFs[scafName] = reverse_gene_models(dUpdateGFFs[scafName], gapStop+len(contigDict[currentVertex]))
 							mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
 														  numMergedGene, 0, gapStop)
+							dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
+							dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 							indexMerged = updatedGeneIDs.index(mergedGene.geneID)
 							dUpdateGFFs[scafName][indexMerged] = mergedGene
 						assemblyList = ((assemblyList, "-"), (nextVertex, "-"))
-						sequence = complement(contigDict[currentVertex]) + \
-								   'N'*lenGapFill + \
-								   complement(contigDict[nextVertex])
+						sequence = rc_seq(sequence) + \
+								   'N'*numNs + \
+								   rc_seq(contigDict[nextVertex])
 						preMergedGene = mergedGene
 						print ">>>> RF zone preMergedGene", preMergedGene.geneID, preMergedGene.geneStart, preMergedGene.geneStop
 					else:
@@ -213,7 +216,9 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 							currentCtg = nextCtg
 							currentSense = "+"
 							assemblyList = currentVertex
-							scafID += 1
+							print "delete before", " ".join([x.geneID for x in dUpdateGFFs[scafName]])
+							del dUpdateGFFs[scafName]
+							scafPath = []
 							scafName = prefix + "_scaf_%d" %(scafID)
 							gapStart, gapStop = 0, 0
 							offset = 0
@@ -221,44 +226,59 @@ def agouti_update(pathList, contigDict, nameList, origSize,
 							updatedGeneIDs = []
 							excludeGeneIDs = []
 							preGeneID = ""
+							continue
 						else:
+							print "RF", "here is a stop"
 							break
 					currentSense = "-"
-				outstring = ">>>>(%d, %d): FF %d RR %d RF %d FR %d : %s \t%s" % (currentVertex, nextVertex, FF, RR, RF, FR, orientation, str(assemblyList))
+				scafPath.append(currentCtg)
 				offset = gapStop
 				preGeneID = nextGene.geneID
 				currentVertex = nextVertex
 				currentCtg = nameList[currentVertex]
 
-				print outstring
-				print >> fSCAFFPATH, outstring
+				outstring = ">>>>(%d, %d): FF %d RR %d RF %d FR %d : %s \t%s" % (currentVertex, nextVertex, FF, RR, RF, FR, orientation, str(assemblyList))
 
 			excludeGeneIDs = [preGeneID]
+			scafPath.append(currentCtg)
 			dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[currentCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
-			fOUTFASTA.write(">%s|%dbp|%s|%s\n%s\n" % (scafName, len(sequence), pathDescription, str(assemblyList), sequence))
+			fOUTFASTA.write(">%s|%dbp|%s\n%s\n" % (scafName, len(sequence), ",".join(scafPath), sequence))
+			fSCAFFPATH.write("%s\n" %(",".join(scafPath)))
+			nCtgScaffolded += len(scafPath)
 			print
 	fSCAFFPATH.close()
 
+	outScafGene = os.path.join(outDir, "%s.agouti.gene.contig_path" %(prefix))
+	with open(outScafGene, 'w') as fOUTSCAFGENE:
+		for k, v in sorted(dMergedGene2Ctgs.iteritems()):
+			fOUTSCAFGENE.write(">%s\n%s\n" %(k, ','.join(v)))
+
+	outGenePath = os.path.join(outDir, "%s.agouti.gene.gene_path" %(prefix))
+	with open(outGenePath, 'w') as fOUTGENEPATH:
+		for k, v in sorted(dMergedGene2Genes.iteritems()):
+			fOUTGENEPATH.write(">%s\n%s\n" %(k, ','.join(v)))
+
 	# other contigs need to be output
-	sys.stderr.write("outputting contigs spared from scaffolding ...\n")
+	sys.stderr.write("outputting contigs escaped from scaffolding ...\n")
 	numLeft = 0
 	for vertex in contigDict:
 		if vertex in visitedDict:
-				if nameList[vertex] in dGFFs:
-					del dGFFs[nameList[vertex]]
-				continue
+			if nameList[vertex] in dGFFs:
+				del dGFFs[nameList[vertex]]
+			continue
 		numLeft += 1
 		fOUTFASTA.write(">%s\n%s\n" % (nameList[vertex], contigDict[vertex]))
 	fOUTFASTA.close()
 
 	# output in GFF format
 	sys.stderr.write("outputting Gene Models in GFF3 ...\n")
+	outGFF = os.path.join(outDir, "%s.agouti.gff" %(prefix))
 	dFinalGFFs = dict(dGFFs, **dUpdateGFFs)
 	numGenes = gff_outputter(dFinalGFFs, outGFF)
 
 	sys.stderr.write("\n####Summary####\n")
 
-	sys.stderr.write("number of contigs scaffoled: %d\n" %(len(visitedDict)))
+	sys.stderr.write("number of contigs scaffoled: %d\n" %(nCtgScaffolded))
 	sys.stderr.write("number of scaffolds: %d\n" %(scafID))
 	sys.stderr.write("number of contigs found no links: %d\n" %(numLeft))
 	sys.stderr.write("number of contigs in the final assembly: %d\n" %(numLeft+scafID))
@@ -278,7 +298,7 @@ def gff_outputter(dGeneModels, outGFF):
 			for j in range(0, len(geneModel.lcds), 2):
 				cdsStart = geneModel.lcds[j]
 				cdsStop = geneModel.lcds[j+1]
-				fOUTGFF.write("%s\t%s\tCDS\t%d\t%d\t.\t%s\t.\tID=%s.cds\n" %(k, geneModel.program, cdsStart, cdsStop, geneModel.strand, geneModel.geneID))
+				fOUTGFF.write("%s\t%s\tExon\t%d\t%d\t.\t%s\t.\tID=%s.exon\n" %(k, geneModel.program, cdsStart, cdsStop, geneModel.strand, geneModel.geneID))
 			fOUTGFF.write("# end gene %s\n" %(geneModel.geneID))
 			fOUTGFF.write("###\n")
 	fOUTGFF.close()
@@ -301,6 +321,7 @@ def remove_cycles(pathList, visitedDict):
 				loop = 1
 				break
 		if loop == 1:
+			print "loop", path
 			loop2Remove.append(i)
 			loop = 0
 			for node in path:
@@ -308,10 +329,11 @@ def remove_cycles(pathList, visitedDict):
 					del visitedDict[node]
 	return loop2Remove, visitedDict
 
-def getGeneIndex(geneModels, curGeneID):
+def get_gene_index(geneModels, curGeneID):
+	print ">>>> get_gene_index", " ".join([x.geneID for x in geneModels]), "curGeneID", curGeneID
 	currentGeneIndex = [x.geneID for x in geneModels].index(curGeneID)
 	toLeft = currentGeneIndex
-	toRight = len(geneModels) - currentGeneIndex
+	toRight = len(geneModels) - 1 - currentGeneIndex
 	return toLeft, toRight
 
 def merge_gene_model(currentGene, nextGene, scafName,
@@ -326,7 +348,7 @@ def merge_gene_model(currentGene, nextGene, scafName,
 		mergedGene.strand = currentGene.strand
 	else:
 		mergedGene.strand = '.'
-	print ">>>> merge", "current LCDS", currentGene.lcds
+	print ">>>> merge", "merged GeneID", mergedGene.geneID, "current LCDS", currentGene.lcds
 	for i in range(len(currentGene.lcds)):
 		currentGene.lcds[i] += currentOffset
 	print ">>>> merge", "next LCDS before", nextGene.lcds
@@ -355,11 +377,13 @@ def update_gene_model(geneModels, updatedGeneModels,
 			updatedGeneModels.append(tmpGeneModel)
 			print ">>>>", "update", tmpGeneModel.geneID, tmpGeneModel.lcds
 	if mergedGene is not None:
+		print ">>>> mergedGene to update", mergedGene.geneID
 		updatedGeneModels.append(mergedGene)
 		print ">>>>", "update", mergedGene.geneID, mergedGene.lcds
 	updatedGeneIDs = []
 	for i in range(len(updatedGeneModels)):
 		updatedGeneIDs.append(updatedGeneModels[i].geneID)
+	print "updated GeneIDs", updatedGeneIDs
 	return updatedGeneModels, updatedGeneIDs
 
 def reverse_gene_models(geneModels, lenCtg, excludeIDs=[]):
@@ -372,6 +396,13 @@ def reverse_gene_models(geneModels, lenCtg, excludeIDs=[]):
 		if geneModels[i].geneID not in excludeIDs:
 			geneModels[i] = reverse_gene_model(geneModels[i], lenCtg)
 	return geneModels
+
+def exclude_gene_model(geneModels, exclude):
+	tmp = []
+	for i in xrange(len(geneModels)):
+		if geneModels[i].geneID != exclude:
+			tmp.append(geneModels[i])
+	return tmp
 
 def reverse_gene_model(geneModel, lenCtg):
 	'''
@@ -442,52 +473,13 @@ def get_scaffolding_orientation(FR, FF, RR, RF):
 	else:
 		return "RF"
 
-def compNT(nt):
-	""" returns the complementary basepair to base nt
+def rc_seq(seq):
 	"""
-	compDict = { "A": "T",
-			 "T": "A",
-			 "G": "C",
-			 "C": "G",
-			 "S": "S",
-			 "W": "W",
-			 "R": "Y",
-			 "Y": "R",
-			 "M": "K",
-			 "K": "M",
-			 "H": "D",
-			 "D": "H",
-			 "B": "V",
-			 "V": "B",
-			 "N": "N",
-			 "a": "t",
-			 "t": "a",
-			 "g": "c",
-			 "c": "g",
-			 "n": "n",
-			 "z": "z"
-	}
-
-	return compDict.get(nt, "N")
-
-def complement(sequence, length=-1):
-	""" returns the complement of the sequence.
+		return the reverse and complementary of
+		the give sequence
 	"""
-	newSeq = ""
-	seqLength = len(sequence)
-	if length == seqLength or length < 0:
-		seqList = list(sequence)
-		seqList.reverse()
-		return "".join(map(compNT, seqList))
-
-#TODO: this seems to want to deal with case where length is more than
-# sequence length except that a negative index on a sequence is fine
-# index will only be overrun if length is negative but that case is
-# handled above
-	for index in range(seqLength - 1,seqLength - length - 1, -1):
-		try:
-			newSeq += compNT(sequence[index])
-		except:
-			newSeq += "N"
-
-	return newSeq
+	alphabetsInString = "ACGTNTGCANacgtntgcan"
+	alphabets = { alphabetsInString[i]:alphabetsInString[i+5] for i
+				  in range(20)
+				  if i<5 or 10<=i<=14 }
+	return "".join([alphabets[base] for base in seq[::-1]])
