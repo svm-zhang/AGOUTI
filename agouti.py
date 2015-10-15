@@ -10,7 +10,8 @@ agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
 from lib import agouti_sam as agBAM
-from src import agouti_filter as agFILTER
+from src import agouti_filter_v2 as agFILTER
+#from src import test_filter as agFILTER
 from lib import agouti_gff as agGFF
 from src import agouti_update as agUPDATE
 from src import agouti_scaffolding as agSCAFF
@@ -47,9 +48,14 @@ def parse_args():
 						help="specify the directory to store output files")
 	parser.add_argument("-mnl",
 						metavar="INT",
-						dest="min_nLinks",
+						dest="minSupport",
 						default=5,
-						help="minimum number of reads supporting a link between a contig pair")
+						help="minimum number of joining reads pair supporting a link between a contig pair")
+	parser.add_argument("-nN",
+						metavar="INT",
+						dest="numNs",
+						default=1000,
+						help="number of Ns put in between a pair of contigs")
 	parser.add_argument("-p",
 						metavar="STR",
 						dest="prefix",
@@ -105,15 +111,16 @@ def main():
 
 	dGFFs = agGFF.get_gene_models(gffFile)
 
-	dContigPairs = agBAM.get_joining_pairs(bamFile, args.min_nLinks)
+	dContigPairs = agBAM.get_joining_pairs(bamFile, args.minSupport)
 
 	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
-	dCtgPair2GenePair = agFILTER.cleanContigPairs(dContigPairs, dGFFs, joinPairsFile, args.min_nLinks)
+#	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
+	dCtgPair2GenePair = agFILTER.cleanContigPairs(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
 
-	pathList, edgeSenseDict, visitedDict = agSCAFF.agouti_scaffolding(len(contigDict), nameList, joinPairsFile)
-	agUPDATE.agouti_update(pathList, contigDict, nameList, origSize,
+	pathList, edgeSenseDict, visitedDict = agSCAFF.agouti_scaffolding(len(contigDict), nameList, joinPairsFile, args.minSupport)
+	agUPDATE.agouti_update(pathList, contigDict, nameList,
 						   edgeSenseDict, visitedDict, dGFFs,
-						   dCtgPair2GenePair, outDir, prefix)
+						   dCtgPair2GenePair, outDir, prefix, args.numNs)
 
 if __name__ == "__main__":
 	main()
