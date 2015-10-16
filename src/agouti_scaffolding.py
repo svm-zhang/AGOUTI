@@ -34,48 +34,36 @@ class EdgeMatrix:
 					return returnPath + [vertex]
 		return []
 
-#	def sz_visitLink(self, fromVertex, ignoreList=[]):
 	def sz_visitLink(self, fromVertex, visitedDict={}):
 		returnPath = [fromVertex]
 		print "fromVertex", fromVertex,
 		print "returnPath", returnPath
 		visitedDict[fromVertex] = ""
-#		newVisited = [fromVertex]
-		print "newVisited", visitedDict
 		toVertex = []
 		for toindex in xrange(self.dimension):
-#			if self.edgeArray[fromVertex][toindex] > 1 and toindex not in ignoreList:
 			if self.edgeArray[fromVertex][toindex] > 1 and toindex not in visitedDict:
 				toVertex.append(toindex)
 		print "toVertex", toVertex
 
 		for vertex in toVertex:
 			print "vertex", vertex
-#			if vertex not in ignoreList:
 			if sum(self.edgeArray[vertex]) == self.edgeArray[fromVertex][vertex]:
 				self.edgeArray[fromVertex][vertex] = 0
 				self.edgeArray[vertex][fromVertex] = 0
 				returnPath += [vertex]
-#				newVisited += [vertex]
 				visitedDict[vertex] = ""
 				return returnPath, visitedDict
-#				return returnPath, newVisited
 			else:
 				self.edgeArray[fromVertex][vertex] = 0
 				try:
-					path, visited = self.sz_visitLink(vertex, dict(visitedDict, **{vertex:""}))
-#					path, visited = self.sz_visitLink(vertex, newVisited+ignoreList)
+					path, visitedDict = self.sz_visitLink(vertex, dict(visitedDict, **{vertex:""}))
 					returnPath += path
-#					newVisited += visited
 					visitedDict[vertex] = ""
 					return returnPath, visitedDict
-#					return returnPath, newVisited
 				except IOError:
 					returnPath += [vertex]
 					return returnPath, visitedDict
-#					return returnPath, newVisited
 		return returnPath, visitedDict
-#		return returnPath, newVisited
 
 def sz_traverseGraph(leafList, edgeMatrix):
 	pathList = []
@@ -147,26 +135,36 @@ def check_orientation_conflicts(vertexA, vertexB, edgeSenseDict):
 	else:
 		return False
 
-def getPath(contigNum, joinPairsFile, nameList):
-	edgeMatrix = EdgeMatrix(contigNum)
+def getPath(nContig, joinPairsFile, seqNames, minSupport):
+	edgeMatrix = EdgeMatrix(nContig)
 
 	print len(edgeMatrix.edgeArray)
 
-	print "processing distal pairs"
-	verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = process_join_pairs_file(joinPairsFile, edgeMatrix, nameList)
+	print "processing joining reads pairs"
+	verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = process_join_pairs_file(joinPairsFile, edgeMatrix, seqNames)
 
 	for vertexA, vertices in vertexEdges.items():
-		print "vertices", vertices
+		print ">vertexA", vertexA, "vertices", vertices
 		toDelete = []
 		for i in range(len(vertices)):
 			vertexB = vertices[i]
-			print "vertexA", vertexA, "vertexB", vertexB
-			orientationConflict = check_orientation_conflicts(vertexA, vertexB, edgeSenseDict)
-			if orientationConflict:
+			print "vertexB", vertexB, "weight", edgeMatrix.edgeArray[vertexA][vertexB]
+			if edgeMatrix.edgeArray[vertexA][vertexB] < minSupport:
 				toDelete.append(vertexB)
 				edgeMatrix.edgeArray[vertexA][vertexB] = 0
 				edgeMatrix.edgeArray[vertexB][vertexA] = 0
+				print "delete because of weight"
+				continue
+#			orientationConflict = check_orientation_conflicts(vertexA, vertexB, edgeSenseDict)
+#			if orientationConflict:
+#				toDelete.append(vertexB)
+#				edgeMatrix.edgeArray[vertexA][vertexB] = 0
+#				edgeMatrix.edgeArray[vertexB][vertexA] = 0
+#				print "delete because of orientation conflict", seqNames[vertexA], seqNames[vertexB]
+		print "toDelete", toDelete
+		print "vertexA list", vertexEdges[vertexA]
 		for vertex in toDelete:
+			print "vertex list", vertexEdges[vertex]
 			vertexEdges[vertexA].remove(vertex)
 			vertexEdges[vertex].remove(vertexA)
 
@@ -177,117 +175,90 @@ def getPath(contigNum, joinPairsFile, nameList):
 	print "cleaning up graph of edges with weight 1"
 	verticesToDelete = []
 
-	for rindex in willVisitList: # if a contig is not in notSoloDict, it means that all connections to/from this contig have weight < 1(cutoff), and those weight will be converted to Zero in edgeMatrix.edgeArray
-		if rindex not in notSoloDict:
-			cindex = vertexEdges[rindex][0]
-			edgeMatrix.edgeArray[rindex][cindex] = 0
-			edgeMatrix.edgeArray[cindex][rindex] = 0
-			verticesToDelete.append(rindex)
-	print "solo to delete", len(verticesToDelete)
-
-	for vertex in verticesToDelete:
-		willVisitList.remove(vertex)
-	print "%d 1-edges zeroed out" % len(verticesToDelete)
-
-	zeroedEdge = 0
 	print "visiting %d vertices" % len(willVisitList)
 
+	zeroedEdge = 0
 	leafList = []
-	multi = []
-	twos = []
 	for rindex in willVisitList:
 		vertices = vertexEdges[rindex]
+		print ">rindex", rindex, "vertices", vertices
 		rEdges = []
 		for avertex in vertices:
 			if avertex in willVisitList:
 				rEdges.append((edgeMatrix.edgeArray[rindex][avertex], avertex))
 
-		if len(rEdges) > 2:
+		if len(rEdges) >= 2:
 			rEdges.sort(reverse=True)
-			zeroedEdge += len(rEdges[2:])
-			for (weight, cindex) in rEdges[2:]:
-				edgeMatrix.edgeArray[rindex][cindex] = 0	#further zero out the non-top2-weight edges
+			zeroedEdge += len(rEdges[3:])
+			for (weight, cindex) in rEdges[3:]:
+				edgeMatrix.edgeArray[rindex][cindex] = 0
 				edgeMatrix.edgeArray[cindex][rindex] = 0
 			leafList.append(rindex)							#added in RNAPATH*
-			multi.append(rindex)
 		elif len(rEdges) == 1:
-#			if edgeMatrix.edgeArray[rindex][rEdges[0][1]] > 1:
 			leafList.append(rindex)
-		else:
-			twos.append(rindex)
-			leafList.append(rindex) #added in RNAPATH*
 	print "length leaf", len(leafList)
-	print "length twos", len(twos)
-	print "length multi", len(multi)
-	print "twos", twos
-	print "multi", multi
-#		if rindex == 4222 or rindex == 4223:
-#			print "vertices", vertices
-#			print "orientationConflict", orientationConflict
-#			print "rEdges", rEdges
-#			print "leafList", leafList
-#	sys.exit()
 
 	print "zeroed out %d lower-weight edges at vertices with degree > 2" % zeroedEdge
 	pathList, visitedDict = traverseGraph(leafList, edgeMatrix)
 
 	return pathList, edgeSenseDict, visitedDict
 
-def process_join_pairs_file(joinPairsFilename, edgeMatrix, nameList):
+def process_join_pairs_file(joinPairsFilename, edgeMatrix, seqNames):
 	contigToRowLookup = {}
 	verticesWithEdges = {}
 	vertexEdges = {}
 	notSoloDict = {}
 	edgeSenseDict = {}
 
-	fJOINPAIRS = open(joinPairsFilename)
-	for line in fJOINPAIRS:
-		if not line.startswith('#'):
-			tmp_line = line.strip().split()
+	with open(joinPairsFilename, 'r') as fJOINPAIRS:
+		for line in fJOINPAIRS:
+			if not line.startswith('#'):
+				tmp_line = line.strip().split()
 
-			contig1 = nameList.index(tmp_line[1])
-			sense1 = tmp_line[3]
-			contig2 = nameList.index(tmp_line[4])
-			sense2 = tmp_line[6]
+				contig1 = seqNames.index(tmp_line[1])
+				sense1 = tmp_line[3]
+				contig2 = seqNames.index(tmp_line[4])
+				sense2 = tmp_line[6]
 
-			edgeMatrix.edgeArray[contig1][contig2] += 1
-			edgeMatrix.edgeArray[contig2][contig1] += 1
-			verticesWithEdges[contig1] = ""
-			verticesWithEdges[contig2] = ""
-			if (contig1, contig2) in edgeSenseDict:
-				edgeSenseDict[contig1, contig2].append((sense1, sense2))
-			elif (contig2, contig1) in edgeSenseDict:
-				edgeSenseDict[contig2, contig1].append((sense2, sense1))
-			else:
-				edgeSenseDict[contig1, contig2] = [(sense1, sense2)]
+				edgeMatrix.edgeArray[contig1][contig2] += 1
+				edgeMatrix.edgeArray[contig2][contig1] += 1
+				verticesWithEdges[contig1] = ""
+				verticesWithEdges[contig2] = ""
+				if (contig1, contig2) in edgeSenseDict:
+					edgeSenseDict[contig1, contig2].append((sense1, sense2))
+				elif (contig2, contig1) in edgeSenseDict:
+					edgeSenseDict[contig2, contig1].append((sense2, sense1))
+				else:
+					edgeSenseDict[contig1, contig2] = [(sense1, sense2)]
 
-			if contig1 in vertexEdges:
-				if contig2 not in vertexEdges[contig1]:
-					vertexEdges[contig1].append(contig2)
-			else:
-				vertexEdges[contig1] = [contig2]
+				if contig1 in vertexEdges:
+					if contig2 not in vertexEdges[contig1]:
+						vertexEdges[contig1].append(contig2)
+				else:
+					vertexEdges[contig1] = [contig2]
 
-			if contig2 in vertexEdges:
-				if contig1 not in vertexEdges[contig2]:
-					vertexEdges[contig2].append(contig1)
-			else:
-				vertexEdges[contig2] = [contig1]
+				if contig2 in vertexEdges:
+					if contig1 not in vertexEdges[contig2]:
+						vertexEdges[contig2].append(contig1)
+				else:
+					vertexEdges[contig2] = [contig1]
 
-			if edgeMatrix.edgeArray[contig1][contig2] > 1:
-				notSoloDict[contig1] = "" #if a contig has at least one connections with weight >1, it will be added to the notSoloDict
-										  # in other words, if all connections to/from a contig have weight <1, it will not be visited in scaffolding path
-				notSoloDict[contig2] = ""
-
-	fJOINPAIRS.close()
-#	for k, v in edgeSenseDict.items():
-#		contig1 = k[0]
-#		contig2 = k[1]
+				if edgeMatrix.edgeArray[contig1][contig2] > 1:
+					notSoloDict[contig1] = ""
+					notSoloDict[contig2] = ""
+				if ((contig1 == 0 and contig2 == 1) or\
+				   (contig1 == 1 and contig2 == 0)):
+					print "haha cao"
+					print vertexEdges[contig1]
+					print vertexEdges[contig2]
 
 	return verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict
 
-def agouti_scaffolding(contigNum, nameList, joinPairsFile):
+def agouti_scaffolding(seqNames, joinPairsFile, minSupport):
 	sys.stderr.write("Scaffolding ... \n")
-	pathList, edgeSenseDict, visitedDict = getPath(contigNum, joinPairsFile, nameList)
+
+	nContig = len(seqNames)
+	pathList, edgeSenseDict, visitedDict = getPath(nContig, joinPairsFile, seqNames, minSupport)
 
 	print pathList
 	print "found %d paths" % len(pathList)
