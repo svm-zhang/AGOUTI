@@ -66,6 +66,21 @@ def parse_args():
 						dest="numNs",
 						default=1000,
 						help="number of Ns put in between a pair of contigs [1000]")
+	parser.add_argument("-minMapQ",
+						metavar="INT",
+						dest="minMapQ",
+						default=5,
+						help="minimum of mapping quality to use [5]")
+	parser.add_argument("-minFracOvl",
+						metavar="FLOAT",
+						dest="minFracOvl",
+						default=0.0,
+						help="minimum alignmentLen/readLen [0.0]")
+	parser.add_argument("-maxFracMismatch",
+						metavar="FLOAT",
+						dest="maxFracMismatch",
+						default=1.0,
+						help="maximum fraction of mismatch of a give alignment [1.0]")
 	parser.add_argument("-debug",
 						action='store_true',
 						help="specify the output prefix")
@@ -119,7 +134,10 @@ def main():
 	dContigPairs = collections.defaultdict(list)
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
-	dContigPairs = agBAM.get_joining_pairs(bamFile, moduleOutDir, prefix, logLevel, args.overwrite)
+	dContigPairs = agBAM.get_joining_pairs(bamFile, moduleOutDir, prefix,
+										   logLevel, args.overwrite,
+										   args.minMapQ, args.minFracOvl,
+										   args.maxFracMismatch)
 	sys.exit()
 
 	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
