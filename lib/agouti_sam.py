@@ -1,9 +1,10 @@
 import os
 import sys
-import argparse
 import re
 import collections
-import pysam
+import time
+
+from lib import agouti_log as agLOG
 
 def getCIGAR(cigar):
 	tmp_cigar = re.split("([MIDNSHPX=])", cigar)[:-1]
@@ -59,98 +60,136 @@ def getMappedRegionOnContigs(start, alnLen, flags):
 	else:
 		return start+alnLen, start
 
-def get_joining_pairs(bamFile, min_nLinks):
-	minFracOvl = 0.0
-	maxFracMismatch = 1
-	minMapQ = 5
-#	fSAM = open(isam, 'r')
-	sys.stderr.write("Getting joining pairs ... ")
-	dContigPairs = collections.defaultdict(list)
-	while True:
-		pairA = bamFile.readline().strip().split("\t")
-		pairB = bamFile.readline().strip().split("\t")
-		if len(pairA) == 1 or len(pairB) == 1:
-			break
-		contigA = pairA[2]
-		contigB = pairB[2]
-		if pairA[0] == pairB[0] and contigA != contigB:
-			alnLenA = getCIGAR(pairA[5])
-			alnLenB = getCIGAR(pairB[5])
-			leftMostPosA = int(pairA[3])
-			leftMostPosB = int(pairB[3])
-			readLenA = len(pairA[9])
-			readLenB = len(pairB[9])
-			nMismatchesA = getMismatches(pairA[11:])
-			nMismatchesB = getMismatches(pairB[11:])
-			mapQA = int(pairA[4])
-			mapQB = int(pairB[4])
-			flagsA = explainSAMFlag(int(pairA[1]))
-			flagsB = explainSAMFlag(int(pairB[1]))
-			senseA = flagsA[4]
-			senseB = flagsB[4]
-#			print pairA
-#			print pairB
-#			print flagsA
-#			print flagsB
-#			print nMismatchesA, nMismatchesB
-#			print alnLenA, alnLenB
-#			print alnLenA/readLenA, alnLenB/readLenB
-#			print nMismatchesA/alnLenA, nMismatchesB/alnLenB
-#			sys.exit()
+def set_module_name(name):
+	global moduleName
+	moduleName = name
 
-			if (min(alnLenA/readLenA, alnLenB/readLenB) >= minFracOvl and				# minimum fraction of overlaps
-				max(nMismatchesA/alnLenA, nMismatchesB/alnLenB) <= maxFracMismatch and	# maximum fraction of mismatches
-				min(mapQA, mapQB) >= minMapQ):				# minimum mapping quality
-				startA = leftMostPosA + 1
-				stopA = startA + 1 + int(alnLenA)
-				startB = leftMostPosB + 1
-				stopB = startB + 1 + int(alnLenB)
-#				startA, stopA = getMappedRegionOnContigs(int(pairA[3]), int(alnLenA), flagsA)
-#				startB, stopB = getMappedRegionOnContigs(int(pairB[3]), int(alnLenB), flagsB)
-				if contigA <= contigB:
-					if (contigA, contigB) not in dContigPairs:
-						dContigPairs[contigA, contigB] = [(startA, startB, stopA, stopB, senseA, senseB, pairA[0])]
+def try_continue_last_run(moduleProgressLogFile, moduleOutputFile):
+	if os.path.exists(moduleProgressLogFile):
+		fLOG = open(moduleProgressLogFile, 'r')
+		lastLine = fLOG.readlines()[-1].strip()
+		fLOG.close()
+		moduleProgressLogger = moduleProgressLogObj.create_logger(moduleProgressLogFile)
+		moduleProgressLogger.info("[BEGIN] Trying to read joining pairs from last run")
+		moduleProgressLogger.info("Found log file from last run")
+		moduleProgressLogger.info("Checking EXIT STATUS of last run")
+		if lastLine.split('-')[-1].strip() == "Succeeded":
+			moduleProgressLogger.info("Last run was successful")
+			moduleProgressLogger.info("Skipping re-reading BAM file")
+			moduleProgressLogger.info("[BEGIN] Reading output from last run")
+			nJoinPairs = 0
+			dContigPairs = collections.defaultdict(list)
+			with open(moduleOutputFile, 'r') as fJOINPAIR:
+				for line in fJOINPAIR:
+					tmpLine = line.strip().split("\t")
+					readsID = tmpLine[0]
+					contigA, startA, stopA, senseA = tmpLine[1:5]
+					contigB, startB, stopB, senseB = tmpLine[5:]
+					nJoinPairs += 1
+					if contigA <= contigB:
+						if (contigA, contigB) not in dContigPairs:
+							dContigPairs[contigA, contigB] = [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
+						else:
+							dContigPairs[contigA, contigB] += [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
 					else:
-						dContigPairs[contigA, contigB] += [(startA, startB, stopA, stopB, senseA, senseB, pairA[0])]
-				else:
-					if (contigB, contigA) not in dContigPairs:
-						dContigPairs[contigB, contigA] = [(startB, startA, stopB, stopA, senseB, senseA, pairB[0])]
-					else:
-						dContigPairs[contigB, contigA] += [(startB, startA, stopB, stopA, senseB, senseA, pairB[0])]
-#				sys.stdout.write("\t".join(pairA)+"\n")
-#				sys.stdout.write("\t".join(pairB)+"\n")
-#				if contigA <= contigB:
-#					sys.stdout.write("%s\t%s\t%d\t%s\t%s\t%d\t%s\n" %(pairA[0], contigA, startA, senseA,
-#																  contigB, startB, senseB))
-#				else:
-#					sys.stdout.write("%s\t%s\t%d\t%s\t%s\t%d\t%s\n" %(pairB[0], contigB, startB, senseB,
-#																  contigA, startA, senseA))
-#	sys.exit()
-
-	# filter some of the contig pairs who do not
-	# have a minimum number of read support
-	nCtgPairs = 0
-	for k, v in dContigPairs.items():
-		if len(v) < min_nLinks:
-			del dContigPairs[k]
+						if (contigB, contigA) not in dContigPairs:
+							dContigPairs[contigB, contigA] = [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
+						else:
+							dContigPairs[contigB, contigA] += [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
+			moduleProgressLogger.info("%d joining pairs parsed" %(nJoinPairs))
+			moduleProgressLogger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
+			moduleProgressLogger.info("Succeeded")
+			return dContigPairs, moduleProgressLogger
 		else:
-			nCtgPairs += len(v)
-	sys.stderr.write("%d joining pairs parsed\n" %(nCtgPairs))
+			moduleProgressLogger.info("Last run was NOT successful")
+			return None, moduleProgressLogger
+	return None, moduleProgressLogger
+
+def get_joining_pairs(bamStream, moduleOutDir, prefix, logLevel, overwrite):
+	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.progressMeter" %(prefix))
+	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.debug" %(prefix))
+	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.txt" %(prefix))
+	global moduleProgressLogObj
+	moduleProgressLogObj = agLOG.AGOUTI_LOG(moduleName)
+	moduleProgressLogger = None
+	if not overwrite:
+		dContigPairs, moduleProgressLogger = try_continue_last_run(moduleProgressLogFile, moduleOutputFile)
+		if dContigPairs is not None:
+			return dContigPairs
+	else:
+		moduleProgressLogger = moduleProgressLogObj.create_logger(moduleProgressLogFile)
+
+	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
+
+	with open(moduleOutputFile, 'w') as fOUT:
+		minFracOvl = 0.0
+		maxFracMismatch = 1
+		minMapQ = 5
+		moduleProgressLogger.info("[BEGIN] Identifying joining pairs")
+		moduleProgressLogger.info("# processed\t| Current Reads ID\t| Elapsed Time")
+		moduleDEBUGLogger.debug("Reads_ID\tLocationA\tLocationB\tmapQA\tmapQB\tsenseA\tsenseB\treadLenA\treadLenB")
+		startTime = time.time()
+		dContigPairs = collections.defaultdict(list)
+		nJoinPairs = 0
+		nReadsPairs = 0
+		while True:
+			pairA = bamStream.readline().strip().split("\t")
+			pairB = bamStream.readline().strip().split("\t")
+			# reach the end of the file
+			if len(pairA) == 1 or len(pairB) == 1:
+				break
+			contigA = pairA[2]
+			contigB = pairB[2]
+			nReadsPairs += 1
+			if pairA[0] == pairB[0] and contigA != contigB:
+				readsID = pairA[0]
+				alnLenA = getCIGAR(pairA[5])
+				alnLenB = getCIGAR(pairB[5])
+				leftMostPosA = int(pairA[3])
+				leftMostPosB = int(pairB[3])
+				readLenA = len(pairA[9])
+				readLenB = len(pairB[9])
+				nMismatchesA = getMismatches(pairA[11:])
+				nMismatchesB = getMismatches(pairB[11:])
+				mapQA = int(pairA[4])
+				mapQB = int(pairB[4])
+				flagsA = explainSAMFlag(int(pairA[1]))
+				flagsB = explainSAMFlag(int(pairB[1]))
+				senseA = flagsA[4]
+				senseB = flagsB[4]
+				moduleDEBUGLogger.debug("%s\t%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d" %(readsID,
+										contigA+":"+str(leftMostPosA), contigB+":"+str(leftMostPosB),
+										mapQA, mapQB, senseA, senseB, readLenA, readLenB))
+
+				if (min(alnLenA/readLenA, alnLenB/readLenB) >= minFracOvl and				# minimum fraction of overlaps
+					max(nMismatchesA/alnLenA, nMismatchesB/alnLenB) <= maxFracMismatch and	# maximum fraction of mismatches
+					min(mapQA, mapQB) >= minMapQ):				# minimum mapping quality
+					startA = leftMostPosA + 1
+					stopA = startA + 1 + int(alnLenA)
+					startB = leftMostPosB + 1
+					stopB = startB + 1 + int(alnLenB)
+					nJoinPairs += 1
+					if contigA <= contigB:
+						if (contigA, contigB) not in dContigPairs:
+							dContigPairs[contigA, contigB] = [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
+						else:
+							dContigPairs[contigA, contigB] += [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
+						fOUT.write("%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\n" %(readsID, contigA, startA,
+																			stopA, senseA, contigB,
+																			startB, stopB, senseB))
+					else:
+						if (contigB, contigA) not in dContigPairs:
+							dContigPairs[contigB, contigA] = [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
+						else:
+							dContigPairs[contigB, contigA] += [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
+						fOUT.write("%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\n" %(readsID, contigB, startB,
+																	stopB, senseB, contigA,
+																	startA, stopA, senseA))
+			if nReadsPairs % 5000000 == 0:
+				elapsedTime = float((time.time() - startTime)/60)
+				moduleProgressLogger.info("%d processed\t| %s\t| %.2f m" %(nReadsPairs, readsID, elapsedTime))
+
+	moduleProgressLogger.info("%d joining pairs parsed" %(nJoinPairs))
+	moduleProgressLogger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
+	moduleProgressLogger.info("Succeeded")
 	return dContigPairs
-
-#def get_joining_pairs(bamFile, min_nLinks):
-#	print bamFile
-#	print min_nLinks
-#	return get_joining_pairs(bamFile, args.min_nLinks)
-
-#def main():
-#	parser = argparse.ArgumentParser()
-#	parser.add_argument("-gff", metavar="FILE", dest="igff", required=True, help="gene models in GFF format")
-#	parser.add_argument("-mnl", metavar="INT", dest="min_nLinks", default=5, help="minimum number of reads supporting a link between a contig pair")
-#	parser.add_argument("sam", nargs='?', help="reads mapping in SAM format")
-#	args = parser.parse_args()
-
-#	cleanContigPairs(dContigPairs, dGFFs)
-
-#if __name__ == "__main__":
-#	main()
