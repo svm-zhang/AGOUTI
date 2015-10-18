@@ -85,6 +85,10 @@ def try_continue_last_run(moduleProgressLogFile, moduleOutputFile):
 					readsID = tmpLine[0]
 					contigA, startA, stopA, senseA = tmpLine[1:5]
 					contigB, startB, stopB, senseB = tmpLine[5:]
+					startA = int(startA)
+					stopA = int(stopA)
+					startB = int(startB)
+					stopB = int(stopB)
 					nJoinPairs += 1
 					if contigA <= contigB:
 						if (contigA, contigB) not in dContigPairs:
