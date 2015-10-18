@@ -2,6 +2,8 @@ import os
 import sys
 import collections
 
+from lib import agouti_log as agLOG
+
 class AGOUTI_GFF(object):
 	def __init__(self):
 		self.geneID = ""
@@ -13,13 +15,17 @@ class AGOUTI_GFF(object):
 		self.startCodon = 0
 		self.strand = ''
 		self.lcds = []
-		self.link = 0
+		self.fake = 0
 
-	def setGene(self, geneID, start, stop, link):
+	def setGene(self, geneID, start=0, stop=0, fake=0):
 		self.geneID = geneID
 		self.geneStart = start
 		self.geneStop = stop
-		self.link = link
+		self.fake = 1
+
+	def printGene(self):
+		print self.geneID, self.ctgID, self.geneStart, self.geneStop
+		print self.lcds
 
 	def setProgram(self, program):
 		self.program = program
@@ -57,8 +63,14 @@ class AGOUTI_GFF(object):
 		else:
 			return False
 
-def get_gene_models(gff):
-	sys.stderr.write("Getting gene models ... ")
+def set_module_name(name):
+	global moduleName
+	moduleName = name
+
+def get_gene_models(gff, moduleOutDir, prefix, logLevel):
+	moduleLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.progressMeter" %(prefix))
+	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleLogFile)
+	moduleProgressLogger.info("[BEGIN] Getting gene models")
 	dGFFs = collections.defaultdict(list)
 	nGene = 0
 	with open(gff, 'r') as fIN:
@@ -78,14 +90,14 @@ def get_gene_models(gff):
 					if geneIndex == 0:
 						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
 														   int(tmp_line[3]),
-														   int(tmp_line[4]), 0)
+														   int(tmp_line[4]))
 					else:
 						preCtgID = lobj_GeneModels[geneIndex-1].ctgID
 						preGeneID = lobj_GeneModels[geneIndex-1].geneID
 						dGFFs[preCtgID].append(lobj_GeneModels[geneIndex-1])
 						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
 														   int(tmp_line[3]),
-														   int(tmp_line[4]), 0)
+														   int(tmp_line[4]))
 					lobj_GeneModels[geneIndex].setProgram(tmp_line[1])
 					lobj_GeneModels[geneIndex].setContigID(tmp_line[0])
 					lobj_GeneModels[geneIndex].setStrand(tmp_line[6])
@@ -97,8 +109,11 @@ def get_gene_models(gff):
 					lobj_GeneModels[geneIndex].updateCDS(int(tmp_line[3]), int(tmp_line[4]))
 		dGFFs[lobj_GeneModels[geneIndex].ctgID].append(lobj_GeneModels[geneIndex])
 
+	moduleProgressLogger.debug("Sequence\tNum_Gene_Models")
 	nGeneModels = 0
 	for k, v in sorted(dGFFs.items()):
 		nGeneModels += len(v)
-	sys.stderr.write("%d Gene Models parsed\n" %(nGeneModels))
+		moduleProgressLogger.debug("%s\t%d" %(k, len(v)))
+	moduleProgressLogger.info("%d Gene Models parsed" %(nGeneModels))
+	moduleProgressLogger.info("[DONE]")
 	return dGFFs
