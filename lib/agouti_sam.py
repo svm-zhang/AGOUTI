@@ -105,7 +105,9 @@ def try_continue_last_run(moduleProgressLogFile, moduleOutputFile):
 			return None, moduleProgressLogger
 	return None, moduleProgressLogger
 
-def get_joining_pairs(bamStream, moduleOutDir, prefix, logLevel, overwrite):
+def get_joining_pairs(bamStream, moduleOutDir, prefix,
+					  logLevel, overwrite, minMapQ=5,
+					  minFracOvl=0.0, maxFracMismatch=1):
 	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.progressMeter" %(prefix))
 	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.debug" %(prefix))
 	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.txt" %(prefix))
@@ -122,9 +124,6 @@ def get_joining_pairs(bamStream, moduleOutDir, prefix, logLevel, overwrite):
 	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
 
 	with open(moduleOutputFile, 'w') as fOUT:
-		minFracOvl = 0.0
-		maxFracMismatch = 1
-		minMapQ = 5
 		moduleProgressLogger.info("[BEGIN] Identifying joining pairs")
 		moduleProgressLogger.info("# processed\t| Current Reads ID\t| Elapsed Time")
 		moduleDEBUGLogger.debug("Reads_ID\tLocationA\tLocationB\tmapQA\tmapQB\tsenseA\tsenseB\treadLenA\treadLenB")
