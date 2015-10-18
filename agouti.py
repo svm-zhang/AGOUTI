@@ -3,10 +3,12 @@ import sys
 import re
 import argparse
 import logging
+import collections
 
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
+from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
 from lib import agouti_sam as agBAM
 from src import agouti_filter_v2 as agFILTER
@@ -67,32 +69,62 @@ def parse_args():
 	parser.add_argument("-debug",
 						action='store_true',
 						help="specify the output prefix")
+	parser.add_argument("-overwrite",
+						action='store_true',
+						help="specify whether to overwrite all results from last run [False]")
 
 	args = parser.parse_args()
 	return args
 
 def main():
+
 	args = parse_args()
 
 	bamFile = args.bamFile
-	gffFile = args.gff
+	gffFile = os.path.realpath(args.gff)
 	prefix = args.prefix
 	outDir = os.path.realpath(args.outDir)
 	if not os.path.exists(outDir):
 		os.makedirs(outDir)
 
+	logLevel = logging.INFO
+	if args.debug:
+		logLevel = logging.DEBUG
+	mainLogFile = os.path.join(outDir, "%s.main.log" %(prefix))
+	logger = agLOG.AGOUTI_LOG("Main").create_logger(mainLogFile)
+	logger.info("Fasta File: %s" %(os.path.realpath(args.contigFasta)))
+	logger.info("GFF file: %s" %(gffFile))
+	logger.info("Output directory: %s" %(outDir))
+	logger.info("Output prefix: %s" %(prefix))
+	logger.info("Minimum number of supports: %d" %(args.minSupport))
+	logger.info("Length of gaps filled: %d" %(args.numNs))
+
+	agSeq.set_module_name("AGOUTI_Seq")
+	moduleOutDir = os.path.join(outDir, "agouti_seq")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
 	if args.contigFasta:
-		seqNames, dSeq = agSeq.get_contigs(args.contigFasta)
+		seqNames, dSeq = agSeq.get_contigs(args.contigFasta, moduleOutDir, prefix, logLevel)
 	elif args.scaffoldFasta:
-		seqNames, dSeq = agSeq.get_scaffolds(args.scaffoldFasta)
+		seqNames, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
 
-	dGFFs = agGFF.get_gene_models(gffFile)
+	agGFF.set_module_name("AGOUTI_GFF")
+	moduleOutDir = os.path.join(outDir, "agouti_GFFs")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+	dGFFs = agGFF.get_gene_models(gffFile, moduleOutDir, prefix, logLevel)
 
-	dContigPairs = agBAM.get_joining_pairs(bamFile, args.minSupport)
+	agBAM.set_module_name("AGOUTI_JoinPair")
+	moduleOutDir = os.path.join(outDir, "agouti_join_pairs")
+	dContigPairs = collections.defaultdict(list)
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+	dContigPairs = agBAM.get_joining_pairs(bamFile, moduleOutDir, prefix, logLevel, args.overwrite)
+	sys.exit()
 
 	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
 #	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
-	dCtgPair2GenePair = agFILTER.cleanContigPairs(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
+	dCtgPair2GenePair = agFILTER.enforce_filters(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
 
 	pathList, edgeSenseDict, visitedDict = agSCAFF.agouti_scaffolding(seqNames, joinPairsFile, args.minSupport)
 	agUPDATE.agouti_update(pathList, dSeq, seqNames,
