@@ -15,7 +15,7 @@ from src import agouti_filter_v2 as agFILTER
 #from src import test_filter as agFILTER
 from lib import agouti_gff as agGFF
 from src import agouti_update as agUPDATE
-from src import agouti_scaffolding as agSCAFF
+from src import rnapathSTAR as agSCAFF
 
 def parse_args():
 	use_message = '''
@@ -59,26 +59,31 @@ def parse_args():
 	parser.add_argument("-mnl",
 						metavar="INT",
 						dest="minSupport",
+						type=int,
 						default=5,
 						help="minimum number of joining reads pair supports [5]")
 	parser.add_argument("-nN",
 						metavar="INT",
 						dest="numNs",
+						type=int,
 						default=1000,
 						help="number of Ns put in between a pair of contigs [1000]")
 	parser.add_argument("-minMapQ",
 						metavar="INT",
 						dest="minMapQ",
+						type=int,
 						default=5,
 						help="minimum of mapping quality to use [5]")
 	parser.add_argument("-minFracOvl",
 						metavar="FLOAT",
 						dest="minFracOvl",
+						type=float,
 						default=0.0,
 						help="minimum alignmentLen/readLen [0.0]")
 	parser.add_argument("-maxFracMismatch",
 						metavar="FLOAT",
 						dest="maxFracMismatch",
+						type=float,
 						default=1.0,
 						help="maximum fraction of mismatch of a give alignment [1.0]")
 	parser.add_argument("-debug",
@@ -131,23 +136,34 @@ def main():
 
 	agBAM.set_module_name("AGOUTI_JoinPair")
 	moduleOutDir = os.path.join(outDir, "agouti_join_pairs")
-	dContigPairs = collections.defaultdict(list)
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
 	dContigPairs = agBAM.get_joining_pairs(bamFile, moduleOutDir, prefix,
 										   logLevel, args.overwrite,
 										   args.minMapQ, args.minFracOvl,
 										   args.maxFracMismatch)
-	sys.exit()
 
-	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
+#	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
 #	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
-	dCtgPair2GenePair = agFILTER.enforce_filters(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
+	agFILTER.set_module_name("AGOUTI_FILTER")
+	# this module uses the same output directory as last module
+	dCtgPair2GenePair, joinPairsFile = agFILTER.enforce_filters(dContigPairs, dGFFs, moduleOutDir,
+																prefix, args.minSupport)
 
-	pathList, edgeSenseDict, visitedDict = agSCAFF.agouti_scaffolding(seqNames, joinPairsFile, args.minSupport)
+	agSCAFF.set_module_name("rnapathSTAR")
+	moduleOutDir = os.path.join(outDir, "rnapathSTAR")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+	pathList, edgeSenseDict, visitedDict = agSCAFF.rnapathSTAR(seqNames, joinPairsFile, moduleOutDir, prefix, args.minSupport)
+
+	agUPDATE.set_module_name("AGOUTI_UPDATE")
+	moduleOutDir = os.path.join(outDir, "agouti_update")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
 	agUPDATE.agouti_update(pathList, dSeq, seqNames,
 						   edgeSenseDict, visitedDict, dGFFs,
-						   dCtgPair2GenePair, outDir, prefix, args.numNs)
+						   dCtgPair2GenePair, outDir, prefix,
+						   moduleOutDir, args.numNs)
 
 if __name__ == "__main__":
 	main()
