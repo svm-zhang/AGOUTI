@@ -2,18 +2,30 @@ import os
 import sys
 import collections
 
+from lib import agouti_log as agLOG
 from lib import agouti_gff as agGFF
+
+def set_module_name(name):
+	global moduleName
+	moduleName = name
 
 def agouti_update(pathList, contigDict, nameList,
 				  edgeSenseDict, visitedDict, dGFFs,
-				  dCtgPair2GenePair, outDir, prefix, numNs=1000):
-	sys.stderr.write("Updating gene models ... \n")
+				  dCtgPair2GenePair, outDir, prefix,
+				  moduleOutDir, numNs=1000):
+	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_update.progressMeter" %(prefix))
+	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_update.debug" %(prefix))
+#	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti_update.txt" %(prefix))
+	global moduleProgressLogger
+	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleProgressLogFile)
+	global moduleDEBUGLogger
+	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
+	moduleProgressLogger.info("Updating gene models")
 	scafID = 0
 
-	print "updating ... "
-	outScaffPath = os.path.join(outDir, "%s.scaff.paths" %(prefix))
+	outScaffPath = os.path.join(moduleOutDir, "%s.agouti.scaffolding_paths.txt" %(prefix))
 	fSCAFFPATH = open(outScaffPath, "w")
-	outFasta = os.path.join(outDir, "%s.agouti.fasta" %(prefix))
+	outFasta = os.path.join(moduleOutDir, "%s.agouti.fasta" %(prefix))
 	fOUTFASTA = open(outFasta, "w")
 	dUpdateGFFs = collections.defaultdict(list)
 	dMergedGene2Ctgs = collections.defaultdict(list)
@@ -62,25 +74,6 @@ def agouti_update(pathList, contigDict, nameList,
 				curGeneID = currentGene.geneID
 				excludeGeneIDs = [preGeneID] + [curGeneID]
 				print ">>>>", scafName, "pre", preGeneID, "current", currentGene.geneID, "next", nextGene.geneID
-
-#				toLeft, toRight = 0, 0
-#				if preGeneID != "":
-#					if curGeneID != preGeneID:
-#						if currentSense == "-":
-#							tmp = exclude_gene_model(dGFFs[curCtg], preGeneID)[::-1]
-#							print ">>>> tmp", " ".join([x.geneID for x in tmp])
-#							toLeft, toRight = get_gene_index(dUpdateGFFs[scafName]+tmp, curGeneID)
-#						else:
-#							toLeft, toRight = get_gene_index(dUpdateGFFs[scafName]+dGFFs[curCtg], curGeneID)
-#					else:
-						# problematic
-#						if len(dGFFs[curCtg]) == 1:
-#						tmp = exclude_gene_model(dGFFs[curCtg], preGeneID)
-#						print ">>>> tmp", " ".join([x.geneID for x in tmp])
-#						toLeft, toRight = get_gene_index(dUpdateGFFs[scafName]+tmp, preMergedGene.geneID)
-#						else:
-#							toLeft, toRight = get_gene_index(dGFFs[curCtg]+dUpdateGFFs[scafName], currentGene.geneID)
-#				print ">>>>", "toleft", toLeft, "toRight", toRight
 
 				FR, FF, RR, RF = get_orientation_counts(currentVertex, nextVertex, edgeSenseDict)
 				if currentSense == "-":
@@ -267,18 +260,18 @@ def agouti_update(pathList, contigDict, nameList,
 			print
 	fSCAFFPATH.close()
 
-	outScafGene = os.path.join(outDir, "%s.agouti.gene.contig_path" %(prefix))
+	outScafGene = os.path.join(moduleOutDir, "%s.agouti.gene.contig_path" %(prefix))
 	with open(outScafGene, 'w') as fOUTSCAFGENE:
 		for k, v in sorted(dMergedGene2Ctgs.iteritems()):
 			fOUTSCAFGENE.write(">%s\n%s\n" %(k, ','.join(v)))
 
-	outGenePath = os.path.join(outDir, "%s.agouti.gene.gene_path" %(prefix))
+	outGenePath = os.path.join(moduleOutDir, "%s.agouti.gene.gene_path" %(prefix))
 	with open(outGenePath, 'w') as fOUTGENEPATH:
 		for k, v in sorted(dMergedGene2Genes.iteritems()):
 			fOUTGENEPATH.write(">%s\n%s\n" %(k, ','.join(v)))
 
 	# other contigs need to be output
-	sys.stderr.write("outputting contigs escaped from scaffolding ...\n")
+	moduleProgressLogger.info("Outputting contigs escaped from scaffolding")
 	numLeft = 0
 	for vertex in contigDict:
 		if vertex in visitedDict:
@@ -290,18 +283,19 @@ def agouti_update(pathList, contigDict, nameList,
 	fOUTFASTA.close()
 
 	# output in GFF format
-	sys.stderr.write("outputting Gene Models in GFF3 ...\n")
-	outGFF = os.path.join(outDir, "%s.agouti.gff" %(prefix))
+	moduleProgressLogger.info("Outputting Gene Models in GFF3")
+	outGFF = os.path.join(moduleOutDir, "%s.agouti.gff" %(prefix))
 	dFinalGFFs = dict(dGFFs, **dUpdateGFFs)
 	numGenes = gff_outputter(dFinalGFFs, outGFF)
 
-	sys.stderr.write("\n####Summary####\n")
+	moduleProgressLogger.info("####Summary####")
 
-	sys.stderr.write("number of contigs scaffoled: %d\n" %(nCtgScaffolded))
-	sys.stderr.write("number of scaffolds: %d\n" %(scafID))
-	sys.stderr.write("number of contigs found no links: %d\n" %(numLeft))
-	sys.stderr.write("number of contigs in the final assembly: %d\n" %(numLeft+scafID))
-	sys.stderr.write("Final number of genes: %d\n" %(numGenes))
+	moduleProgressLogger.info("number of contigs scaffoled: %d" %(nCtgScaffolded))
+	moduleProgressLogger.info("number of scaffolds: %d" %(scafID))
+	moduleProgressLogger.info("number of contigs found no links: %d" %(numLeft))
+	moduleProgressLogger.info("number of contigs in the final assembly: %d" %(numLeft+scafID))
+	moduleProgressLogger.info("Final number of genes: %d" %(numGenes))
+	moduleProgressLogger.info("Succeeded")
 
 def gff_outputter(dGeneModels, outGFF):
 	fOUTGFF = open(outGFF, 'w')
