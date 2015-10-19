@@ -5,10 +5,12 @@ import string
 import collections
 from numpy import zeros, int16
 
+from lib import agouti_log as agLOG
 from lib import agouti_gff as agGFF
 
 class EdgeMatrix:
-	""" Describes a sparse matrix to hold edge data.
+	"""
+		Describes a sparse matrix to hold edge data.
 	"""
 	def __init__(self, dimension):
 		self.dimension = dimension
@@ -34,7 +36,7 @@ class EdgeMatrix:
 					return returnPath + [vertex]
 		return []
 
-	def sz_visitLink(self, fromVertex, visitedDict={}):
+	def walk_graph(self, fromVertex, visitedDict={}):
 		returnPath = [fromVertex]
 		print "fromVertex", fromVertex,
 		print "returnPath", returnPath
@@ -56,7 +58,7 @@ class EdgeMatrix:
 			else:
 				self.edgeArray[fromVertex][vertex] = 0
 				try:
-					path, visitedDict = self.sz_visitLink(vertex, dict(visitedDict, **{vertex:""}))
+					path, visitedDict = self.walk_graph(vertex, dict(visitedDict, **{vertex:""}))
 					returnPath += path
 					visitedDict[vertex] = ""
 					return returnPath, visitedDict
@@ -65,7 +67,7 @@ class EdgeMatrix:
 					return returnPath, visitedDict
 		return returnPath, visitedDict
 
-def sz_traverseGraph(leafList, edgeMatrix):
+def sz_scaffolding(leafList, edgeMatrix):
 	pathList = []
 	visitedDict = {}
 	leafList.sort()
@@ -77,7 +79,7 @@ def sz_traverseGraph(leafList, edgeMatrix):
 		else:
 			print ">rindex", rindex
 #			path = edgeMatrix.visitLink(rindex, visitedDict.keys()) # orig
-			path, ignoreList = edgeMatrix.sz_visitLink(rindex, visitedDict.keys()) #added
+			path, ignoreList = edgeMatrix.walk_graph(rindex, visitedDict.keys()) #added
 			print "path", path, "ignore", ignoreList
 			if len(path) > 1:
 				visitedDict = dict(visitedDict, **{x: "" for x in ignoreList})
@@ -90,28 +92,21 @@ def sz_traverseGraph(leafList, edgeMatrix):
 	sys.exit()
 	return pathList, visitedDict
 
-def traverseGraph(leafList, edgeMatrix):
+def scaffolding(leafList, edgeMatrix):
 	pathList = []
 	visitedDict = {}
 	leafList.sort()
 	ignoreList = []
-	print "traveling through the graph"
 	for rindex in leafList:
 		if visitedDict.has_key(rindex):
 			pass
 		else:
-			print ">rindex", rindex
-#			path = edgeMatrix.visitLink(rindex, visitedDict.keys()) # orig
-			path, visitedDict = edgeMatrix.sz_visitLink(rindex, visitedDict) #added
-#			path, ignoreList = edgeMatrix.sz_visitLink(rindex, visitedDict.keys()) #added
+			moduleDEBUGLogger.debug(">graph walk start from node: %s" %(rindex))
+			path, visitedDict = edgeMatrix.walk_graph(rindex, visitedDict) #added
 			if len(path) > 1:
-#				visitedDict = dict(visitedDict, **{x: "" for x in ignoreList})
-#				for vertex in path:
-#					visitedDict[vertex] = ""
-				print "path", path, "visited nodes", visitedDict.keys()
+				moduleDEBUGLogger.debug("return path: %s" %(",".join(map(str, path))))
 				pathList.append(path)
-	print "number of visitedVertex: %d" %(len(visitedDict))
-	print "number of paths: %d" %(len(pathList))
+	moduleDEBUGLogger.debug("number of paths: %d" %(len(pathList)))
 	return pathList, visitedDict
 
 def check_orientation_conflicts(vertexA, vertexB, edgeSenseDict):
@@ -136,56 +131,53 @@ def check_orientation_conflicts(vertexA, vertexB, edgeSenseDict):
 		return False
 
 def getPath(nContig, joinPairsFile, seqNames, minSupport):
+	moduleProgressLogger.info("Initializing edge-weighted graph")
 	edgeMatrix = EdgeMatrix(nContig)
 
-	print len(edgeMatrix.edgeArray)
+	moduleDEBUGLogger.debug("Dimension of edge matrix: %d x %d" %(nContig, nContig))
 
-	print "processing joining reads pairs"
-	verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = process_join_pairs_file(joinPairsFile, edgeMatrix, seqNames)
+	verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = build_graph(joinPairsFile, edgeMatrix, seqNames)
 
+	moduleProgressLogger.info("Simplifying graph")
+	moduleDEBUGLogger.debug("Simplifying graph")
 	for vertexA, vertices in vertexEdges.items():
-		print ">vertexA", vertexA, "vertices", vertices
+		moduleDEBUGLogger.debug(">vertexA %s - connecting to %s" %(vertexA, ",".join(map(str, vertices))))
 		toDelete = []
 		for i in range(len(vertices)):
 			vertexB = vertices[i]
-			print "vertexB", vertexB, "weight", edgeMatrix.edgeArray[vertexA][vertexB]
+			moduleDEBUGLogger.debug("\tvertexB %s - weight %d" %(vertexB, edgeMatrix.edgeArray[vertexA][vertexB]))
 			if edgeMatrix.edgeArray[vertexA][vertexB] < minSupport:
 				toDelete.append(vertexB)
 				edgeMatrix.edgeArray[vertexA][vertexB] = 0
 				edgeMatrix.edgeArray[vertexB][vertexA] = 0
-				print "delete because of weight"
+				moduleDEBUGLogger.debug("\tDelete because of weight")
 				continue
 #			orientationConflict = check_orientation_conflicts(vertexA, vertexB, edgeSenseDict)
-#			if orientationConflict:
-#				toDelete.append(vertexB)
-#				edgeMatrix.edgeArray[vertexA][vertexB] = 0
-#				edgeMatrix.edgeArray[vertexB][vertexA] = 0
-#				print "delete because of orientation conflict", seqNames[vertexA], seqNames[vertexB]
-		print "toDelete", toDelete
-		print "vertexA list", vertexEdges[vertexA]
+		if len(toDelete) > 0:
+			moduleDEBUGLogger.debug("\tvertexA %s - delete connections %s" %(vertexA, ",".join(map(str, toDelete))))
 		for vertex in toDelete:
-			print "vertex list", vertexEdges[vertex]
 			vertexEdges[vertexA].remove(vertex)
 			vertexEdges[vertex].remove(vertexA)
 
 	willVisitList = verticesWithEdges.keys()
 	willVisitList.sort()
-	print "visiting %d vertices" % len(willVisitList)
+	moduleProgressLogger.debug("%d vertices in the graph" %(len(willVisitList)))
+	moduleDEBUGLogger.debug("%d vertices in the graph" %(len(willVisitList)))
 
-	print "cleaning up graph of edges with weight 1"
 	verticesToDelete = []
 
-	print "visiting %d vertices" % len(willVisitList)
-
+	moduleProgressLogger.info("Preparing nodes to start graph walk")
+	moduleDEBUGLogger.debug("Preparing nodes to start graph walk")
 	zeroedEdge = 0
 	leafList = []
 	for rindex in willVisitList:
 		vertices = vertexEdges[rindex]
-		print ">rindex", rindex, "vertices", vertices
 		rEdges = []
 		for avertex in vertices:
 			if avertex in willVisitList:
 				rEdges.append((edgeMatrix.edgeArray[rindex][avertex], avertex))
+
+		moduleDEBUGLogger.debug("vertexA %s - Edges %s" %(rindex, rEdges))
 
 		if len(rEdges) >= 2:
 			rEdges.sort(reverse=True)
@@ -196,21 +188,23 @@ def getPath(nContig, joinPairsFile, seqNames, minSupport):
 			leafList.append(rindex)							#added in RNAPATH*
 		elif len(rEdges) == 1:
 			leafList.append(rindex)
-	print "length leaf", len(leafList)
 
-	print "zeroed out %d lower-weight edges at vertices with degree > 2" % zeroedEdge
-	pathList, visitedDict = traverseGraph(leafList, edgeMatrix)
+	moduleProgressLogger.info("Start graph walk")
+	moduleDEBUGLogger.debug("Start graph walk")
+	pathList, visitedDict = scaffolding(leafList, edgeMatrix)
 
 	return pathList, edgeSenseDict, visitedDict
 
-def process_join_pairs_file(joinPairsFilename, edgeMatrix, seqNames):
+def build_graph(joinPairsFile, edgeMatrix, seqNames):
+	moduleProgressLogger.info("Building graph using joining reads pairs")
+
 	contigToRowLookup = {}
 	verticesWithEdges = {}
 	vertexEdges = {}
 	notSoloDict = {}
 	edgeSenseDict = {}
 
-	with open(joinPairsFilename, 'r') as fJOINPAIRS:
+	with open(joinPairsFile, 'r') as fJOINPAIRS:
 		for line in fJOINPAIRS:
 			if not line.startswith('#'):
 				tmp_line = line.strip().split()
@@ -246,21 +240,28 @@ def process_join_pairs_file(joinPairsFilename, edgeMatrix, seqNames):
 				if edgeMatrix.edgeArray[contig1][contig2] > 1:
 					notSoloDict[contig1] = ""
 					notSoloDict[contig2] = ""
-				if ((contig1 == 0 and contig2 == 1) or\
-				   (contig1 == 1 and contig2 == 0)):
-					print "haha cao"
-					print vertexEdges[contig1]
-					print vertexEdges[contig2]
 
 	return verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict
 
-def agouti_scaffolding(seqNames, joinPairsFile, minSupport):
-	sys.stderr.write("Scaffolding ... \n")
+def set_module_name(name):
+	global moduleName
+	moduleName = name
+
+def rnapathSTAR(seqNames, joinPairsFile, moduleOutDir, prefix, minSupport):
+	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.rnapathSTAR.progressMeter" %(prefix))
+	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.rnapathSTAR.debug" %(prefix))
+	moduleOutputFile = os.path.join(moduleOutDir, "%s.rnapathSTAR.txt" %(prefix))
+	global moduleProgressLogger
+	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleProgressLogFile)
+	global moduleDEBUGLogger
+	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
+	moduleProgressLogger.info("[BEGIN] Scaffolding")
 
 	nContig = len(seqNames)
 	pathList, edgeSenseDict, visitedDict = getPath(nContig, joinPairsFile, seqNames, minSupport)
 
-	print pathList
-	print "found %d paths" % len(pathList)
+#	moduleDEBUGLogger.debug(pathList)
+	moduleProgressLogger.info("%d paths scaffolded" %(len(pathList)))
+	moduleProgressLogger.info("Succeeded")
 
 	return pathList, edgeSenseDict, visitedDict
