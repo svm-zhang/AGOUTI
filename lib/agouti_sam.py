@@ -107,14 +107,14 @@ def try_continue_last_run(moduleProgressLogFile, moduleOutputFile):
 		else:
 			moduleProgressLogger.info("Last run was NOT successful")
 			return None, moduleProgressLogger
-	return None, moduleProgressLogger
+	return None, None
 
 def get_joining_pairs(bamStream, moduleOutDir, prefix,
 					  logLevel, overwrite, minMapQ=5,
 					  minFracOvl=0.0, maxFracMismatch=1):
 	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.progressMeter" %(prefix))
 	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.debug" %(prefix))
-	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.txt" %(prefix))
+	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.unfiltered.txt" %(prefix))
 	global moduleProgressLogObj
 	moduleProgressLogObj = agLOG.AGOUTI_LOG(moduleName)
 	moduleProgressLogger = None
@@ -122,8 +122,7 @@ def get_joining_pairs(bamStream, moduleOutDir, prefix,
 		dContigPairs, moduleProgressLogger = try_continue_last_run(moduleProgressLogFile, moduleOutputFile)
 		if dContigPairs is not None:
 			return dContigPairs
-	else:
-		moduleProgressLogger = moduleProgressLogObj.create_logger(moduleProgressLogFile)
+	moduleProgressLogger = moduleProgressLogObj.create_logger(moduleProgressLogFile)
 
 	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
 
