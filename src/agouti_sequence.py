@@ -20,7 +20,7 @@ def get_contigs(contigFasta, moduleOutDir, prefix, logLevel):
 	moduleProgressLogger.info("[BEGIN] Reading the initial assembly")
 	seq = ""
 	contigs = []
-#	origSize = []
+	seqLens = []
 	contigDict = {}
 	contigIndex = 0
 	with open(contigFasta, 'r') as fCONTIG:
@@ -29,7 +29,7 @@ def get_contigs(contigFasta, moduleOutDir, prefix, logLevel):
 				if seq != "":
 					contigDict[contigIndex] = seq
 					moduleProgressLogger.debug("%s\t%d" %(contig, len(seq)))
-#					origSize.append(len(seq))
+					seqLens.append(len(seq))
 					contigIndex += 1
 					seq = ""
 				contig = line.strip()[1:]
@@ -39,9 +39,12 @@ def get_contigs(contigFasta, moduleOutDir, prefix, logLevel):
 	# read one last sequence
 	moduleProgressLogger.debug("%s\t%d" %(contig, len(seq)))
 	contigDict[contigIndex] = seq
-#	origSize.append(len(seq))
+	seqLens.append(len(seq))
+
+	n50 = get_assembly_NXX(seqLens)
 
 	moduleProgressLogger.info("%d sequences parsed" %(len(contigDict)))
+	moduleProgressLogger.info("The give assembly N50: %d" %(n50))
 	moduleProgressLogger.info("[DONE]")
 
 	return contigs, contigDict
@@ -50,3 +53,18 @@ def get_scaffolds(scaffoldFasta):
 	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName, logLevel, None).create_logger()
 	moduleProgressLogger.info("Processing scaffolds ... ")
 	moduleProgressLogger.info("TO BE CONTINUED\n")
+
+def get_assembly_NXX(seqLens, nXX=50):
+	seqLenSum = sum(seqLens)
+
+	nXXThreshold = seqLenSum * (nXX/100.0)
+
+	seqLens.sort()
+	cumuSeqLen = 0
+	nXXLen = 0
+	for i in range(len(seqLens)-1, -1, -1):
+		cumuSeqLen += seqLens[i]
+		if cumuSeqLen > nXXThreshold:
+			nXXLen = seqLens[i]
+			break
+	return nXXLen
