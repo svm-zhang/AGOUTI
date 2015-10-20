@@ -93,6 +93,7 @@ def find_gene_overlap(interval, geneModel_5, geneModel_3):
 			elif ovl_5 == 1 and ovl_3 == -1:
 				return -2, -2
 			elif ovl_5 == 0 and ovl_3 == 0:
+				#!!! should merge two genes
 				return 0, 0
 
 def mapping_to_geneModel(geneModelsA, geneModelsB,
@@ -211,7 +212,8 @@ def enforce_filters(dContigPairs, dGFFs,
 	dCtgPair2GenePair = collections.defaultdict()
 	dMappedPos = collections.defaultdict()
 	daddedModels = collections.defaultdict(list)
-	nFiltered = 0
+	nFail4Combination = 0
+	nFailGeneModel = 0
 	fOUT = open(moduleOutputFile, 'w')
 	for ctgPair, pairInfo in dContigPairs.items():
 		if len(pairInfo) < minSupport:
@@ -232,7 +234,6 @@ def enforce_filters(dContigPairs, dGFFs,
 			mapIntervalsB += [(startB, stopB)]
 			pairs += [(startA, stopA, startB, stopB)]
 			senses += [(senseA, senseB)]
-		print "enforce_filters all senses", senses
 		genePair = get_genePair_for_contigPair(dGFFs, ctgA, ctgB, mapIntervalsA, mapIntervalsB, senses)
 		geneModelsA = dGFFs[ctgA]
 		geneModelsB = dGFFs[ctgB]
@@ -336,7 +337,7 @@ def enforce_filters(dContigPairs, dGFFs,
 							if overlapA == 0 and overlapB == 0:
 								fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 			else:
-				nFiltered += 1
+				nFail4Combination += 1
 #			if len(sensesCounter) == 1:
 #				sense = sensesCounter.keys()[0]
 #			else:
@@ -345,8 +346,12 @@ def enforce_filters(dContigPairs, dGFFs,
 #				print "senses", senses
 #				ratio = float(senses[0][1])/(senses[0][1]+senses[1][1])
 #				print "ratio", ratio
+		else:
+			nFailGeneModel += 1
+			print "genePair is None"
 	fOUT.close()
-	moduleProgressLogger.info("%d contig pairs filtered" %(nFiltered))
+	moduleProgressLogger.info("%d contig pairs filtered for spanning across >1 gene models" %(nFail4Combination))
+	moduleProgressLogger.info("%d contig pairs filtered for not being one of the four combinations" %(nFail4Combination))
 	moduleProgressLogger.info("Succeeded")
 	return dCtgPair2GenePair, moduleOutputFile
 
