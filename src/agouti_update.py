@@ -3,6 +3,7 @@ import sys
 import collections
 
 from lib import agouti_log as agLOG
+from src import agouti_sequence as agSeq
 from lib import agouti_gff as agGFF
 
 def set_module_name(name):
@@ -32,6 +33,7 @@ def agouti_update(pathList, contigDict, nameList,
 	dMergedGene2Genes = collections.defaultdict(list)
 	numMergedGene = 0
 	nCtgScaffolded = 0
+	seqLens = []
 	for i in range(len(pathList)):
 		path = pathList[i]
 		if len(path) >= 2:
@@ -255,6 +257,7 @@ def agouti_update(pathList, contigDict, nameList,
 			scafPath.append(curCtg)
 			dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
 			fOUTFASTA.write(">%s|%dbp|%s\n%s\n" % (scafName, len(sequence), ",".join(scafPath), sequence))
+			seqLens.append(len(sequence))
 			fSCAFFPATH.write("%s\n" %(",".join(scafPath)))
 			nCtgScaffolded += len(scafPath)
 			print
@@ -280,7 +283,9 @@ def agouti_update(pathList, contigDict, nameList,
 			continue
 		numLeft += 1
 		fOUTFASTA.write(">%s\n%s\n" % (nameList[vertex], contigDict[vertex]))
+		seqLens.append(len(contigDict[vertex]))
 	fOUTFASTA.close()
+	n50 = agSeq.get_assembly_NXX(seqLens)
 
 	# output in GFF format
 	moduleProgressLogger.info("Outputting Gene Models in GFF3")
@@ -294,6 +299,7 @@ def agouti_update(pathList, contigDict, nameList,
 	moduleProgressLogger.info("number of scaffolds: %d" %(scafID))
 	moduleProgressLogger.info("number of contigs found no links: %d" %(numLeft))
 	moduleProgressLogger.info("number of contigs in the final assembly: %d" %(numLeft+scafID))
+	moduleProgressLogger.info("Final assembly N50: %d" %(n50))
 	moduleProgressLogger.info("Final number of genes: %d" %(numGenes))
 	moduleProgressLogger.info("Succeeded")
 
