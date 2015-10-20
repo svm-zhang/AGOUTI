@@ -21,7 +21,7 @@ class AGOUTI_GFF(object):
 		self.geneID = geneID
 		self.geneStart = start
 		self.geneStop = stop
-		self.fake = 1
+		self.fake = fake
 
 	def printGene(self):
 		print self.geneID, self.ctgID, self.geneStart, self.geneStop
