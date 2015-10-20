@@ -309,17 +309,22 @@ def gff_outputter(dGeneModels, outGFF):
 	fOUTGFF.write("# This output was generated with AGOUTI (version 0.1)\n")
 	numGenes = 0
 	for k, v in dGeneModels.iteritems():
-		numGenes += len(v)
+#		numGenes += len(v)
 		for i in range(len(v)):
 			geneModel = v[i]
-			fOUTGFF.write("# start gene %s\n" %(geneModel.geneID))
-			fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s\n" %(k, geneModel.program, geneModel.geneStart, geneModel.geneStop, geneModel.strand, geneModel.geneID))
-			for j in range(0, len(geneModel.lcds), 2):
-				cdsStart = geneModel.lcds[j]
-				cdsStop = geneModel.lcds[j+1]
-				fOUTGFF.write("%s\t%s\tExon\t%d\t%d\t.\t%s\t.\tID=%s.exon\n" %(k, geneModel.program, cdsStart, cdsStop, geneModel.strand, geneModel.geneID))
-			fOUTGFF.write("# end gene %s\n" %(geneModel.geneID))
-			fOUTGFF.write("###\n")
+			if geneModel.fake == 1:
+				continue
+#				fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s;FAKE=1\n" %(k, geneModel.program, geneModel.geneStart, geneModel.geneStop, geneModel.strand, geneModel.geneID))
+			else:
+				numGenes += 1
+				fOUTGFF.write("# start gene %s\n" %(geneModel.geneID))
+				fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s\n" %(k, geneModel.program, geneModel.geneStart, geneModel.geneStop, geneModel.strand, geneModel.geneID))
+				for j in range(0, len(geneModel.lcds), 2):
+					cdsStart = geneModel.lcds[j]
+					cdsStop = geneModel.lcds[j+1]
+					fOUTGFF.write("%s\t%s\tExon\t%d\t%d\t.\t%s\t.\tID=%s.exon\n" %(k, geneModel.program, cdsStart, cdsStop, geneModel.strand, geneModel.geneID))
+				fOUTGFF.write("# end gene %s\n" %(geneModel.geneID))
+				fOUTGFF.write("###\n")
 	fOUTGFF.close()
 	return numGenes
 
