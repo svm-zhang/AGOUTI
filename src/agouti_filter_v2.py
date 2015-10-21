@@ -350,7 +350,7 @@ def enforce_filters(dContigPairs, dGFFs,
 			nFailGeneModel += 1
 			print "genePair is None"
 	fOUT.close()
-	moduleProgressLogger.info("%d contig pairs filtered for spanning across >1 gene models" %(nFail4Combination))
+	moduleProgressLogger.info("%d contig pairs filtered for spanning across >1 gene models" %(nFailGeneModel))
 	moduleProgressLogger.info("%d contig pairs filtered for not being one of the four combinations" %(nFail4Combination))
 	moduleProgressLogger.info("Succeeded")
 	return dCtgPair2GenePair, moduleOutputFile
