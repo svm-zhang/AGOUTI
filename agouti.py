@@ -154,13 +154,13 @@ def main():
 	moduleOutDir = os.path.join(outDir, "rnapathSTAR")
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
-	pathList, edgeSenseDict, visitedDict = agSCAFF.rnapathSTAR(seqNames, joinPairsFile, moduleOutDir, prefix, args.minSupport)
+	scafPaths, edgeSenseDict, visitedDict = agSCAFF.rnapathSTAR(seqNames, joinPairsFile, moduleOutDir, prefix, args.minSupport)
 
 	agUPDATE.set_module_name("AGOUTI_UPDATE")
 	moduleOutDir = os.path.join(outDir, "agouti_update")
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
-	agUPDATE.agouti_update(pathList, dSeq, seqNames,
+	agUPDATE.agouti_update(scafPaths, dSeq, seqNames,
 						   edgeSenseDict, visitedDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
 						   moduleOutDir, args.numNs)
