@@ -25,15 +25,17 @@ def agouti_update(pathList, contigDict, nameList,
 	scafID = 0
 
 	outScaffPath = os.path.join(moduleOutDir, "%s.agouti.scaffolding_paths.txt" %(prefix))
-	fSCAFFPATH = open(outScaffPath, "w")
+	fSCAFFPATH = open(outScaffPath, 'w')
 	outFasta = os.path.join(moduleOutDir, "%s.agouti.fasta" %(prefix))
-	fOUTFASTA = open(outFasta, "w")
+	fOUTFASTA = open(outFasta, 'w')
 	dUpdateGFFs = collections.defaultdict(list)
 	dMergedGene2Ctgs = collections.defaultdict(list)
 	dMergedGene2Genes = collections.defaultdict(list)
 	numMergedGene = 0
 	nCtgScaffolded = 0
 	seqLens = []
+	scafPaths = []
+	mergedGenes = []
 	for i in range(len(pathList)):
 		path = pathList[i]
 		if len(path) >= 2:
@@ -57,6 +59,7 @@ def agouti_update(pathList, contigDict, nameList,
 			offset = 0
 			orientation = ""
 			updatedGeneIDs = []
+			mergedGenesPerPath = []
 			excludeGeneIDs = []
 			stopFlag = 0
 			for nextVertex in path[1:]:
@@ -245,23 +248,41 @@ def agouti_update(pathList, contigDict, nameList,
 							break
 					currentSense = "-"
 				scafPath.append(curCtg)
+				mergedGenesPerPath.append(mergedGene.geneID)
 				offset = gapStop
 				preGeneID = nextGene.geneID
 				preCtg = curCtg
 				currentVertex = nextVertex
 				curCtg = nameList[currentVertex]
 
-				outstring = ">>>>(%d, %d): FF %d RR %d RF %d FR %d : %s \t%s" % (currentVertex, nextVertex, FF, RR, RF, FR, orientation, str(assemblyList))
-
 			excludeGeneIDs = [preGeneID]
 			scafPath.append(curCtg)
+			scafPaths.append(scafPath)
+			mergedGenes.append(mergedGenesPerPath)
 			dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
+			print "updatedGeneIDs", updatedGeneIDs
+			print "mergedGenesPerPath", mergedGenesPerPath
 			fOUTFASTA.write(">%s|%dbp|%s\n%s\n" % (scafName, len(sequence), ",".join(scafPath), sequence))
 			seqLens.append(len(sequence))
 			fSCAFFPATH.write("%s\n" %(",".join(scafPath)))
 			nCtgScaffolded += len(scafPath)
 			print
 	fSCAFFPATH.close()
+
+	outDotFile = os.path.join(moduleOutDir, "%s.agouti.scaffolding_paths.dot" %(prefix))
+	with open(outDotFile, 'w') as fDOT:
+		fDOT.write("graph {\n")
+		for i in range(len(scafPaths)):
+			scafPath = scafPaths[i]
+			curVertex = scafPath[0]
+			mergedGenesPerPath = mergedGenes[i]
+			for j in range(1, len(scafPath)):
+				nextVertex = scafPath[j]
+				fDOT.write("\t%s -- %s[label=%s];\n" %(curVertex,
+													   nextVertex,
+													   mergedGenesPerPath[j-1]))
+				curVertex = nextVertex
+		fDOT.write("}\n")
 
 	outScafGene = os.path.join(moduleOutDir, "%s.agouti.gene.contig_path" %(prefix))
 	with open(outScafGene, 'w') as fOUTSCAFGENE:
