@@ -8,33 +8,10 @@ from numpy import zeros, int16
 from lib import agouti_log as agLOG
 from lib import agouti_gff as agGFF
 
-class EdgeMatrix:
-	"""
-		Describes a sparse matrix to hold edge data.
-	"""
+class Graph:
 	def __init__(self, dimension):
 		self.dimension = dimension
 		self.edgeArray = zeros((self.dimension, self.dimension), int16)
-
-	def visitLink(self, fromVertex, ignoreList=[]):
-		returnPath = [fromVertex]
-		toVertex = []
-		for toindex in xrange(self.dimension):
-			if self.edgeArray[fromVertex][toindex] > 1 and toindex not in ignoreList:
-				toVertex.append(toindex)
-
-		for vertex in toVertex:
-			if sum(self.edgeArray[vertex]) == self.edgeArray[fromVertex][vertex]:
-				self.edgeArray[fromVertex][vertex] = 0
-				self.edgeArray[vertex][fromVertex] = 0
-				return returnPath + [vertex]
-			else:
-				self.edgeArray[fromVertex][vertex] = 0
-				try:
-					return returnPath + self.visitLink(vertex, ignoreList)
-				except IOError:
-					return returnPath + [vertex]
-		return []
 
 	def walk_graph(self, fromVertex, visitedDict={}):
 		returnPath = [fromVertex]
@@ -67,47 +44,26 @@ class EdgeMatrix:
 					return returnPath, visitedDict
 		return returnPath, visitedDict
 
-def sz_scaffolding(leafList, edgeMatrix):
-	pathList = []
+def scaffolding(walkStarts, graph):
+	scafPaths = []
 	visitedDict = {}
-	leafList.sort()
+	walkStarts.sort()
 	ignoreList = []
-	print "traveling through the graph"
-	for rindex in leafList:
-		if visitedDict.has_key(rindex):
-			pass
-		else:
-			print ">rindex", rindex
-#			path = edgeMatrix.visitLink(rindex, visitedDict.keys()) # orig
-			path, ignoreList = edgeMatrix.walk_graph(rindex, visitedDict.keys()) #added
-			print "path", path, "ignore", ignoreList
-			if len(path) > 1:
-				visitedDict = dict(visitedDict, **{x: "" for x in ignoreList})
-#				for vertex in path:
-#					visitedDict[vertex] = ""
-				print "path", path, "visited nodes", visitedDict.keys()
-				pathList.append(path)
-	print "number of visitedVertex: %d" %(len(visitedDict))
-	print "number of paths: %d" %(len(pathList))
-	sys.exit()
-	return pathList, visitedDict
-
-def scaffolding(leafList, edgeMatrix):
-	pathList = []
-	visitedDict = {}
-	leafList.sort()
-	ignoreList = []
-	for rindex in leafList:
+	for rindex in walkStarts:
 		if visitedDict.has_key(rindex):
 			pass
 		else:
 			moduleDEBUGLogger.debug(">graph walk start from node: %s" %(rindex))
-			path, visitedDict = edgeMatrix.walk_graph(rindex, visitedDict) #added
+			path, visitedDict = graph.walk_graph(rindex, visitedDict) #added
 			if len(path) > 1:
 				moduleDEBUGLogger.debug("return path: %s" %(",".join(map(str, path))))
-				pathList.append(path)
-	moduleDEBUGLogger.debug("number of paths: %d" %(len(pathList)))
-	return pathList, visitedDict
+				moduleDEBUGLogger.debug("pathLen=%d" %(len(path)))
+				scafPaths.append(path)
+	moduleDEBUGLogger.debug("number of paths: %d" %(len(scafPaths)))
+	for k in visitedDict.iterkeys():
+		moduleDEBUGLogger.debug("%s" %(k))
+	moduleProgressLogger.info("number of visited nodes: %d" %(len(visitedDict)))
+	return scafPaths, visitedDict
 
 def check_orientation_conflicts(vertexA, vertexB, edgeSenseDict):
 	fr, ff, rr, rf = 0, 0, 0, 0
@@ -130,73 +86,73 @@ def check_orientation_conflicts(vertexA, vertexB, edgeSenseDict):
 	else:
 		return False
 
-def getPath(nContig, joinPairsFile, seqNames, minSupport):
-	moduleProgressLogger.info("Initializing edge-weighted graph")
-	edgeMatrix = EdgeMatrix(nContig)
-
-	moduleDEBUGLogger.debug("Dimension of edge matrix: %d x %d" %(nContig, nContig))
-
-	verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = build_graph(joinPairsFile, edgeMatrix, seqNames)
-
+def reduce_complexity(willVisitList, vertexEdges, graph,
+					  moduleOutDir, prefix,
+					  seqNames, minSupport):
 	moduleProgressLogger.info("Simplifying graph")
 	moduleDEBUGLogger.debug("Simplifying graph")
-	for vertexA, vertices in vertexEdges.items():
-		moduleDEBUGLogger.debug(">vertexA %s - connecting to %s" %(vertexA, ",".join(map(str, vertices))))
-		toDelete = []
-		for i in range(len(vertices)):
-			vertexB = vertices[i]
-			moduleDEBUGLogger.debug("\tvertexB %s - weight %d" %(vertexB, edgeMatrix.edgeArray[vertexA][vertexB]))
-			if edgeMatrix.edgeArray[vertexA][vertexB] < minSupport:
-				toDelete.append(vertexB)
-				edgeMatrix.edgeArray[vertexA][vertexB] = 0
-				edgeMatrix.edgeArray[vertexB][vertexA] = 0
-				moduleDEBUGLogger.debug("\tDelete because of weight")
-				continue
-#			orientationConflict = check_orientation_conflicts(vertexA, vertexB, edgeSenseDict)
-		if len(toDelete) > 0:
-			moduleDEBUGLogger.debug("\tvertexA %s - delete connections %s" %(vertexA, ",".join(map(str, toDelete))))
-		for vertex in toDelete:
-			vertexEdges[vertexA].remove(vertex)
-			vertexEdges[vertex].remove(vertexA)
-
-	willVisitList = verticesWithEdges.keys()
-	willVisitList.sort()
-	moduleProgressLogger.debug("%d vertices in the graph" %(len(willVisitList)))
-	moduleDEBUGLogger.debug("%d vertices in the graph" %(len(willVisitList)))
-
-	verticesToDelete = []
-
-	moduleProgressLogger.info("Preparing nodes to start graph walk")
-	moduleDEBUGLogger.debug("Preparing nodes to start graph walk")
+	outGraphFile = os.path.join(moduleOutDir, "%s.rnapathSTAR.graph.gv" %(prefix))
+	dGRAPH = {}
 	zeroedEdge = 0
-	leafList = []
-	for rindex in willVisitList:
-		vertices = vertexEdges[rindex]
-		rEdges = []
-		for avertex in vertices:
-			if avertex in willVisitList:
-				rEdges.append((edgeMatrix.edgeArray[rindex][avertex], avertex))
+	walkStarts = []
+	with open(outGraphFile, 'w') as fGRAPH:
+		fGRAPH.write("graph {\n")
+		for vertexA in willVisitList:
+			vertices = vertexEdges[vertexA]
+			rEdges = []
+			for avertex in vertices:
+				if avertex in willVisitList:
+					rEdges.append((graph.edgeArray[vertexA][avertex], avertex))
+			moduleDEBUGLogger.debug("vertexA %s - Edges %s" %(seqNames[vertexA], rEdges))
 
-		moduleDEBUGLogger.debug("vertexA %s - Edges %s" %(rindex, rEdges))
+			verticesToDelete = []
+			for i in range(len(rEdges)):
+				weight, vertexB = rEdges[i]
+				moduleDEBUGLogger.debug("\tvertexB %s - weight %d" %(seqNames[vertexB], weight))
+				if i >= 3:
+					graph.edgeArray[vertexA][vertexB] = 0
+					graph.edgeArray[vertexB][vertexA] = 0
+					moduleDEBUGLogger.debug("\t[reduce complexity] - remove edge %s - %s"
+											%(seqNames[vertexA], seqNames[vertexB]))
+					if (vertexA, vertexB) not in dGRAPH and \
+					   (vertexB, vertexA) not in dGRAPH:
+						dGRAPH[vertexA, vertexB] = 1
+						fGRAPH.write("\t%s -- %s[label=%s, color=purple, penwidth=1];\n"
+									 %(seqNames[vertexA], seqNames[vertexB],
+									 graph.edgeArray[vertexA][vertexB]))
+				else:
+					if weight < minSupport:
+						if (vertexA, vertexB) not in dGRAPH and \
+						   (vertexB, vertexA) not in dGRAPH:
+							dGRAPH[vertexA, vertexB] = 1
+							fGRAPH.write("\t%s -- %s[label=%s, color=red, penwidth=1];\n"
+										 %(seqNames[vertexA], seqNames[vertexB],
+										 graph.edgeArray[vertexA][vertexB]))
+						verticesToDelete.append(vertexB)
+						graph.edgeArray[vertexA][vertexB] = 0
+						graph.edgeArray[vertexB][vertexA] = 0
+						moduleDEBUGLogger.debug("\t[insufficent support] - remove edge %s - %s"
+												%(seqNames[vertexA], seqNames[vertexB]))
+					else:
+						if (vertexA, vertexB) not in dGRAPH and \
+						   (vertexB, vertexA) not in dGRAPH:
+							dGRAPH[vertexA, vertexB] = 1
+							fGRAPH.write("\t%s -- %s[label=%s, color=blue, penwidth=2];\n"
+										 %(seqNames[vertexA], seqNames[vertexB],
+										 graph.edgeArray[vertexA][vertexB]))
+			if len(rEdges)-len(verticesToDelete) > 0:
+				walkStarts.append(vertexA)							#added in RNAPATH*
+			if len(verticesToDelete) >= 1:
+				for vertex in verticesToDelete:
+					vertexEdges[vertexA].remove(vertex)
+					vertexEdges[vertex].remove(vertexA)
+		fGRAPH.write("}")
+	moduleProgressLogger.info("Number of starting nodes: %d" %(len(walkStarts)))
 
-		if len(rEdges) >= 2:
-			rEdges.sort(reverse=True)
-			zeroedEdge += len(rEdges[3:])
-			for (weight, cindex) in rEdges[3:]:
-				edgeMatrix.edgeArray[rindex][cindex] = 0
-				edgeMatrix.edgeArray[cindex][rindex] = 0
-			leafList.append(rindex)							#added in RNAPATH*
-		elif len(rEdges) == 1:
-			leafList.append(rindex)
+	return walkStarts, graph
 
-	moduleProgressLogger.info("Start graph walk")
-	moduleDEBUGLogger.debug("Start graph walk")
-	pathList, visitedDict = scaffolding(leafList, edgeMatrix)
-
-	return pathList, edgeSenseDict, visitedDict
-
-def build_graph(joinPairsFile, edgeMatrix, seqNames):
-	moduleProgressLogger.info("Building graph using joining reads pairs")
+def build_graph(joinPairsFile, graph, seqNames):
+	moduleProgressLogger.info("Building graph from joining reads pairs")
 
 	contigToRowLookup = {}
 	verticesWithEdges = {}
@@ -214,8 +170,8 @@ def build_graph(joinPairsFile, edgeMatrix, seqNames):
 				contig2 = seqNames.index(tmp_line[4])
 				sense2 = tmp_line[6]
 
-				edgeMatrix.edgeArray[contig1][contig2] += 1
-				edgeMatrix.edgeArray[contig2][contig1] += 1
+				graph.edgeArray[contig1][contig2] += 1
+				graph.edgeArray[contig2][contig1] += 1
 				verticesWithEdges[contig1] = ""
 				verticesWithEdges[contig2] = ""
 				if (contig1, contig2) in edgeSenseDict:
@@ -237,7 +193,7 @@ def build_graph(joinPairsFile, edgeMatrix, seqNames):
 				else:
 					vertexEdges[contig2] = [contig1]
 
-				if edgeMatrix.edgeArray[contig1][contig2] > 1:
+				if graph.edgeArray[contig1][contig2] > 1:
 					notSoloDict[contig1] = ""
 					notSoloDict[contig2] = ""
 
@@ -258,10 +214,26 @@ def rnapathSTAR(seqNames, joinPairsFile, moduleOutDir, prefix, minSupport):
 	moduleProgressLogger.info("[BEGIN] Scaffolding")
 
 	nContig = len(seqNames)
-	pathList, edgeSenseDict, visitedDict = getPath(nContig, joinPairsFile, seqNames, minSupport)
+	moduleProgressLogger.info("Initializing edge-weighted graph")
+	graph = Graph(nContig)
+	moduleDEBUGLogger.debug("Dimension of edge matrix: %d x %d" %(nContig, nContig))
 
-#	moduleDEBUGLogger.debug(pathList)
-	moduleProgressLogger.info("%d paths scaffolded" %(len(pathList)))
+	verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = build_graph(joinPairsFile, graph, seqNames)
+
+	willVisitList = verticesWithEdges.keys()
+	willVisitList.sort()
+	moduleProgressLogger.debug("%d vertices in the graph" %(len(willVisitList)))
+	moduleDEBUGLogger.debug("%d vertices in the graph" %(len(willVisitList)))
+
+	walkStarts, graph = reduce_complexity(willVisitList, vertexEdges, graph,
+											   moduleOutDir, prefix,
+											   seqNames, minSupport)
+
+	moduleProgressLogger.info("Start graph walk")
+	moduleDEBUGLogger.debug("Start graph walk")
+	scafPaths, visitedDict = scaffolding(walkStarts, graph)
+
+	moduleProgressLogger.info("%d paths scaffolded" %(len(scafPaths)))
 	moduleProgressLogger.info("Succeeded")
 
-	return pathList, edgeSenseDict, visitedDict
+	return scafPaths, edgeSenseDict, visitedDict
