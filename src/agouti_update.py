@@ -10,18 +10,17 @@ def set_module_name(name):
 	global moduleName
 	moduleName = name
 
-def agouti_update(pathList, contigDict, nameList,
-				  edgeSenseDict, visitedDict, dGFFs,
+def agouti_update(pathList, contigDict, seqNames,
+				  edgeSenseDict, dGFFs,
 				  dCtgPair2GenePair, outDir, prefix,
 				  moduleOutDir, numNs=1000):
 	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_update.progressMeter" %(prefix))
 	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_update.debug" %(prefix))
-#	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti_update.txt" %(prefix))
 	global moduleProgressLogger
 	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleProgressLogFile)
 	global moduleDEBUGLogger
 	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
-	moduleProgressLogger.info("Updating gene models")
+	moduleProgressLogger.info("[BEGIN] Updating gene models")
 	scafID = 0
 
 	outScaffPath = os.path.join(moduleOutDir, "%s.agouti.scaffolding_paths.txt" %(prefix))
@@ -33,6 +32,7 @@ def agouti_update(pathList, contigDict, nameList,
 	dMergedGene2Genes = collections.defaultdict(list)
 	numMergedGene = 0
 	nCtgScaffolded = 0
+	scaffoldedCtgs = {}
 	seqLens = []
 	scafPaths = []
 	mergedGenes = []
@@ -47,7 +47,7 @@ def agouti_update(pathList, contigDict, nameList,
 			currentVertex = path[0]
 			sequence = contigDict[currentVertex]
 			currentSense = "+"
-			curCtg = nameList[currentVertex]
+			curCtg = seqNames[currentVertex]
 			preCtg = ""
 			scafPath = []
 			assemblyList = currentVertex
@@ -63,8 +63,7 @@ def agouti_update(pathList, contigDict, nameList,
 			excludeGeneIDs = []
 			stopFlag = 0
 			for nextVertex in path[1:]:
-				print "sequence length", len(sequence)
-				nextCtg = nameList[nextVertex]
+				nextCtg = seqNames[nextVertex]
 
 				if tmp == 0:
 					print "scaf_%d" %(scafID), path
@@ -253,7 +252,7 @@ def agouti_update(pathList, contigDict, nameList,
 				preGeneID = nextGene.geneID
 				preCtg = curCtg
 				currentVertex = nextVertex
-				curCtg = nameList[currentVertex]
+				curCtg = seqNames[currentVertex]
 
 			excludeGeneIDs = [preGeneID]
 			scafPath.append(curCtg)
@@ -266,10 +265,54 @@ def agouti_update(pathList, contigDict, nameList,
 			seqLens.append(len(sequence))
 			fSCAFFPATH.write("%s\n" %(",".join(scafPath)))
 			nCtgScaffolded += len(scafPath)
+			scaffoldedCtgs.update(dict((contig, 1) for contig in scafPath))
 			print
 	fSCAFFPATH.close()
 
 	outDotFile = os.path.join(moduleOutDir, "%s.agouti.scaffolding_paths.dot" %(prefix))
+	output_graph(scafPaths, mergedGenes, outDotFile)
+
+	outScafGene = os.path.join(moduleOutDir, "%s.agouti.gene.contig_path" %(prefix))
+	with open(outScafGene, 'w') as fOUTSCAFGENE:
+		for k, v in sorted(dMergedGene2Ctgs.iteritems()):
+			fOUTSCAFGENE.write(">%s\n%s\n" %(k, ','.join(v)))
+
+	outGenePath = os.path.join(moduleOutDir, "%s.agouti.gene.gene_path" %(prefix))
+	with open(outGenePath, 'w') as fOUTGENEPATH:
+		for k, v in sorted(dMergedGene2Genes.iteritems()):
+			fOUTGENEPATH.write(">%s\n%s\n" %(k, ','.join(v)))
+
+	# other contigs need to be output
+	moduleProgressLogger.info("Finalizing sequences")
+	numLeft = 0
+	for vertex in contigDict:
+		if seqNames[vertex] in scaffoldedCtgs:
+			if seqNames[vertex] in dGFFs:
+				del dGFFs[seqNames[vertex]]
+			continue
+		numLeft += 1
+		fOUTFASTA.write(">%s\n%s\n" % (seqNames[vertex], contigDict[vertex]))
+		seqLens.append(len(contigDict[vertex]))
+	fOUTFASTA.close()
+	n50 = agSeq.get_assembly_NXX(seqLens)
+
+	# output in GFF format
+	outGFF = os.path.join(moduleOutDir, "%s.agouti.gff" %(prefix))
+	dFinalGFFs = dict(dGFFs, **dUpdateGFFs)
+	numGenes = output_gff(dFinalGFFs, dMergedGene2Ctgs, dMergedGene2Genes, outGFF)
+
+	moduleProgressLogger.info("####Summary####")
+
+	moduleProgressLogger.info("number of contigs scaffoled: %d" %(nCtgScaffolded))
+	moduleProgressLogger.info("number of scaffolds: %d" %(scafID))
+	moduleProgressLogger.info("number of contigs found no links: %d" %(numLeft))
+	moduleProgressLogger.info("number of contigs in the final assembly: %d" %(numLeft+scafID))
+	moduleProgressLogger.info("Final assembly N50: %d" %(n50))
+	moduleProgressLogger.info("Final number of genes: %d" %(numGenes))
+	moduleProgressLogger.info("Succeeded")
+
+def output_graph(scafPaths, mergedGenes, outDotFile):
+	moduleProgressLogger.info("Outputting scaffolding paths")
 	with open(outDotFile, 'w') as fDOT:
 		fDOT.write("graph {\n")
 		for i in range(len(scafPaths)):
@@ -284,69 +327,35 @@ def agouti_update(pathList, contigDict, nameList,
 				curVertex = nextVertex
 		fDOT.write("}\n")
 
-	outScafGene = os.path.join(moduleOutDir, "%s.agouti.gene.contig_path" %(prefix))
-	with open(outScafGene, 'w') as fOUTSCAFGENE:
-		for k, v in sorted(dMergedGene2Ctgs.iteritems()):
-			fOUTSCAFGENE.write(">%s\n%s\n" %(k, ','.join(v)))
-
-	outGenePath = os.path.join(moduleOutDir, "%s.agouti.gene.gene_path" %(prefix))
-	with open(outGenePath, 'w') as fOUTGENEPATH:
-		for k, v in sorted(dMergedGene2Genes.iteritems()):
-			fOUTGENEPATH.write(">%s\n%s\n" %(k, ','.join(v)))
-
-	# other contigs need to be output
-	moduleProgressLogger.info("Outputting contigs escaped from scaffolding")
-	numLeft = 0
-	for vertex in contigDict:
-		if vertex in visitedDict:
-			if nameList[vertex] in dGFFs:
-				del dGFFs[nameList[vertex]]
-			continue
-		numLeft += 1
-		fOUTFASTA.write(">%s\n%s\n" % (nameList[vertex], contigDict[vertex]))
-		seqLens.append(len(contigDict[vertex]))
-	fOUTFASTA.close()
-	n50 = agSeq.get_assembly_NXX(seqLens)
-
-	# output in GFF format
-	moduleProgressLogger.info("Outputting Gene Models in GFF3")
-	outGFF = os.path.join(moduleOutDir, "%s.agouti.gff" %(prefix))
-	dFinalGFFs = dict(dGFFs, **dUpdateGFFs)
-	numGenes = gff_outputter(dFinalGFFs, outGFF)
-
-	moduleProgressLogger.info("####Summary####")
-
-	moduleProgressLogger.info("number of contigs scaffoled: %d" %(nCtgScaffolded))
-	moduleProgressLogger.info("number of scaffolds: %d" %(scafID))
-	moduleProgressLogger.info("number of contigs found no links: %d" %(numLeft))
-	moduleProgressLogger.info("number of contigs in the final assembly: %d" %(numLeft+scafID))
-	moduleProgressLogger.info("Final assembly N50: %d" %(n50))
-	moduleProgressLogger.info("Final number of genes: %d" %(numGenes))
-	moduleProgressLogger.info("Succeeded")
-
-def gff_outputter(dGeneModels, outGFF):
-	fOUTGFF = open(outGFF, 'w')
-	fOUTGFF.write("##gff-version3\n")
-	fOUTGFF.write("# This output was generated with AGOUTI (version 0.1)\n")
+def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes, outGFF):
+	moduleProgressLogger.info("Outputting updated Gene Moddels")
 	numGenes = 0
-	for k, v in dGeneModels.iteritems():
-#		numGenes += len(v)
-		for i in range(len(v)):
-			geneModel = v[i]
-			if geneModel.fake == 1:
-				continue
-#				fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s;FAKE=1\n" %(k, geneModel.program, geneModel.geneStart, geneModel.geneStop, geneModel.strand, geneModel.geneID))
-			else:
-				numGenes += 1
-				fOUTGFF.write("# start gene %s\n" %(geneModel.geneID))
-				fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s\n" %(k, geneModel.program, geneModel.geneStart, geneModel.geneStop, geneModel.strand, geneModel.geneID))
-				for j in range(0, len(geneModel.lcds), 2):
-					cdsStart = geneModel.lcds[j]
-					cdsStop = geneModel.lcds[j+1]
-					fOUTGFF.write("%s\t%s\tExon\t%d\t%d\t.\t%s\t.\tID=%s.exon\n" %(k, geneModel.program, cdsStart, cdsStop, geneModel.strand, geneModel.geneID))
-				fOUTGFF.write("# end gene %s\n" %(geneModel.geneID))
-				fOUTGFF.write("###\n")
-	fOUTGFF.close()
+	with open(outGFF, 'w') as fOUTGFF:
+		fOUTGFF.write("##gff-version3\n")
+		fOUTGFF.write("# This output was generated with AGOUTI (version 0.1)\n")
+		for k, v in dGeneModels.iteritems():
+			for i in range(len(v)):
+				geneModel = v[i]
+				if geneModel.fake == 1:
+					continue
+				else:
+					numGenes += 1
+					fOUTGFF.write("# start gene %s\n" %(geneModel.geneID))
+					if geneModel.geneID.startswith("AGOUTI_Merged"):
+						fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s;MERGE_FROM_GENES=%s;MERGE_FROM_CONTIGS=%s\n" %(k, geneModel.program, geneModel.geneStart, geneModel.geneStop, geneModel.strand, geneModel.geneID, ",".join(dMergedGene2Genes[geneModel.geneID]), ",".join(dMergedGene2Ctgs[geneModel.geneID])))
+					else:
+						fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s\n"
+									  %(k, geneModel.program, geneModel.geneStart,
+										geneModel.geneStop, geneModel.strand,
+										geneModel.geneID))
+					for j in range(0, len(geneModel.lcds), 2):
+						cdsStart = geneModel.lcds[j]
+						cdsStop = geneModel.lcds[j+1]
+						fOUTGFF.write("%s\t%s\tExon\t%d\t%d\t.\t%s\t.\tID=%s.exon\n"
+									  %(k, geneModel.program, cdsStart, cdsStop,
+										geneModel.strand, geneModel.geneID))
+					fOUTGFF.write("# end gene %s\n" %(geneModel.geneID))
+					fOUTGFF.write("###\n")
 	return numGenes
 
 def remove_cycles(pathList, visitedDict):
