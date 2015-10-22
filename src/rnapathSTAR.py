@@ -236,4 +236,4 @@ def rnapathSTAR(seqNames, joinPairsFile, moduleOutDir, prefix, minSupport):
 	moduleProgressLogger.info("%d paths scaffolded" %(len(scafPaths)))
 	moduleProgressLogger.info("Succeeded")
 
-	return scafPaths, edgeSenseDict, visitedDict
+	return scafPaths, edgeSenseDict
