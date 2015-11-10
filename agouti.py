@@ -4,9 +4,12 @@ import re
 import argparse
 import logging
 import collections
+#from _version import __version__
 
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
+
+__version__ = "v0.2"
 
 from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
@@ -45,6 +48,11 @@ def parse_args():
 						dest="gff",
 						required=True,
 						help="specify the predicted gene model in GFF format")
+	parser.add_argument("-algorithm",
+						metavar="STR",
+						dest="algorithm",
+						default="gene",
+						help="specify scaffolding algorith: gene model or weight priority [gene]")
 	parser.add_argument("-outdir",
 						metavar="DIR",
 						dest="outDir",
@@ -92,6 +100,10 @@ def parse_args():
 	parser.add_argument("-overwrite",
 						action='store_true',
 						help="specify whether to overwrite all results from last run [False]")
+	parser.add_argument("-v",
+						"--version",
+						action="version",
+						version="AGOUTI {version}".format(version=__version__))
 
 	args = parser.parse_args()
 	return args
@@ -124,9 +136,9 @@ def main():
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
 	if args.contigFasta:
-		seqNames, dSeq = agSeq.get_contigs(args.contigFasta, moduleOutDir, prefix, logLevel)
+		vertex2Name, dSeq = agSeq.get_contigs(args.contigFasta, moduleOutDir, prefix, logLevel)
 	elif args.scaffoldFasta:
-		seqNames, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
+		vertex2Name, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
 
 	agGFF.set_module_name("AGOUTI_GFF")
 	moduleOutDir = os.path.join(outDir, "agouti_GFFs")
@@ -147,20 +159,22 @@ def main():
 #	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
 	agFILTER.set_module_name("AGOUTI_FILTER")
 	# this module uses the same output directory as last module
-	dCtgPair2GenePair, joinPairsFile = agFILTER.enforce_filters(dContigPairs, dGFFs, moduleOutDir,
+	dCtgPair2GenePair, joinPairsFile = agFILTER.enforce_filters(dContigPairs, dGFFs, vertex2Name, moduleOutDir,
 																prefix, args.minSupport)
 
 	agSCAFF.set_module_name("rnapathSTAR")
 	moduleOutDir = os.path.join(outDir, "rnapathSTAR")
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
-	scafPaths, edgeSenseDict = agSCAFF.rnapathSTAR(seqNames, joinPairsFile, moduleOutDir, prefix, args.minSupport)
+	scafPaths, edgeSenseDict = agSCAFF.rnapathSTAR(args.algorithm, vertex2Name, joinPairsFile,
+												   dCtgPair2GenePair, moduleOutDir, prefix,
+												   args.minSupport)
 
 	agUPDATE.set_module_name("AGOUTI_UPDATE")
 	moduleOutDir = os.path.join(outDir, "agouti_update")
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
-	agUPDATE.agouti_update(scafPaths, dSeq, seqNames,
+	agUPDATE.agouti_update(scafPaths, dSeq, vertex2Name,
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
 						   moduleOutDir, args.numNs)
