@@ -162,8 +162,8 @@ def main():
 	dCtgPair2GenePair, joinPairsFile = agFILTER.enforce_filters(dContigPairs, dGFFs, vertex2Name, moduleOutDir,
 																prefix, args.minSupport)
 
-	agSCAFF.set_module_name("rnapathSTAR")
-	moduleOutDir = os.path.join(outDir, "rnapathSTAR")
+	agSCAFF.set_module_name("scaffolding")
+	moduleOutDir = os.path.join(outDir, "scaffolding")
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
 	scafPaths, edgeSenseDict = agSCAFF.rnapathSTAR(args.algorithm, vertex2Name, joinPairsFile,
