@@ -44,7 +44,7 @@ def get_contigs(contigFasta, moduleOutDir, prefix, logLevel):
 	n50 = get_assembly_NXX(seqLens)
 
 	moduleProgressLogger.info("%d sequences parsed" %(len(contigDict)))
-	moduleProgressLogger.info("The give assembly N50: %d" %(n50))
+	moduleProgressLogger.info("The given assembly N50: %d" %(n50))
 	moduleProgressLogger.info("[DONE]")
 
 	return contigs, contigDict
