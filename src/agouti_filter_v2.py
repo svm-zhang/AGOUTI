@@ -200,7 +200,7 @@ def set_module_name(name):
 	global moduleName
 	moduleName = name
 
-def enforce_filters(dContigPairs, dGFFs,
+def enforce_filters(dContigPairs, dGFFs, vertex2Name,
 					moduleOutDir, prefix, minSupport):
 	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_filter.progressMeter" %(prefix))
 	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_filter.debug" %(prefix))
@@ -304,7 +304,7 @@ def enforce_filters(dContigPairs, dGFFs,
 			if keep:
 				geneA = dGFFs[ctgA][geneIndexA]
 				geneB = dGFFs[ctgB][geneIndexB]
-				dCtgPair2GenePair[ctgA, ctgB] = [geneA, geneB]
+				dCtgPair2GenePair[vertex2Name.index(ctgA), vertex2Name.index(ctgB)] = [geneA, geneB]
 				print "geneA", geneA.geneID, geneA.geneStart, geneA.geneStop
 				print "geneB", geneB.geneID, geneB.geneStart, geneB.geneStop
 				print "sense", sense
@@ -354,4 +354,3 @@ def enforce_filters(dContigPairs, dGFFs,
 	moduleProgressLogger.info("%d contig pairs filtered for not being one of the four combinations" %(nFail4Combination))
 	moduleProgressLogger.info("Succeeded")
 	return dCtgPair2GenePair, moduleOutputFile
-
