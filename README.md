@@ -66,7 +66,19 @@ optional arguments:
     -v, --version               show program's version number and exit
 ```
 
-## Example
+## Get Started
+
+In it simplest usage, AGOUTI takes three inputs: an initial genome assembly in FASTA format, paired-end RNA-seq reads mapped against the assembly in BAM format, and gene predictions from the initial assembly in GFF3 format. For instance:
+
+    samtools view example.bam | \
+    python agouti.py -contig example.fasta | \
+    -bam - | \
+    -gff example.gff | \
+    -outdir ./example | \
+    > ./example.stdout
+
+This will produce a scaffoled assembly in FASTA format, and a updated gene models in GFF3 format. All files (including the intermediate files) will be stored under a directory specified by `-outdir`, "example" in this case.
+
 
 ```
 samtools view test.bam | \
