@@ -102,9 +102,9 @@ At the end of gene prediction, you will now have a set of gene models predicted 
 * a line annotated as `CDS`
     * start and stop positions of each coding frame
 
-So as long as your file of gene models has these information, AGOUTI will not issue any complaints.
+AGOUTI will not issue any complaints if your gene prediction have these information.
 
-And that's it! You now have all the inputs required AGOUTI.
+** And that's it! You now have all the inputs required AGOUTI. **
 
 ## Understand Outputs
 
