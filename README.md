@@ -1,15 +1,12 @@
 # **AGOUTI**: Annotated Genome Optimization Using Transcriptome Information
 
 ## Overview
-AGOUTI(v0.2) uses RNAseq reads to guide genome scaffolding and improve gene annotation.
+AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gene annotation. It works in the following steps:
 
-```
-AGOUTI works in the following steps:
-	i) read RNAseq mapping results and get reads pairs uniquely mapped to different contigs
-	ii) filter reads pairs based on their mapped positions and orientations
-	iii) scaffolding based on reads pairs passing step ii filtration, this step uses a modified version of RNAPATH
-	iv) updating assembly and gene annotations
-```
+1. Extracting uniquely mapped joining-read pairs
+2. Denoise the set of joining-pairs using gene models
+3. Traversing the graph built from the noise-free data to identify scaffolding paths
+4. Updating assembly and gene annotation given the scaffolds
 
 ## Features
 
