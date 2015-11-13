@@ -110,13 +110,23 @@ AGOUTI will not issue any complaints if your gene prediction have these informat
 
 AGOUTI outputs its results to a base directory specified by `-outdir`. Under the base director, there are several sub-folders created, each corresponding to a step built in AGOUTI. As current version (v 0.2), a run of AGOUTI using the command-line setting demonstrated in **Getting Started** will generated a structured output like the following:
 
-* example
-    * [Folder] agouti_seq
-    * [Folder] agouti_gff
-    * [Folder] agouti_join_pairs
-    * [Folder] scaffolding
-    * [Folder] agouti_update
-    * [File]   agouti.main.log
+* drw-r--r-- example
+    * drw-r--r-- agouti_seq
+    * drw-r--r-- agouti_gff
+    * drw-r--r-- agouti_join_pairs
+    * drw-r--r-- scaffolding
+    * drw-r--r-- agouti_update
+    * -rw-r--r-- agouti.main.log
+
+Each subfolder includes three types of file:
+
+1. progress meter info
+2. debug info
+3. intermediate outputs
+
+To get a file with debug info you will need to specify `-debug`. An intermediate file can have all the joining-pairs, the denoised set of joining-pairs, the graph in DOT format, etc. Some intermediate files are important to support the break-and-continue feature, e.g. the file with the denoised-set of joining-pairs (see below for more details).
+
+Th`agouti.main.log` 
 
 ```
 samtools view test.bam | \
