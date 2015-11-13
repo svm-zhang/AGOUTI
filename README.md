@@ -140,7 +140,7 @@ The `agouti.main.log` is prefixed with the string specified by `-p`, so do all t
 
 ## Contributors
 
-Simo Zhang
+Simo Zhang  
 Luting Zhuo
 
 ## Support
