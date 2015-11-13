@@ -104,7 +104,7 @@ At the end of gene prediction, you will now have a set of gene models predicted 
 
 AGOUTI will not issue any complaints if your gene prediction have these information.
 
-** And that's it! You now have all the inputs required AGOUTI. **
+**And that's it! You now have all the inputs required AGOUTI.**
 
 ## Understand Outputs
 
