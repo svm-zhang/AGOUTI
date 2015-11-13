@@ -108,6 +108,16 @@ AGOUTI will not issue any complaints if your gene prediction have these informat
 
 ## Understand Outputs
 
+AGOUTI outputs its results to a base directory specified by `-outdir`. Under the base director, there are several sub-folders created, each corresponding to a step built in AGOUTI. As current version (v 0.2), a run of AGOUTI using the command-line setting demonstrated in **Getting Started** will generated a structured output like the following:
+
+* example
+    * [Folder] agouti_seq
+    * [Folder] agouti_gff
+    * [Folder] agouti_join_pairs
+    * [Folder] scaffolding
+    * [Folder] agouti_update
+    * [File]   agouti.main.log
+
 ```
 samtools view test.bam | \
 python agouti.py | \
