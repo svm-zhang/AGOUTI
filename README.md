@@ -94,13 +94,13 @@ To run AGOUTI, you will also need a set of gene models predicted from the assemb
 
 At the end of gene prediction, you will now have a set of gene models predicted from the assembly. You can choose any * ab inito * gene predictor as long as it spits out the models in GFF3 format. Specifically, AGOUTI looks for the following information in a GFF3 file.
 
-    * a line annotated as `gene`
-        * contig ID
-        * gene ID
-        * start and stop positions of the gene
-        * strand
-    * a line annotated as `CDS`
-        * start and stop positions of each coding frame
+* a line annotated as `gene`
+    * contig ID
+    * gene ID
+    * start and stop positions of the gene
+    * strand
+* a line annotated as `CDS`
+    * start and stop positions of each coding frame
 
 So as long as your file of gene models has these information, AGOUTI will not issue any complaints.
 
