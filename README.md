@@ -11,6 +11,14 @@ AGOUTI works in the following steps:
 	iv) updating assembly and gene annotations
 ```
 
+## Features
+
+1. Scaffold hundreds to thousands of contigs, yielding more contiguous assemblies;
+2. Reduce the number of gene models and update them simultaneously;
+3. Record any inconsistencies with the original (input) scaffolding results;
+4. Support break-and-continue feature such that some time-consuming steps can be skipped if the previous run is successful;
+5. Output graph in dot format for visualization
+
 ## Obtain AGOUTI
 
 To download AGOUTI, please use git to download the most recent development version through:
