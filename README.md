@@ -134,6 +134,7 @@ The `agouti.main.log` is prefixed with the string specified by `-p`, so do all t
 
 ## Break-and-Continue
 
+AGOUTI is built with a couple of modules. The output of current module will be taken as the input as the next module. Given the same input, modules such as extracting joining-pairs from BAM file, spits out the same intermediate results. AGOUTI therefore tries to save some running time by skipping some steps if they were finished successfully from previous runs. To use this feature, simply run AGOUTI the second time with the same output folder and prefix as the previous run. In some cases you want to have a fresh start, simply use `-overwrite` to overwrite all results generated previously.
 
 ## Graph Visualization
 
