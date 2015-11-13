@@ -79,6 +79,34 @@ In it simplest usage, AGOUTI takes three inputs: an initial genome assembly in F
 
 This will produce a scaffoled assembly in FASTA format, and a updated gene models in GFF3 format. All files (including the intermediate files) will be stored under a directory specified by `-outdir`, "example" in this case.
 
+## Prepare Inputs
+
+Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `example.2.fq`, and an initial assembly generated from an assembler of your favorite, `example.fasta`. You will first need to map the RNA-seq data against the assembly using a short-reads mapper, such as BWA. For example,
+
+    bwa index example.fasta
+    bwa mem example.fasta example.1.fq example.2.fq | samtools view -h - > example.bam
+
+At the end of reads mapping, you will have the mapping results in BAM format.
+
+To run AGOUTI, you will also need a set of gene models predicted from the assembly. For instance,
+
+    Augustus --AUGUSTUS_CONFIG_PATH=[path to augustus config file] -gff3=on --species=[your sepcies] example.fasta > example.gff
+
+At the end of gene prediction, you will now have a set of gene models predicted from the assembly. You can choose any * ab inito * gene predictor as long as it spits out the models in GFF3 format. Specifically, AGOUTI looks for the following information in a GFF3 file.
+
+    * a line annotated as `gene`
+        * contig ID
+        * gene ID
+        * start and stop positions of the gene
+        * strand
+    * a line annotated as `CDS`
+        * start and stop positions of each coding frame
+
+So as long as your file of gene models has these information, AGOUTI will not issue any complaints.
+
+And that's it! You now have all the inputs required AGOUTI.
+
+## Understand Outputs
 
 ```
 samtools view test.bam | \
