@@ -38,21 +38,21 @@ usage: agouti.py [-h] -contig FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p S
 Welcome to AGOUTI!
 
 optional arguments:
-	-h, --help    show this help message and exit
-	-contig FILE  specify the initial assembly in FASTA format
-	-bam FILE     specify the RNA-seq mapping results in BAM format
-	-gff FILE     specify the predicted gene model in GFF format
-    -algorithm STR specify the scaffolding algorith: gene or weight priority [gene]
-	-outdir DIR      specify the directory to store output files
-	-p STR        specify the output prefix [agouti]
-	-mnl INT      minimum number of supporting joining-pairs [5]
-    -nN INT       number of Ns put in between a pair of contigs [1000]
-    -minMapQ INT  minimum mapping quality to use [5]
-    -minFracOvl FLOAT   minimum fraction of alignment to use [0.0]
-    -maxFracMismatch FLOAT  maximum fraction of mismatch per alignment [1.0]
-    -debug  Output extra info for debug
-    -overwrite  specify to overwirte all results from previous run
-    -v, --version   show program's version number and exit
+	-h, --help                  show this help message and exit
+	-contig             FILE    specify the initial assembly in FASTA format
+	-bam                FILE    specify the RNA-seq mapping results in BAM format
+	-gff                FILE    specify the predicted gene model in GFF format
+    -algorithm          STR     specify the scaffolding algorith: gene or weight priority [gene]
+	-outdir             DIR     specify the directory to store output files
+	-p                  STR     specify the output prefix [agouti]
+	-mnl                INT     minimum number of supporting joining-pairs [5]
+    -nN                 INT     number of Ns put in between a pair of contigs [1000]
+    -minMapQ            INT     minimum mapping quality to use [5]
+    -minFracOvl         FLOAT   minimum fraction of alignment to use [0.0]
+    -maxFracMismatch    FLOAT   maximum fraction of mismatch per alignment [1.0]
+    -debug                      Output extra info for debug
+    -overwrite                  specify to overwirte all results from previous run
+    -v, --version               show program's version number and exit
 ```
 
 ## Example
