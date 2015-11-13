@@ -134,10 +134,11 @@ The `agouti.main.log` is prefixed with the string specified by `-p`, so do all t
 
 ## Break-and-Continue
 
-AGOUTI is built with a couple of modules. The output of current module will be taken as the input as the next module. Given the same input, modules such as extracting joining-pairs from BAM file, spits out the same intermediate results. AGOUTI therefore tries to save some running time by skipping some steps if they were finished successfully from previous runs. To use this feature, simply run AGOUTI the second time with the same output folder and prefix as the previous run. In some cases you want to have a fresh start, simply use `-overwrite` to overwrite all results generated previously.
+AGOUTI is built with a couple of modules. The output of current module will be taken as the input as the next module. Given the same input, modules such as extracting joining-pairs from BAM file, spits out the same intermediate results. AGOUTI therefore tries to save some running time by skipping some steps if they were finished successfully from previous runs. To use this feature, simply run AGOUTI the second time with the same output prefix as the previous run. In some cases you want to have a fresh start, simply use `-overwrite` to overwrite all results generated previously, or gives a new prefix.
 
 ## Graph Visualization
 
+AGOUTI makes the scaffolding graph accessible to users. Under `scaffolding` folder, you can find a file named after `[prefix].agouti_scaffolding.graph.dot`. The dot file can be directly loaded in packages like Graphviz. In the graph, contigs/vertices are in black circle, while there are two color codings for edges. Ones in red are the scaffolding path in the final assembly, and others in black are simply edges that were not traversed. Edges in dotted style represent connections with a number of supporting joining-pairs lower than the minimum specified.
 
 ## Contributors
 
