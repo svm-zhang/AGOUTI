@@ -13,13 +13,23 @@ AGOUTI works in the following steps:
 
 ## Obtain AGOUTI
 
-To download AGOUTI, please use git to download the most recent development tree. Currently, the tree is hosted on gitthub, and can be obtained via:
+To download AGOUTI, please use git to download the most recent development version through:
 
     git clone git@github.com:svm-zhang/AGOUTI.git
 
-AGOUTI is designed to be light-weight. It only uses SAMtools to pipe the mapping results from BAM file. You also need python 2.y or above.
+AGOUTI is designed to be light-weight by only requiring SAMtools and python 2.7 or above.
 
-## Running AGOUTI
+To get the current version of the download, simply do
+
+    python agouti.py -v
+
+You should see, for example, something like this:
+
+    AGOUTI v0.2
+
+In any case, please use this version as your reference.
+
+## Command-line interface
 
 ```
 python agouti.py -h
@@ -32,9 +42,17 @@ optional arguments:
 	-contig FILE  specify the initial assembly in FASTA format
 	-bam FILE     specify the RNA-seq mapping results in BAM format
 	-gff FILE     specify the predicted gene model in GFF format
-	-out DIR      specify the directory to store output files
-	-mnl INT      minimum number of reads supporting a link between a contig pair
-	-p STR        specify the output prefix
+    -algorithm STR specify the scaffolding algorith: gene or weight priority [gene]
+	-outdir DIR      specify the directory to store output files
+	-p STR        specify the output prefix [agouti]
+	-mnl INT      minimum number of supporting joining-pairs [5]
+    -nN INT       number of Ns put in between a pair of contigs [1000]
+    -minMapQ INT  minimum mapping quality to use [5]
+    -minFracOvl FLOAT   minimum fraction of alignment to use [0.0]
+    -maxFracMismatch FLOAT  maximum fraction of mismatch per alignment [1.0]
+    -debug  Output extra info for debug
+    -overwrite  specify to overwirte all results from previous run
+    -v, --version   show program's version number and exit
 ```
 
 ## Example
