@@ -1,8 +1,6 @@
-Annotated Genome Optimization Using Transcriptome Information (AGOUTI)
-==========================
+# **AGOUTI**: Annotated Genome Optimization Using Transcriptome Information
 
 ## Overview
-=======================
 AGOUTI(v0.2) uses RNAseq reads to guide genome scaffolding and improve gene annotation.
 
 ```
