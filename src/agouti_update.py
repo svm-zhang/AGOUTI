@@ -70,7 +70,8 @@ def agouti_update(pathList, contigDict, seqNames,
 					tmp = 1
 				print ">>", currentVertex, nextVertex, curCtg, nextCtg
 
-				currentGene, nextGene = ctgpair2genepair(dCtgPair2GenePair, curCtg, nextCtg)
+				#currentGene, nextGene = ctgpair2genepair(dCtgPair2GenePair, curCtg, nextCtg)
+				currentGene, nextGene = ctgpair2genepair(dCtgPair2GenePair, currentVertex, nextVertex)
 				if currentGene is None and nextGene is None:
 					print "%s %s not found in dCtgPair2GenePair" %(curCtg, nextCtg)
 					#!!! I should not break here, should continue#
@@ -143,6 +144,10 @@ def agouti_update(pathList, contigDict, seqNames,
 						print ">>>>", "curToLeft", curToLeft, "curToRight", curToRight
 						if curToRight < 1:
 							valid = 1
+					else:
+						# the first pair must be always right
+						# no need to check
+						valid = 1
 					print ">>>> RR valid", valid
 					if valid:
 						if currentGene.geneID != preGeneID:
@@ -198,6 +203,10 @@ def agouti_update(pathList, contigDict, seqNames,
 						print ">>>>", "nextToLeft", nextToLeft, "nextToRight", nextToRight
 						if curToRight < 1 and nextToLeft < 1:
 							valid = 1
+					else:
+						# the first pair must be always right
+						# no need to check
+						valid = 1
 					print ">>>> RF valid", valid
 					if valid:
 						if currentGene.geneID != preGeneID:
@@ -246,6 +255,7 @@ def agouti_update(pathList, contigDict, seqNames,
 							print "RF", "here is a stop"
 							break
 					currentSense = "-"
+				print "scafPath", scafPath
 				scafPath.append(curCtg)
 				mergedGenesPerPath.append(mergedGene.geneID)
 				offset = gapStop
@@ -255,7 +265,9 @@ def agouti_update(pathList, contigDict, seqNames,
 				curCtg = seqNames[currentVertex]
 
 			excludeGeneIDs = [preGeneID]
+			print "append last curCtg", curCtg
 			scafPath.append(curCtg)
+			print "last scafPath", scafPath
 			scafPaths.append(scafPath)
 			mergedGenes.append(mergedGenesPerPath)
 			dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
