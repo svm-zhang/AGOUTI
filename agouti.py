@@ -4,7 +4,6 @@ import re
 import argparse
 import logging
 import collections
-#from _version import __version__
 
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
@@ -15,10 +14,9 @@ from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
 from lib import agouti_sam as agBAM
 from src import agouti_filter_v2 as agFILTER
-#from src import test_filter as agFILTER
 from lib import agouti_gff as agGFF
 from src import agouti_update as agUPDATE
-from src import rnapathSTAR as agSCAFF
+from src import agouti_scaffolding as agSCAFF
 
 def parse_args():
 	use_message = '''
@@ -27,15 +25,16 @@ def parse_args():
 
 	parser = argparse.ArgumentParser(description=use_message)
 
-	exclusiveGroup = parser.add_mutually_exclusive_group(required=True)
-	exclusiveGroup.add_argument("-contig",
+#	exclusiveGroup = parser.add_mutually_exclusive_group(required=True)
+	parser.add_argument("-assembly",
 						metavar="FILE",
-						dest="contigFasta",
-						help="specify the assembly in contigs in FASTA format")
-	exclusiveGroup.add_argument("-scaffold",
-						metavar="FILE",
-						dest="scaffoldFasta",
-						help="specify the assembly in scaffolds in FASTA format")
+						dest="assemblyFile",
+						required=True,
+						help="specify the assembly in FASTA format")
+#	exclusiveGroup.add_argument("-scaffold",
+#						metavar="FILE",
+#						dest="scaffoldFasta",
+#						help="specify the assembly in scaffolds in FASTA format")
 	parser.add_argument("-bam",
 						metavar="FILE",
 						type=argparse.FileType('r'),
@@ -58,13 +57,13 @@ def parse_args():
 						dest="outDir",
 						default=".",
 						required=True,
-						help="specify the directory to store output files")
+						help="specify the base directory to store all output files")
 	parser.add_argument("-p",
 						metavar="STR",
 						dest="prefix",
 						default="agouti",
 						help="specify the prefix for all output files [agouti]")
-	parser.add_argument("-mnl",
+	parser.add_argument("-k",
 						metavar="INT",
 						dest="minSupport",
 						type=int,
@@ -76,9 +75,9 @@ def parse_args():
 						type=int,
 						default=1000,
 						help="number of Ns put in between a pair of contigs [1000]")
-	parser.add_argument("-minMapQ",
+	parser.add_argument("-minMQ",
 						metavar="INT",
-						dest="minMapQ",
+						dest="minMQ",
 						type=int,
 						default=5,
 						help="minimum of mapping quality to use [5]")
@@ -87,19 +86,19 @@ def parse_args():
 						dest="minFracOvl",
 						type=float,
 						default=0.0,
-						help="minimum alignmentLen/readLen [0.0]")
-	parser.add_argument("-maxFracMismatch",
+						help="minimum percentage of alignment length: alnLen/readLen [0.0]")
+	parser.add_argument("-maxFracMM",
 						metavar="FLOAT",
-						dest="maxFracMismatch",
+						dest="maxFracMM",
 						type=float,
 						default=1.0,
 						help="maximum fraction of mismatch of a give alignment [1.0]")
 	parser.add_argument("-debug",
 						action='store_true',
-						help="specify the output prefix")
+						help="specify to have info for debugging")
 	parser.add_argument("-overwrite",
 						action='store_true',
-						help="specify whether to overwrite all results from last run [False]")
+						help="specify whether to overwrite all results from last run")
 	parser.add_argument("-v",
 						"--version",
 						action="version",
@@ -124,7 +123,7 @@ def main():
 		logLevel = logging.DEBUG
 	mainLogFile = os.path.join(outDir, "%s.main.log" %(prefix))
 	logger = agLOG.AGOUTI_LOG("Main").create_logger(mainLogFile)
-	logger.info("Fasta File: %s" %(os.path.realpath(args.contigFasta)))
+	logger.info("Fasta File: %s" %(os.path.realpath(args.assemblyFile)))
 	logger.info("GFF file: %s" %(gffFile))
 	logger.info("Output directory: %s" %(outDir))
 	logger.info("Output prefix: %s" %(prefix))
@@ -135,8 +134,8 @@ def main():
 	moduleOutDir = os.path.join(outDir, "agouti_seq")
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
-	if args.contigFasta:
-		vertex2Name, dSeq = agSeq.get_contigs(args.contigFasta, moduleOutDir, prefix, logLevel)
+	if args.assemblyFile:
+		vertex2Name, dSeq = agSeq.get_contigs(args.assemblyFile, moduleOutDir, prefix, logLevel)
 	elif args.scaffoldFasta:
 		vertex2Name, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
 
@@ -152,8 +151,8 @@ def main():
 		os.makedirs(moduleOutDir)
 	dContigPairs = agBAM.get_joining_pairs(bamFile, moduleOutDir, prefix,
 										   logLevel, args.overwrite,
-										   args.minMapQ, args.minFracOvl,
-										   args.maxFracMismatch)
+										   args.minMQ, args.minFracOvl,
+										   args.maxFracMM)
 
 #	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
 #	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
