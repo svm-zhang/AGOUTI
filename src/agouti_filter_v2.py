@@ -213,9 +213,6 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_denoise.debug" %(prefix))
 		agDENOISEDebug = agLOG.DEBUG(moduleName, debugLogFile)
 
-#	agDENOISEProgress.logger = agLOG.AGOUTI_LOG(moduleName).create_logger(progressLogFile)
-#	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(debugLogFile)
-
 	agDENOISEProgress.logger.info("[BEGIN] Filtering joining pairs")
 	dCtgPair2GenePair = collections.defaultdict()
 	dMappedPos = collections.defaultdict()
