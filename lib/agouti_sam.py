@@ -60,76 +60,89 @@ def getMappedRegionOnContigs(start, alnLen, flags):
 	else:
 		return start+alnLen, start
 
-def set_module_name(name):
-	global moduleName
-	moduleName = name
-
-def try_continue_last_run(moduleProgressLogFile, moduleOutputFile):
-	if os.path.exists(moduleProgressLogFile):
-		fLOG = open(moduleProgressLogFile, 'r')
-		lastLine = fLOG.readlines()[-1].strip()
-		fLOG.close()
-		moduleProgressLogger = moduleProgressLogObj.create_logger(moduleProgressLogFile)
-		moduleProgressLogger.info("[BEGIN] Trying to read joining pairs from last run")
-		moduleProgressLogger.info("Found log file from last run")
-		moduleProgressLogger.info("Checking EXIT STATUS of last run")
-		if lastLine.split('-')[-1].strip() == "Succeeded":
-			moduleProgressLogger.info("Last run was successful")
-			moduleProgressLogger.info("Skipping re-reading BAM file")
-			moduleProgressLogger.info("[BEGIN] Reading output from last run")
-			nJoinPairs = 0
-			dContigPairs = collections.defaultdict(list)
-			with open(moduleOutputFile, 'r') as fJOINPAIR:
-				for line in fJOINPAIR:
-					tmpLine = line.strip().split("\t")
-					readsID = tmpLine[0]
-					contigA, startA, stopA, senseA = tmpLine[1:5]
-					contigB, startB, stopB, senseB = tmpLine[5:]
-					startA = int(startA)
-					stopA = int(stopA)
-					startB = int(startB)
-					stopB = int(stopB)
-					nJoinPairs += 1
-					if contigA <= contigB:
-						if (contigA, contigB) not in dContigPairs:
-							dContigPairs[contigA, contigB] = [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
-						else:
-							dContigPairs[contigA, contigB] += [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
+def retrieve_joininng_pairs(agBAMProgress, agBAMOutAllJoinPairs):
+	progressLogFile = agBAMProgress.logFile
+	with open(progressLogFile, 'r') as fLOG:
+		reports = fLOG.readlines()
+	if len(reports) == 0:
+		return None
+	lastLine = reports[-1].strip()
+	exitStatus = lastLine.split('-')[-1].strip()
+	agBAMProgress.logger.info("---------------------------------")
+	agBAMProgress.logger.info("[BEGIN] Identifying joining pairs")
+	agBAMProgress.logger.info("Found progress file from previous run")
+	if exitStatus == "Succeeded":
+		agBAMProgress.logger.info("EXIT STATUS of last run: %s" %(exitStatus))
+		agBAMProgress.logger.info("Skip re-reading BAM file")
+		agBAMProgress.logger.info("Read joining-pairs from previous run")
+		nJoinPairs = 0
+		dContigPairs = collections.defaultdict(list)
+		with open(agBAMOutAllJoinPairs, 'r') as fJOINPAIR:
+			for line in fJOINPAIR:
+				tmpLine = line.strip().split("\t")
+				readsID = tmpLine[0]
+				contigA, startA, stopA, senseA = tmpLine[1:5]
+				contigB, startB, stopB, senseB = tmpLine[5:]
+				startA = int(startA)
+				stopA = int(stopA)
+				startB = int(startB)
+				stopB = int(stopB)
+				nJoinPairs += 1
+				if contigA <= contigB:
+					if (contigA, contigB) not in dContigPairs:
+						dContigPairs[contigA, contigB] = [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
 					else:
-						if (contigB, contigA) not in dContigPairs:
-							dContigPairs[contigB, contigA] = [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
-						else:
-							dContigPairs[contigB, contigA] += [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
-			moduleProgressLogger.info("%d joining pairs parsed" %(nJoinPairs))
-			moduleProgressLogger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
-			moduleProgressLogger.info("Succeeded")
-			return dContigPairs, moduleProgressLogger
+						dContigPairs[contigA, contigB] += [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
+				else:
+					if (contigB, contigA) not in dContigPairs:
+						dContigPairs[contigB, contigA] = [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
+					else:
+						dContigPairs[contigB, contigA] += [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
+		agBAMProgress.logger.info("%d joining pairs parsed" %(nJoinPairs))
+		agBAMProgress.logger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
+		agBAMProgress.logger.info("Succeeded")
+		return dContigPairs
+	else:
+		return None
+
+def get_joining_pairs(bamStream, outDir, prefix,
+					  overwrite, minMapQ=5, minFracOvl=0.0,
+					  maxFracMismatch=1.0, debug=0):
+
+	moduleName = os.path.basename(__file__).split('.')[0].upper()
+	moduleOutDir = os.path.join(outDir, "agouti_join_pairs")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+
+	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.progressMeter" %(prefix))
+	agBAMOutAllJoinPairs = os.path.join(moduleOutDir, "%s.agouti.join_pairs.all.txt" %(prefix))
+	agBAMProgress = agLOG.PROGRESS_METER(moduleName)
+	if not os.path.exists(progressLogFile):
+		agBAMProgress.add_file_handler(progressLogFile)
+		agBAMProgress.logger.info("[BEGIN] Identifying joining pairs")
+	else:
+		if not overwrite:
+			agBAMProgress.add_file_handler(progressLogFile, 'a')
+			dContigPairs = retrieve_joininng_pairs(agBAMProgress, agBAMOutAllJoinPairs)
+			if dContigPairs is not None:
+				return dContigPairs
+			else:
+				agBAMProgress.logger.info("Fail to pick up results from the previous run")
+				agBAMProgress.logger.info("Re-processing the BAM file")
 		else:
-			moduleProgressLogger.info("Last run was NOT successful")
-			return None, moduleProgressLogger
-	return None, None
+			agBAMProgress.add_file_handler(progressLogFile)
+			agBAMProgress.logger.info("[BEGIN] Identifying joining pairs")
+			agBAMProgress.logger.info("Overwrite results from the previous run")
 
-def get_joining_pairs(bamStream, moduleOutDir, prefix,
-					  logLevel, overwrite, minMapQ=5,
-					  minFracOvl=0.0, maxFracMismatch=1):
-	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.progressMeter" %(prefix))
-	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.debug" %(prefix))
-	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.unfiltered.txt" %(prefix))
-	global moduleProgressLogObj
-	moduleProgressLogObj = agLOG.AGOUTI_LOG(moduleName)
-	moduleProgressLogger = None
-	if not overwrite:
-		dContigPairs, moduleProgressLogger = try_continue_last_run(moduleProgressLogFile, moduleOutputFile)
-		if dContigPairs is not None:
-			return dContigPairs
-	moduleProgressLogger = moduleProgressLogObj.create_logger(moduleProgressLogFile)
+	agBAMDebug = None
+	if debug:
+		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.debug" %(prefix))
+		agBAMDebug = agLOG.DEBUG(moduleName, debugLogFile)
 
-	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
-
-	with open(moduleOutputFile, 'w') as fOUT:
-		moduleProgressLogger.info("[BEGIN] Identifying joining pairs")
-		moduleProgressLogger.info("# processed\t| Current Reads ID\t| Elapsed Time")
-		moduleDEBUGLogger.debug("Reads_ID\tLocationA\tLocationB\tmapQA\tmapQB\tsenseA\tsenseB\treadLenA\treadLenB")
+	with open(agBAMOutAllJoinPairs, 'w') as fOUT:
+		agBAMProgress.logger.info("# processed\t| Current Reads ID\t| Elapsed Time")
+		if debug:
+			agBAMDebug.debugger.debug("Reads_ID\tLocationA\tLocationB\tmapQA\tmapQB\tsenseA\tsenseB\treadLenA\treadLenB")
 		startTime = time.time()
 		dContigPairs = collections.defaultdict(list)
 		nJoinPairs = 0
@@ -159,9 +172,10 @@ def get_joining_pairs(bamStream, moduleOutDir, prefix,
 				flagsB = explainSAMFlag(int(pairB[1]))
 				senseA = flagsA[4]
 				senseB = flagsB[4]
-				moduleDEBUGLogger.debug("%s\t%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d" %(readsID,
-										contigA+":"+str(leftMostPosA), contigB+":"+str(leftMostPosB),
-										mapQA, mapQB, senseA, senseB, readLenA, readLenB))
+				if debug:
+					agBAMDebug.debugger.debug("%s\t%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d" %(readsID,
+											contigA+":"+str(leftMostPosA), contigB+":"+str(leftMostPosB),
+											mapQA, mapQB, senseA, senseB, readLenA, readLenB))
 
 				if (min(alnLenA/readLenA, alnLenB/readLenB) >= minFracOvl and				# minimum fraction of overlaps
 					max(nMismatchesA/alnLenA, nMismatchesB/alnLenB) <= maxFracMismatch and	# maximum fraction of mismatches
@@ -189,9 +203,9 @@ def get_joining_pairs(bamStream, moduleOutDir, prefix,
 																	startA, stopA, senseA))
 			if nReadsPairs % 5000000 == 0:
 				elapsedTime = float((time.time() - startTime)/60)
-				moduleProgressLogger.info("%d processed\t| %s\t| %.2f m" %(nReadsPairs, readsID, elapsedTime))
+				agBAMProgress.logger.info("%d parsed\t| %s\t| %.2f m" %(nReadsPairs, readsID, elapsedTime))
 
-	moduleProgressLogger.info("%d joining pairs parsed" %(nJoinPairs))
-	moduleProgressLogger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
-	moduleProgressLogger.info("Succeeded")
+	agBAMProgress.logger.info("%d joining pairs parsed" %(nJoinPairs))
+	agBAMProgress.logger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
+	agBAMProgress.logger.info("Succeeded")
 	return dContigPairs
