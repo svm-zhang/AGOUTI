@@ -1,5 +1,3 @@
-import os
-import sys
 import logging
 
 class AGOUTI_LOG(object):
