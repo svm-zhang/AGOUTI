@@ -2,7 +2,6 @@ import sys
 import os
 import collections
 import operator
-import logging
 
 from lib import agouti_gff as agGFF
 from lib import agouti_log as agLOG
@@ -196,25 +195,34 @@ def get_genePair_for_contigPair(dGFFs, ctgA, ctgB, mapIntervalsA, mapIntervalsB,
 	print "contig Pair", ctgA, ctgB, "genePair", genePair
 	return genePair
 
-def set_module_name(name):
-	global moduleName
-	moduleName = name
+def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
+						  outDir, prefix, minSupport,
+						  debug=0):
 
-def enforce_filters(dContigPairs, dGFFs, vertex2Name,
-					moduleOutDir, prefix, minSupport):
-	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_filter.progressMeter" %(prefix))
-	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_filter.debug" %(prefix))
-	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.filtered.txt" %(prefix))
-	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleProgressLogFile)
-	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
+	moduleName = os.path.basename(__file__).split('.')[0].upper()
+	moduleOutDir = os.path.join(outDir, "agouti_denoise")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
 
-	moduleProgressLogger.info("[BEGIN] Filtering joining pairs")
+	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_denoise.progressMeter" %(prefix))
+	outDenoiseJPFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.noise_free.txt" %(prefix))
+
+	agDENOISEProgress = agLOG.PROGRESS_METER(moduleName)
+	agDENOISEProgress.add_file_handler(progressLogFile)
+	if debug:
+		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_denoise.debug" %(prefix))
+		agDENOISEDebug = agLOG.DEBUG(moduleName, debugLogFile)
+
+#	agDENOISEProgress.logger = agLOG.AGOUTI_LOG(moduleName).create_logger(progressLogFile)
+#	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(debugLogFile)
+
+	agDENOISEProgress.logger.info("[BEGIN] Filtering joining pairs")
 	dCtgPair2GenePair = collections.defaultdict()
 	dMappedPos = collections.defaultdict()
 	daddedModels = collections.defaultdict(list)
 	nFail4Combination = 0
 	nFailGeneModel = 0
-	fOUT = open(moduleOutputFile, 'w')
+	fOUT = open(outDenoiseJPFile, 'w')
 	for ctgPair, pairInfo in dContigPairs.items():
 		if len(pairInfo) < minSupport:
 			del dContigPairs[ctgPair]
@@ -350,7 +358,7 @@ def enforce_filters(dContigPairs, dGFFs, vertex2Name,
 			nFailGeneModel += 1
 			print "genePair is None"
 	fOUT.close()
-	moduleProgressLogger.info("%d contig pairs filtered for spanning across >1 gene models" %(nFailGeneModel))
-	moduleProgressLogger.info("%d contig pairs filtered for not being one of the four combinations" %(nFail4Combination))
-	moduleProgressLogger.info("Succeeded")
-	return dCtgPair2GenePair, moduleOutputFile
+	agDENOISEProgress.logger.info("%d contig pairs filtered for spanning across >1 gene models" %(nFailGeneModel))
+	agDENOISEProgress.logger.info("%d contig pairs filtered for not being one of the four combinations" %(nFail4Combination))
+	agDENOISEProgress.logger.info("Succeeded")
+	return dCtgPair2GenePair, outDenoiseJPFile
