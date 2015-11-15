@@ -1,5 +1,4 @@
 import os
-import sys
 import collections
 
 from lib import agouti_log as agLOG
@@ -63,14 +62,15 @@ class AGOUTI_GFF(object):
 		else:
 			return False
 
-def set_module_name(name):
-	global moduleName
-	moduleName = name
-
-def get_gene_models(gff, moduleOutDir, prefix, logLevel):
-	moduleLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.progressMeter" %(prefix))
-	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleLogFile)
-	moduleProgressLogger.info("[BEGIN] Getting gene models")
+def get_gene_models(gff, outDir, prefix, debug=0):
+	moduleName = os.path.basename(__file__).split('.')[0].upper()
+	moduleOutDir = os.path.join(outDir, "agouti_GFFs")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.progressMeter" %(prefix))
+	agGFFProgress = agLOG.PROGRESS_METER(moduleName)
+	agGFFProgress.add_file_handler(progressLogFile)
+	agGFFProgress.logger.info("[BEGIN] Getting gene models")
 	dGFFs = collections.defaultdict(list)
 	nGene = 0
 	with open(gff, 'r') as fIN:
@@ -109,11 +109,15 @@ def get_gene_models(gff, moduleOutDir, prefix, logLevel):
 					lobj_GeneModels[geneIndex].updateCDS(int(tmp_line[3]), int(tmp_line[4]))
 		dGFFs[lobj_GeneModels[geneIndex].ctgID].append(lobj_GeneModels[geneIndex])
 
-	moduleProgressLogger.debug("Sequence\tNum_Gene_Models")
-	nGeneModels = 0
-	for k, v in sorted(dGFFs.items()):
-		nGeneModels += len(v)
-		moduleProgressLogger.debug("%s\t%d" %(k, len(v)))
-	moduleProgressLogger.info("%d Gene Models parsed" %(nGeneModels))
-	moduleProgressLogger.info("[DONE]")
+	if debug:
+		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.debug" %(prefix))
+		agGFFDebug = agLOG.DEBUG(moduleName, debugLogFile)
+		agGFFDebug.logger.debug("Sequence\tNum_Gene_Models")
+		nGeneModels = 0
+		for k, v in sorted(dGFFs.items()):
+			nGeneModels += len(v)
+			agGFFDebug.logger.debug("%s\t%d" %(k, len(v)))
+
+	agGFFProgress.logger.info("%d Gene Models parsed" %(nGeneModels))
+	agGFFProgress.logger.info("[DONE]")
 	return dGFFs
