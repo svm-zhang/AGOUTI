@@ -10,48 +10,6 @@ import operator
 from lib import agouti_log as agLOG
 from lib import agouti_gff as agGFF
 
-#class Graph:
-#	def __init__(self, dimension, minSupport):
-#		self.dimension = dimension
-#		self.edgeArray = zeros((self.dimension, self.dimension), int16)
-#		self.minSupport = minSupport
-#
-#	def walk_graph(self, fromVertex, vertex2Name, visitedDict={}):
-#		returnPath = [fromVertex]
-#		print "fromVertex", vertex2Name[fromVertex]
-#		print "returnPath", [vertex2Name[k] for k in returnPath]
-#		visitedDict[fromVertex] = ""
-#		toVertex = []
-#		for toindex in xrange(self.dimension):
-#			if self.edgeArray[fromVertex][toindex] >= self.minSupport and toindex not in visitedDict:
-#				weight = self.edgeArray[fromVertex][toindex]
-#				toVertex.append((weight, toindex))
-#
-#		toVertex.sort(reverse=True)
-#		print "toVertex", toVertex
-#		for (weight, vertex) in toVertex:
-#			if vertex in vertex2Name:
-#				print "vertex", vertex2Name[vertex]
-#			else:
-#				print "vertex", vertex
-#			if sum(self.edgeArray[vertex]) == self.edgeArray[fromVertex][vertex]:
-#				self.edgeArray[fromVertex][vertex] = 0
-#				self.edgeArray[vertex][fromVertex] = 0
-#				returnPath += [vertex]
-#				visitedDict[vertex] = ""
-#				return returnPath, visitedDict
-#			else:
-#				self.edgeArray[fromVertex][vertex] = 0
-#				try:
-#					path, visitedDict = self.walk_graph(vertex, dict(visitedDict, **{vertex:""}))
-#					returnPath += path
-#					visitedDict[vertex] = ""
-#					return returnPath, visitedDict
-#				except IOError:
-#					returnPath += [vertex]
-#					return returnPath, visitedDict
-#		return returnPath, visitedDict
-
 class Graph(object):
 	def __init__(self, outGraphFile, graph={}):
 		self.outGraphFile = outGraphFile
@@ -613,8 +571,8 @@ def set_module_name(name):
 	global moduleName
 	moduleName = name
 
-def rnapathSTAR(algorithm, vertex2Name, joinPairsFile,
-				dCtgPair2GenePair, moduleOutDir, prefix, minSupport):
+def run_scaffolding(algorithm, vertex2Name, joinPairsFile,
+				    dCtgPair2GenePair, moduleOutDir, prefix, minSupport):
 	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.progressMeter" %(prefix))
 	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.debug" %(prefix))
 	moduleOutputFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.txt" %(prefix))
@@ -630,7 +588,7 @@ def rnapathSTAR(algorithm, vertex2Name, joinPairsFile,
 #	moduleDEBUGLogger.debug("Dimension of edge matrix: %d x %d" %(nContig, nContig))
 
 	#verticesWithEdges, vertexEdges, notSoloDict, edgeSenseDict = build_graph(joinPairsFile, graph, vertex2Name)
-	outGraphFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.graph.gv" %(prefix))
+	outGraphFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.graph.dot" %(prefix))
 	scafPaths = []
 	if algorithm == "gene":
 		graph = AGOUTI_Graph(outGraphFile)
