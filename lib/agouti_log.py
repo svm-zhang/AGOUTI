@@ -28,21 +28,10 @@ class PROGRESS_METER(AGOUTI_LOG):
 class DEBUG(AGOUTI_LOG):
 	def __init__(self, loggerName, logFile, mode='w'):
 		logLevel = logging.DEBUG
-		logger = logging.getLogger(loggerName.upper())
-		logger.setLevel(logLevel)
+		self.logger = logging.getLogger(loggerName.upper())
+		self.logger.setLevel(logLevel)
 		fileHandler = logging.FileHandler(logFile, mode=mode)
 		fileHandler.setLevel(logLevel)
 		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 		fileHandler.setFormatter(formatter)
-		logger.addHandler(fileHandler)
-		return logger
-
-	def create_logger(self, logFile):
-		logger = logging.getLogger(self.loggerName)
-		logger.setLevel(self.logLevel)
-		formatter = logging.Formatter('%(name)s\t%(message)s')
-		fileHandler = logging.FileHandler(logFile, mode='w')
-		fileHandler.setLevel(self.logLevel)
-		fileHandler.setFormatter(formatter)
-		logger.addHandler(fileHandler)
-		return logger
+		self.logger.addHandler(fileHandler)
