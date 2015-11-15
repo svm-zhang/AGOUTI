@@ -1,6 +1,5 @@
 import os
 import sys
-import re
 import argparse
 import logging
 import collections
@@ -118,32 +117,24 @@ def main():
 	if not os.path.exists(outDir):
 		os.makedirs(outDir)
 
-	logLevel = logging.INFO
-	if args.debug:
-		logLevel = logging.DEBUG
-	mainLogFile = os.path.join(outDir, "%s.main.log" %(prefix))
-	logger = agLOG.AGOUTI_LOG("Main").create_logger(mainLogFile)
-	logger.info("Fasta File: %s" %(os.path.realpath(args.assemblyFile)))
-	logger.info("GFF file: %s" %(gffFile))
-	logger.info("Output directory: %s" %(outDir))
-	logger.info("Output prefix: %s" %(prefix))
-	logger.info("Minimum number of supports: %d" %(args.minSupport))
-	logger.info("Length of gaps filled: %d" %(args.numNs))
+	paraLogFile = os.path.join(outDir, "%s.parameters.txt" %(args.prefix))
+	para = agLOG.PROGRESS_METER(parse_args.__name__)
+	para.add_file_handler(paraLogFile)
+	para.logger.info("Assembly: %s" %(os.path.realpath(args.assemblyFile)))
+	para.logger.info("Gene Model: %s" %(gffFile))
+	para.logger.info("Output directory: %s" %(outDir))
+	para.logger.info("Output prefix: %s" %(prefix))
+	para.logger.info("Minimum number of supports: %d" %(args.minSupport))
+	para.logger.info("Length of gaps filled: %d" %(args.numNs))
 
-	agSeq.set_module_name("AGOUTI_Seq")
-	moduleOutDir = os.path.join(outDir, "agouti_seq")
-	if not os.path.exists(moduleOutDir):
-		os.makedirs(moduleOutDir)
-	if args.assemblyFile:
-		vertex2Name, dSeq = agSeq.get_contigs(args.assemblyFile, moduleOutDir, prefix, logLevel)
-	elif args.scaffoldFasta:
-		vertex2Name, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
+#	if args.assemblyFile:
+	vertex2Name, dSeq = agSeq.read_assembly(args.assemblyFile, outDir,
+											prefix, args.debug)
+#	elif args.scaffoldFasta:
+#		vertex2Name, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
 
-	agGFF.set_module_name("AGOUTI_GFF")
-	moduleOutDir = os.path.join(outDir, "agouti_GFFs")
-	if not os.path.exists(moduleOutDir):
-		os.makedirs(moduleOutDir)
-	dGFFs = agGFF.get_gene_models(gffFile, moduleOutDir, prefix, logLevel)
+	dGFFs = agGFF.get_gene_models(gffFile, outDir, prefix, args.debug)
+	sys.exit()
 
 	agBAM.set_module_name("AGOUTI_JoinPair")
 	moduleOutDir = os.path.join(outDir, "agouti_join_pairs")
@@ -165,7 +156,7 @@ def main():
 	moduleOutDir = os.path.join(outDir, "scaffolding")
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
-	scafPaths, edgeSenseDict = agSCAFF.rnapathSTAR(args.algorithm, vertex2Name, joinPairsFile,
+	scafPaths, edgeSenseDict = agSCAFF.run_scaffolding(args.algorithm, vertex2Name, joinPairsFile,
 												   dCtgPair2GenePair, moduleOutDir, prefix,
 												   args.minSupport)
 
