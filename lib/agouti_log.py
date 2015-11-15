@@ -7,10 +7,11 @@ class AGOUTI_LOG(object):
 	def create_logger(self, logFile=None):
 		pass
 
-class PROGRESS_METER(AGOUTI_LOG):
+class PROGRESS_METER(object):
 	def __init__(self, loggerName):
 		logLevel = logging.INFO
-		self.logger = logging.getLogger(loggerName.upper())
+		self.logFile = None
+		self.logger = logging.getLogger(loggerName.upper()+"_PROGRESS")
 		self.logger.setLevel(logLevel)
 		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 		consoleHandler = logging.StreamHandler()
@@ -19,19 +20,20 @@ class PROGRESS_METER(AGOUTI_LOG):
 		self.logger.addHandler(consoleHandler)
 
 	def add_file_handler(self, logFile, mode='w'):
-		fileHandler = logging.FileHandler(logFile, mode=mode)
+		self.logFile = logFile
+		fileHandler = logging.FileHandler(self.logFile, mode=mode)
 		fileHandler.setLevel(logging.INFO)
 		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 		fileHandler.setFormatter(formatter)
 		self.logger.addHandler(fileHandler)
 
-class DEBUG(AGOUTI_LOG):
-	def __init__(self, loggerName, logFile, mode='w'):
+class DEBUG(object):
+	def __init__(self, debuggerName, logFile, mode='w'):
 		logLevel = logging.DEBUG
-		self.logger = logging.getLogger(loggerName.upper())
-		self.logger.setLevel(logLevel)
+		self.debugger = logging.getLogger(debuggerName.upper()+"_DEBUG")
+		self.debugger.setLevel(logLevel)
 		fileHandler = logging.FileHandler(logFile, mode=mode)
 		fileHandler.setLevel(logLevel)
 		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 		fileHandler.setFormatter(formatter)
-		self.logger.addHandler(fileHandler)
+		self.debugger.addHandler(fileHandler)
