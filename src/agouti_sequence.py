@@ -1,34 +1,31 @@
 import os
 import sys
-import logging
 
 from lib import agouti_log as agLOG
 
-def set_module_name(name):
-	global moduleName
-	moduleName = name
+#def set_module_name(name):
+#	global moduleName
+#	moduleName = name
 
-def get_contigs(contigFasta, moduleOutDir, prefix, logLevel):
-	moduleLogFile = os.path.join(moduleOutDir, "%s.agouti_seq.progressMeter" %(prefix))
-	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleLogFile)
-	try:
-		fCONTIG = open(contigFasta, 'r')
-	except IOError:
-		moduleProgressLogger.error("Error opening contig file: %s" %(contigFasta), exc_info=True)
-		sys.exit()
+def get_contigs(assemblyFile, agSeqProgress):
+#	try:
+#		fCONTIG = open(assemblyFile, 'r')
+#	except IOError:
+#		agSeqProgress.logger.error("Error opening contig file: %s" %(assemblyFile), exc_info=True)
+#		sys.exit()
 
-	moduleProgressLogger.info("[BEGIN] Reading the initial assembly")
+	agSeqProgress.logger.info("[BEGIN] Reading the initial assembly")
 	seq = ""
 	contigs = []
 	seqLens = []
 	contigDict = {}
 	contigIndex = 0
-	with open(contigFasta, 'r') as fCONTIG:
+	with open(assemblyFile, 'r') as fCONTIG:
 		for line in fCONTIG:
 			if line.startswith('>'):
 				if seq != "":
 					contigDict[contigIndex] = seq
-					moduleProgressLogger.debug("%s\t%d" %(contig, len(seq)))
+					agSeqProgress.logger.debug("%s\t%d" %(contig, len(seq)))
 					seqLens.append(len(seq))
 					contigIndex += 1
 					seq = ""
@@ -37,22 +34,29 @@ def get_contigs(contigFasta, moduleOutDir, prefix, logLevel):
 			else:
 				seq += line.strip()
 	# read one last sequence
-	moduleProgressLogger.debug("%s\t%d" %(contig, len(seq)))
+	agSeqProgress.logger.debug("%s\t%d" %(contig, len(seq)))
 	contigDict[contigIndex] = seq
 	seqLens.append(len(seq))
 
 	n50 = get_assembly_NXX(seqLens)
 
-	moduleProgressLogger.info("%d sequences parsed" %(len(contigDict)))
-	moduleProgressLogger.info("The given assembly N50: %d" %(n50))
-	moduleProgressLogger.info("[DONE]")
+	agSeqProgress.logger.info("%d sequences parsed" %(len(contigDict)))
+	agSeqProgress.logger.info("The given assembly N50: %d" %(n50))
+	agSeqProgress.logger.info("[DONE]")
 
 	return contigs, contigDict
 
-def get_scaffolds(scaffoldFasta):
-	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName, logLevel, None).create_logger()
-	moduleProgressLogger.info("Processing scaffolds ... ")
-	moduleProgressLogger.info("TO BE CONTINUED\n")
+def read_assembly(assemblyFile, outDir, prefix):
+	moduleName = os.path.basename(__file__).split('.')[0].upper()
+	moduleOutDir = os.path.join(outDir, "agouti_seq")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_seq.progressMeter" %(prefix))
+	agSeqProgress = agLOG.PROGRESS_METER(moduleName)
+	agSeqProgress.add_file_handler(progressLogFile)
+	contigs, contigDict = get_contigs(assemblyFile, agSeqProgress)
+
+	return contigs, contigDict
 
 def get_assembly_NXX(seqLens, nXX=50):
 	seqLenSum = sum(seqLens)
