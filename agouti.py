@@ -134,16 +134,12 @@ def main():
 #		vertex2Name, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
 
 	dGFFs = agGFF.get_gene_models(gffFile, outDir, prefix, args.debug)
-	sys.exit()
 
-	agBAM.set_module_name("AGOUTI_JoinPair")
-	moduleOutDir = os.path.join(outDir, "agouti_join_pairs")
-	if not os.path.exists(moduleOutDir):
-		os.makedirs(moduleOutDir)
-	dContigPairs = agBAM.get_joining_pairs(bamFile, moduleOutDir, prefix,
-										   logLevel, args.overwrite,
-										   args.minMQ, args.minFracOvl,
-										   args.maxFracMM)
+	dContigPairs = agBAM.get_joining_pairs(bamFile, outDir, prefix,
+										   args.overwrite, args.minMQ,
+										   args.minFracOvl, args.maxFracMM,
+										   args.debug)
+	sys.exit()
 
 #	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
 #	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
