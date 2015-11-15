@@ -3,10 +3,6 @@ import sys
 
 from lib import agouti_log as agLOG
 
-#def set_module_name(name):
-#	global moduleName
-#	moduleName = name
-
 def get_contigs(assemblyFile, agSeqProgress):
 #	try:
 #		fCONTIG = open(assemblyFile, 'r')
@@ -46,7 +42,7 @@ def get_contigs(assemblyFile, agSeqProgress):
 
 	return contigs, contigDict
 
-def read_assembly(assemblyFile, outDir, prefix):
+def read_assembly(assemblyFile, outDir, prefix, debug=0):
 	moduleName = os.path.basename(__file__).split('.')[0].upper()
 	moduleOutDir = os.path.join(outDir, "agouti_seq")
 	if not os.path.exists(moduleOutDir):
