@@ -112,11 +112,11 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 	if debug:
 		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.debug" %(prefix))
 		agGFFDebug = agLOG.DEBUG(moduleName, debugLogFile)
-		agGFFDebug.logger.debug("Sequence\tNum_Gene_Models")
+		agGFFDebug.debugger.debug("Sequence\tNum_Gene_Models")
 		nGeneModels = 0
 		for k, v in sorted(dGFFs.items()):
 			nGeneModels += len(v)
-			agGFFDebug.logger.debug("%s\t%d" %(k, len(v)))
+			agGFFDebug.debugger.debug("%s\t%d" %(k, len(v)))
 
 	agGFFProgress.logger.info("%d Gene Models parsed" %(nGeneModels))
 	agGFFProgress.logger.info("[DONE]")
