@@ -6,7 +6,7 @@ import operator
 from lib import agouti_gff as agGFF
 from lib import agouti_log as agLOG
 
-def merge_intervals(intervals):
+def merge_intervals(intervals, debug=0):
 	if len(intervals) == 0:
 		return []
 	mergedIntervals = []
@@ -21,10 +21,12 @@ def merge_intervals(intervals):
 				mergedIntervals[-1] = (lower[0], upper_bound)
 			else:
 				mergedIntervals.append(higher)
-	print "\t    merged intervals", mergedIntervals
+	if debug:
+		agDENOISEDebug.debugger.debug("MERGE_INTERVAL\tmerged intervals - %s"
+										 %(mergedIntervals))
 	return mergedIntervals
 
-def create_fake_genes(geneModels, index, ctg, intervals):
+def create_fake_genes(geneModels, index, ctg, intervals, debug=0):
 	geneModel = agGFF.AGOUTI_GFF()
 	fake = 1
 	start = intervals[0][0]
@@ -40,7 +42,10 @@ def create_fake_genes(geneModels, index, ctg, intervals):
 		geneModels = geneModels + [geneModel]
 	else:
 		geneModels = geneModels[0:index] + [geneModel] + geneModels[index:]
-	print "\tcreate fake gene", geneModel.geneID, geneModel.geneStart, geneModel.geneStop, geneModel.lcds
+	if debug:
+		agDENOISEDebug.debugger.debug("FAKE_GENE\tcreate fake gene - %s - %d - %d"
+									  %(geneModel.geneID, geneModel.geneStart,
+										geneModel.geneStop))
 	return geneModels
 
 def find_interval_belongings(intervalQry, mergedIntervals):
@@ -59,12 +64,15 @@ def find_overlap(interval1, interval2):
 		# 1: interval1 on the right side of interval2
 		return 1
 
-def find_gene_overlap(interval, geneModel_5, geneModel_3):
-	print "find gene overlap for interval", interval
+def find_gene_overlap(interval, geneModel_5, geneModel_3, debug=0):
 	if geneModel_5.geneID == geneModel_3.geneID:
-		print "single gene contig", geneModel_5.geneID, geneModel_5.geneStart, geneModel_5.geneStop
+		if debug:
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tsingle gene contig - %s - %d - %d"
+										  %(geneModel_5.geneID, geneModel_5.geneStart,
+											geneModel_5.geneStop))
 		ovl = find_overlap(interval, (geneModel_5.geneStart, geneModel_5.geneStop))
-		print "ovl", ovl
+		if debug:
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tovl - %d" %(ovl))
 		if ovl == 0:
 			# relatviePos, geneIndex, end
 			return 0, 0
@@ -73,13 +81,17 @@ def find_gene_overlap(interval, geneModel_5, geneModel_3):
 		elif ovl == 1:
 			return 1, 0
 	else:
-		print "multiple gene contig"
-		print "\tgeneModel_5", geneModel_5.geneID, geneModel_5.geneStart, geneModel_5.geneStop
-		print "\tgeneModel_3", geneModel_3.geneID, geneModel_3.geneStart, geneModel_3.geneStop
+		if debug:
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tmultiple gene contig")
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tgeneModel_5 - %s - %d - %d"
+										  %(geneModel_5.geneID, geneModel_5.geneStart, geneModel_5.geneStop))
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tgeneModel_3 - %s - %d - %d"
+										  %(geneModel_3.geneID, geneModel_3.geneStart, geneModel_3.geneStop))
 		ovl_5 = find_overlap(interval, (geneModel_5.geneStart, geneModel_5.geneStop))
 		ovl_3 = find_overlap(interval, (geneModel_3.geneStart, geneModel_3.geneStop))
-		print "ovl_5", ovl_5
-		print "ovl_3", ovl_3
+		if debug:
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tovl_5 - %d" %(ovl_5))
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tovl_3 - %d" %(ovl_3))
 		if ovl_5 == 0 and ovl_3 != 0:
 			return 0, 5
 		elif ovl_5 != 0 and ovl_3 == 0:
@@ -98,14 +110,14 @@ def find_gene_overlap(interval, geneModel_5, geneModel_3):
 def mapping_to_geneModel(geneModelsA, geneModelsB,
 						 mapIntervalsA, mapIntervalsB,
 						 mergedIntervalsA, mergedIntervalsB,
-						 senses):
+						 senses, debug=0):
 	geneModelA_5 = geneModelsA[0]
 	geneModelA_3 = geneModelsA[-1]
 	geneModelB_5 = geneModelsB[0]
 	geneModelB_3 = geneModelsB[-1]
 	dMappingSupport = {}
 	dSenses = {}
-	print "mapping_to_geneModel all senses", collections.Counter(senses)
+	#print "mapping_to_geneModel all senses", collections.Counter(senses)
 	for i in xrange(len(mapIntervalsA)):
 		intervalA = mapIntervalsA[i]
 		mergedIntervalA = find_interval_belongings(intervalA, mergedIntervalsA)
@@ -124,12 +136,13 @@ def mapping_to_geneModel(geneModelsA, geneModelsB,
 		clusterA = k[0][0]
 		clusterB = k[0][1]
 		nSupport = k[1]
-		print clusterA, clusterB, nSupport
-		print "A"
-		geneIndexA, endA = find_gene_overlap(clusterA, geneModelA_5, geneModelA_3)
-		print "B"
-		geneIndexB, endB = find_gene_overlap(clusterB, geneModelB_5, geneModelB_3)
-		print "geneIndexA", geneIndexA, endA, "geneIndexB", geneIndexB, endB
+		geneIndexA, endA = find_gene_overlap(clusterA, geneModelA_5, geneModelA_3, debug)
+		geneIndexB, endB = find_gene_overlap(clusterB, geneModelB_5, geneModelB_3, debug)
+		if debug:
+			agDENOISEDebug.debugger.debug("MAP2GENE\tclusterA - %s - clusterB -%s - nSupport - %d"
+										  %(clusterA, clusterB, nSupport))
+#			agDENOISEDebug.debugger.debug("MAP2GENE\tgeneIndexA - %d - endA - %d - geneIndexB - %d - endB - %d"
+#										  %(geneIndexA, endA, geneIndexB, endB))
 		if geneIndexA == 0 and geneIndexB == 0:
 			# save and go on
 			return (geneIndexA, geneIndexB, endA, endB, [], [], dSenses[k[0]])
@@ -143,56 +156,63 @@ def mapping_to_geneModel(geneModelsA, geneModelsB,
 			createOnBoth.append((clusterA, clusterB))
 			dIndex2Cluster[geneIndexA, geneIndexB, endA, endB].append((clusterA, clusterB))
 
-	print "createOnBoth", createOnBoth
-	print "dIndex2Cluster", dIndex2Cluster
+	if debug:
+		agDENOISEDebug.debugger.debug("MAP2GENE\tBoth FAIL to map any gene models")
+		agDENOISEDebug.debugger.debug("MAP2GENE\tCreate gene models on both")
+	#print "dIndex2Cluster", dIndex2Cluster
 	if len(createOnBoth) > 0:
 		# create gene on both contig  using all mapped intervals
-		print "createonboth"
 		if len(dIndex2Cluster) == 1:
 			genePair = list(dIndex2Cluster.keys()[0])
 			intervalsA = merge_intervals([cluster[0] for x in dIndex2Cluster.itervalues() for cluster in x])
 			intervalsB = merge_intervals([cluster[1] for x in dIndex2Cluster.itervalues() for cluster in x])
 			tmp = []
 			for k, v in dIndex2Cluster.iteritems():
-				print "k", k, "v", v
+				#print "k", k, "v", v
 				for i in range(len(v)):
 					tmp += dSenses[v[i]]
-			print "intervalsA", intervalsA
-			print "intervalsB", intervalsB
-			print "tmp", tmp
+			if debug:
+				agDENOISEDebug.debugger.debug("MAP2GENE\tintervalsA - %s" %(intervalsA))
+				agDENOISEDebug.debugger.debug("MAP2GENE\tintervalsB - %s" %(intervalsB))
+			#print "tmp", tmp
 			return tuple(genePair + [intervalsA] + [intervalsB] + [tmp])
 		else:
-			print "index conflict"
+			if debug:
+				agDENOISEDebug.debugger.debug("MAP2GENE\tindex conflict")
 
-def get_genePair_for_contigPair(dGFFs, ctgA, ctgB, mapIntervalsA, mapIntervalsB, senses):
+def get_genePair_for_contigPair(dGFFs, ctgA, ctgB, mapIntervalsA,
+								mapIntervalsB, senses, debug=0):
+#	agDENOISEDebug = None
+#	if debugLogFile != "":
+#		agDENOISEDebug = agLOG.DEBUG("get_genePair_main", debugLogFile, 'a')
 	geneModelsA = []
 	geneModelsB = []
 	createA, createB = 0, 0
 	mergedIntervalsA = merge_intervals(mapIntervalsA)
 	if ctgA not in dGFFs:
 		# create genes on contig A using all intervals
-		print "create gene on A"
-		dGFFs[ctgA] = create_fake_genes([], 0, ctgA, mergedIntervalsA)
+		if debug:
+			agDENOISEDebug.debugger.debug("GET_GENEPAIR_MAIN\tcreate gene on A")
+		dGFFs[ctgA] = create_fake_genes([], 0, ctgA, mergedIntervalsA, debug)
 		createA = 1
 	mergedIntervalsB = merge_intervals(mapIntervalsB)
 	if ctgB not in dGFFs:
 		# create genes on contig B using all intervals
-		print "create gene on B"
-		dGFFs[ctgB] = create_fake_genes([], 0, ctgB, mergedIntervalsB)
+		if debug:
+			agDENOISEDebug.debugger.debug("GET_GENEPAIR_MAIN\tcreate gene on B")
+		dGFFs[ctgB] = create_fake_genes([], 0, ctgB, mergedIntervalsB, debug)
 		createB = 1
-	print "createA", createA, "createB", createB
 	if createA and createB:
 		# no need to map to gene model, return gene pair directly
-		print "create both"
+		if debug:
+			agDENOISEDebug.debugger.debug("GET_GENEPAIR_MAIN\tcreate gene on both")
 		return (0, 0, 0, 0, [], [], senses)
 	geneModelsA = dGFFs[ctgA]
 	geneModelsB = dGFFs[ctgB]
-	print "get_genePair_for_contigPair all senses", senses
 	genePair = mapping_to_geneModel(geneModelsA, geneModelsB,
 									mapIntervalsA, mapIntervalsB,
 									mergedIntervalsA, mergedIntervalsB,
-									senses)
-	print "contig Pair", ctgA, ctgB, "genePair", genePair
+									senses, debug)
 	return genePair
 
 def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
@@ -205,12 +225,13 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 		os.makedirs(moduleOutDir)
 
 	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_denoise.progressMeter" %(prefix))
-	outDenoiseJPFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.noise_free.txt" %(prefix))
-
 	agDENOISEProgress = agLOG.PROGRESS_METER(moduleName)
 	agDENOISEProgress.add_file_handler(progressLogFile)
+
+	debugLogFile = ""
 	if debug:
 		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_denoise.debug" %(prefix))
+		global agDENOISEDebug
 		agDENOISEDebug = agLOG.DEBUG(moduleName, debugLogFile)
 
 	agDENOISEProgress.logger.info("[BEGIN] Filtering joining pairs")
@@ -219,6 +240,7 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 	daddedModels = collections.defaultdict(list)
 	nFail4Combination = 0
 	nFailGeneModel = 0
+	outDenoiseJPFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.noise_free.txt" %(prefix))
 	fOUT = open(outDenoiseJPFile, 'w')
 	for ctgPair, pairInfo in dContigPairs.items():
 		if len(pairInfo) < minSupport:
@@ -226,7 +248,9 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 			continue
 		ctgA = ctgPair[0]
 		ctgB = ctgPair[1]
-		print ">%s %s" %(ctgA, ctgB)
+		if debug:
+			agDENOISEDebug.debugger.debug(">contigA - %s - contigB - %s"
+										  %(ctgA, ctgB))
 		pairToRemove = []
 		mapIntervalsA = []
 		mapIntervalsB = []
@@ -239,21 +263,28 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 			mapIntervalsB += [(startB, stopB)]
 			pairs += [(startA, stopA, startB, stopB)]
 			senses += [(senseA, senseB)]
-		genePair = get_genePair_for_contigPair(dGFFs, ctgA, ctgB, mapIntervalsA, mapIntervalsB, senses)
+		genePair = get_genePair_for_contigPair(dGFFs, ctgA, ctgB,
+											   mapIntervalsA,
+											   mapIntervalsB, senses,
+											   debug)
 		geneModelsA = dGFFs[ctgA]
 		geneModelsB = dGFFs[ctgB]
-		if genePair is not None:
+		if genePair is None:
+			nFailGeneModel += 1
+			agDENOISEDebug.debugger.debug("\tFail to find a pair of gene models")
+		else:
 			geneIndexA, geneIndexB, endA, endB, intervalsA, intervalsB, senses = genePair
 			sensesCounter = collections.Counter(senses)
-			print "sensesCounter", sensesCounter
+			if debug:
+				agDENOISEDebug.debugger.debug("\tsensesCounter: %s" %(str(sensesCounter)))
 			if geneIndexB != 0:
 				# create gene model according to endB using intervalsB
 				if geneIndexB == -1 and (endB == 5 or endB == 0):
-					dGFFs[ctgB] = create_fake_genes(geneModelsB, 0, ctgB, intervalsB)
+					dGFFs[ctgB] = create_fake_genes(geneModelsB, 0, ctgB, intervalsB, debug)
 					geneIndexB = 0
 					endB = 5
 				elif geneIndexB == 1 and (endB == 3 or endB == 0):
-					dGFFs[ctgB] = create_fake_genes(geneModelsB, len(geneModelsB), ctgB, intervalsB)
+					dGFFs[ctgB] = create_fake_genes(geneModelsB, len(geneModelsB), ctgB, intervalsB, debug)
 					geneIndexB = len(dGFFs[ctgB]) - 1
 					endB = 3
 			else:
@@ -264,11 +295,11 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 			if geneIndexA != 0:
 				# create gene model according to endA using intervalsA
 				if geneIndexA == -1 and (endA == 5 or endA == 0):
-					dGFFs[ctgA] = create_fake_genes(geneModelsA, 0, ctgA, intervalsA)
+					dGFFs[ctgA] = create_fake_genes(geneModelsA, 0, ctgA, intervalsA, debug)
 					geneIndexA = 0
 					endA = 5
 				elif geneIndexA == 1 and (endA == 3 or endA == 0):
-					dGFFs[ctgA] = create_fake_genes(geneModelsA, len(geneModelsA), ctgA, intervalsA)
+					dGFFs[ctgA] = create_fake_genes(geneModelsA, len(geneModelsA), ctgA, intervalsA, debug)
 					geneIndexA = len(dGFFs[ctgA]) - 1
 					endA = 3
 			else:
@@ -276,11 +307,15 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 					endA = 3
 				elif endA == 3:
 					geneIndexA = len(dGFFs[ctgA])-1
-			print "contig Pair", ctgA, ctgB, "genePair", genePair
-			print "# model on ctgA", len(dGFFs[ctgA]), "# model on ctgB", len(dGFFs[ctgB])
-			print "geneIndexA", geneIndexA, "endA", endA, "geneIndexB", geneIndexB, "endB", endB
+			if debug:
+				agDENOISEDebug.debugger.debug("\tgenePair: %s" %(str(genePair)))
+				agDENOISEDebug.debugger.debug("\t# models on ctgA - %d - # models on ctgB - %d"
+											  %(len(dGFFs[ctgA]), len(dGFFs[ctgB])))
+				agDENOISEDebug.debugger.debug("\tgeneIndexA - %d - endA - %d - geneIndexB - %d - endB - %d"
+											  %(geneIndexA, endA, geneIndexB, endB))
 			sense = sorted(sensesCounter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
-			print "sense", sense
+			if debug:
+				agDENOISEDebug.debugger.debug("\tsensePair - %s" %(str(sense)))
 			if (geneIndexA == len(dGFFs[ctgA])-1 and endA == 3) and \
 			   (geneIndexB == 0 and endB == 5) and sense == ('+', '-'):
 					# FR + 3'-5'
@@ -305,38 +340,41 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 					# only one gene on the contig
 					# it doesn't matter which end
 					keep = 1
-			print "****keep", keep
+			if debug:
+				agDENOISEDebug.debugger.debug("\tNOISE-FREE")
 			if keep:
 				geneA = dGFFs[ctgA][geneIndexA]
 				geneB = dGFFs[ctgB][geneIndexB]
 				dCtgPair2GenePair[vertex2Name.index(ctgA), vertex2Name.index(ctgB)] = [geneA, geneB]
-				print "geneA", geneA.geneID, geneA.geneStart, geneA.geneStop
-				print "geneB", geneB.geneID, geneB.geneStart, geneB.geneStop
-				print "sense", sense
+				if debug:
+					agDENOISEDebug.debugger.debug("\tgeneA ID - %s - startA - %d - stopA = %d"
+												  %(geneA.geneID, geneA.geneStart, geneA.geneStop))
+					agDENOISEDebug.debugger.debug("\tgeneB ID - %s - startB - %d - stopB = %d"
+												  %(geneB.geneID, geneB.geneStart, geneB.geneStop))
 				senseA = sense[0]
 				senseB = sense[1]
 				for i in xrange(len(pairInfo)):
 					startA, startB, stopA, stopB, _, _, readID = pairInfo[i]
 					intervalA = (startA, stopA)
 					intervalB = (startB, stopB)
-					print "intervalA", intervalA, "intervalB", intervalB
+					#print "intervalA", intervalA, "intervalB", intervalB
 					if len(intervalsA) == 0:
 						if len(intervalsB) == 0:
-							print "use all"
+							#print "use all"
 							fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 						else:
-							print "use all A, not all B"
+							#print "use all A, not all B"
 							overlap = find_overlap(intervalB, (geneB.geneStart, geneB.geneStop))
 							if overlap == 0:
 								fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 					else:
 						if len(intervalsB) == 0:
-							print "use all B, not all A"
+							#print "use all B, not all A"
 							overlap = find_overlap(intervalA, (geneA.geneStart, geneA.geneStop))
 							if overlap == 0:
 								fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
 						else:
-							print "not all Both"
+							#print "not all Both"
 							overlapA = find_overlap(intervalA, (geneA.geneStart, geneA.geneStop))
 							overlapB = find_overlap(intervalB, (geneB.geneStart, geneB.geneStop))
 							if overlapA == 0 and overlapB == 0:
@@ -351,11 +389,10 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 #				print "senses", senses
 #				ratio = float(senses[0][1])/(senses[0][1]+senses[1][1])
 #				print "ratio", ratio
-		else:
-			nFailGeneModel += 1
-			print "genePair is None"
 	fOUT.close()
-	agDENOISEProgress.logger.info("%d contig pairs filtered for spanning across >1 gene models" %(nFailGeneModel))
-	agDENOISEProgress.logger.info("%d contig pairs filtered for not being one of the four combinations" %(nFail4Combination))
+	agDENOISEProgress.logger.info("%d contig pairs filtered for spanning across >1 gene models"
+								  %(nFailGeneModel))
+	agDENOISEProgress.logger.info("%d contig pairs filtered for not being one of the four combinations"
+								  %(nFail4Combination))
 	agDENOISEProgress.logger.info("Succeeded")
 	return dCtgPair2GenePair, outDenoiseJPFile
