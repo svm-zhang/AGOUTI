@@ -141,8 +141,6 @@ def mapping_to_geneModel(geneModelsA, geneModelsB,
 		if debug:
 			agDENOISEDebug.debugger.debug("MAP2GENE\tclusterA - %s - clusterB -%s - nSupport - %d"
 										  %(clusterA, clusterB, nSupport))
-#			agDENOISEDebug.debugger.debug("MAP2GENE\tgeneIndexA - %d - endA - %d - geneIndexB - %d - endB - %d"
-#										  %(geneIndexA, endA, geneIndexB, endB))
 		if geneIndexA == 0 and geneIndexB == 0:
 			# save and go on
 			return (geneIndexA, geneIndexB, endA, endB, [], [], dSenses[k[0]])
