@@ -5,7 +5,6 @@ import string
 import collections
 import itertools
 import operator
-#from numpy import zeros, int16
 
 from lib import agouti_log as agLOG
 from lib import agouti_gff as agGFF
@@ -151,7 +150,8 @@ class Graph(object):
 					startVertices.append(vertexA)
 					if self.debug:
 						simplifyDebug.debugger.debug("\tLeaf: Neighbor B %s - %s" %(vertexB, vertex2Name[vertexB]))
-		self.agSCAFProgress.logger.info("%d Edges removed due to insufficient supports")
+		self.agSCAFProgress.logger.info("%d Edges removed due to insufficient supports"
+										%(nEdgeRemoved))
 
 	def dfs(self, vertex, vertex2Name, minSupport, seen=None, path=None):
 		"""
