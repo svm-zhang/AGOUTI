@@ -7,7 +7,7 @@ import collections
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
-__version__ = "v0.2"
+__version__ = "v0.2.1"
 
 from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
@@ -140,10 +140,6 @@ def main():
 										   args.minFracOvl, args.maxFracMM,
 										   args.debug)
 
-#	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
-#	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
-#	agFILTER.set_module_name("AGOUTI_FILTER")
-	# this module uses the same output directory as last module
 	dCtgPair2GenePair, joinPairsFile = agFILTER.denoise_joining_pairs(dContigPairs, dGFFs,
 																	  vertex2Name, outDir,
 																	  prefix, args.minSupport,
@@ -152,16 +148,11 @@ def main():
 	scafPaths, edgeSenseDict = agSCAFF.run_scaffolding(args.algorithm, vertex2Name, joinPairsFile,
 												   dCtgPair2GenePair, outDir, prefix,
 												   args.minSupport, args.debug)
-	sys.exit()
 
-	agUPDATE.set_module_name("AGOUTI_UPDATE")
-	moduleOutDir = os.path.join(outDir, "agouti_update")
-	if not os.path.exists(moduleOutDir):
-		os.makedirs(moduleOutDir)
 	agUPDATE.agouti_update(scafPaths, dSeq, vertex2Name,
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
-						   moduleOutDir, args.numNs)
+						   moduleOutDir, args.numNs, args.debug)
 
 if __name__ == "__main__":
 	main()
