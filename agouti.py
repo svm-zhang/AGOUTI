@@ -12,7 +12,7 @@ __version__ = "v0.2.1"
 from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
 from lib import agouti_sam as agBAM
-from src import agouti_filter_v2 as agFILTER
+from src import agouti_denoise as agDENOISE
 from lib import agouti_gff as agGFF
 from src import agouti_update as agUPDATE
 from src import agouti_scaffolding as agSCAFF
@@ -140,7 +140,7 @@ def main():
 										   args.minFracOvl, args.maxFracMM,
 										   args.debug)
 
-	dCtgPair2GenePair, joinPairsFile = agFILTER.denoise_joining_pairs(dContigPairs, dGFFs,
+	dCtgPair2GenePair, joinPairsFile = agDENOISE.denoise_joining_pairs(dContigPairs, dGFFs,
 																	  vertex2Name, outDir,
 																	  prefix, args.minSupport,
 																	  args.debug)
@@ -152,7 +152,7 @@ def main():
 	agUPDATE.agouti_update(scafPaths, dSeq, vertex2Name,
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
-						   moduleOutDir, args.numNs, args.debug)
+						   args.numNs, args.debug)
 
 if __name__ == "__main__":
 	main()
