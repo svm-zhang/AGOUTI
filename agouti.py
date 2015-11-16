@@ -139,22 +139,20 @@ def main():
 										   args.overwrite, args.minMQ,
 										   args.minFracOvl, args.maxFracMM,
 										   args.debug)
-	sys.exit()
 
 #	joinPairsFile = os.path.join(outDir, "%s.join_pairs" %(prefix))
 #	dCtgPair2GenePair = agFILTER.map_contigPair2genePair(dContigPairs, dGFFs, joinPairsFile, args.minSupport)
-	agFILTER.set_module_name("AGOUTI_FILTER")
+#	agFILTER.set_module_name("AGOUTI_FILTER")
 	# this module uses the same output directory as last module
-	dCtgPair2GenePair, joinPairsFile = agFILTER.enforce_filters(dContigPairs, dGFFs, vertex2Name, moduleOutDir,
-																prefix, args.minSupport)
+	dCtgPair2GenePair, joinPairsFile = agFILTER.denoise_joining_pairs(dContigPairs, dGFFs,
+																	  vertex2Name, outDir,
+																	  prefix, args.minSupport,
+																	  args.debug)
 
-	agSCAFF.set_module_name("scaffolding")
-	moduleOutDir = os.path.join(outDir, "scaffolding")
-	if not os.path.exists(moduleOutDir):
-		os.makedirs(moduleOutDir)
 	scafPaths, edgeSenseDict = agSCAFF.run_scaffolding(args.algorithm, vertex2Name, joinPairsFile,
-												   dCtgPair2GenePair, moduleOutDir, prefix,
-												   args.minSupport)
+												   dCtgPair2GenePair, outDir, prefix,
+												   args.minSupport, args.debug)
+	sys.exit()
 
 	agUPDATE.set_module_name("AGOUTI_UPDATE")
 	moduleOutDir = os.path.join(outDir, "agouti_update")
