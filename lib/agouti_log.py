@@ -27,6 +27,6 @@ class DEBUG(object):
 		self.debugger.setLevel(logLevel)
 		fileHandler = logging.FileHandler(logFile, mode=mode)
 		fileHandler.setLevel(logLevel)
-		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+		formatter = logging.Formatter('%(name)s - %(message)s')
 		fileHandler.setFormatter(formatter)
 		self.debugger.addHandler(fileHandler)
