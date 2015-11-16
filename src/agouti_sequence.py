@@ -4,12 +4,6 @@ import sys
 from lib import agouti_log as agLOG
 
 def get_contigs(assemblyFile, agSeqProgress):
-#	try:
-#		fCONTIG = open(assemblyFile, 'r')
-#	except IOError:
-#		agSeqProgress.logger.error("Error opening contig file: %s" %(assemblyFile), exc_info=True)
-#		sys.exit()
-
 	agSeqProgress.logger.info("[BEGIN] Reading the initial assembly")
 	seq = ""
 	contigs = []
@@ -53,6 +47,17 @@ def read_assembly(assemblyFile, outDir, prefix, debug=0):
 	contigs, contigDict = get_contigs(assemblyFile, agSeqProgress)
 
 	return contigs, contigDict
+
+def rc_seq(seq):
+	"""
+		return the reverse and complementary of
+		the give sequence
+	"""
+	alphabetsInString = "ACGTNTGCANacgtntgcan"
+	alphabets = { alphabetsInString[i]:alphabetsInString[i+5] for i
+				  in range(20)
+				  if i<5 or 10<=i<=14 }
+	return "".join([alphabets[base] for base in seq[::-1]])
 
 def get_assembly_NXX(seqLens, nXX=50):
 	seqLenSum = sum(seqLens)
