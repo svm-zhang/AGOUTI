@@ -1,17 +1,10 @@
 import logging
 
-class AGOUTI_LOG(object):
-	def __init__(self):
-		pass
-
-	def create_logger(self, logFile=None):
-		pass
-
 class PROGRESS_METER(object):
 	def __init__(self, loggerName):
 		logLevel = logging.INFO
 		self.logFile = None
-		self.logger = logging.getLogger(loggerName.upper()+"_PROGRESS")
+		self.logger = logging.getLogger(loggerName.upper()+" PROGRESS")
 		self.logger.setLevel(logLevel)
 		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 		consoleHandler = logging.StreamHandler()
@@ -30,7 +23,7 @@ class PROGRESS_METER(object):
 class DEBUG(object):
 	def __init__(self, debuggerName, logFile, mode='w'):
 		logLevel = logging.DEBUG
-		self.debugger = logging.getLogger(debuggerName.upper()+"_DEBUG")
+		self.debugger = logging.getLogger(debuggerName.upper()+" DEBUG")
 		self.debugger.setLevel(logLevel)
 		fileHandler = logging.FileHandler(logFile, mode=mode)
 		fileHandler.setLevel(logLevel)
