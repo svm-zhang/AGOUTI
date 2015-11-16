@@ -44,7 +44,7 @@ def agouti_update(pathList, contigDict, seqNames,
 	for i in range(len(pathList)):
 		path = pathList[i]
 #		if len(path) >= 2:
-		tmp = 0
+#		tmp = 0
 		scafID += 1
 		scafName = prefix + "_scaf_%d" %(scafID)
 		fSCAFFPATH.write(">%s\n" % (scafName))
@@ -70,10 +70,15 @@ def agouti_update(pathList, contigDict, seqNames,
 		for nextVertex in path[1:]:
 			nextCtg = seqNames[nextVertex]
 
-			if tmp == 0:
-				print "scaf_%d" %(scafID), path
-				tmp = 1
-			print ">>", currentVertex, nextVertex, curCtg, nextCtg
+			if preCtg == "":
+				if debug:
+					agUPDATEDebug.debugger.debug("UPDATE_MAIN\t>scaf_%d - path - %s"
+												 %(scafID,
+												  str([seqNames[vertex] for vertex in path])))
+#				tmp = 1
+			if debug:
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurVertex - %d - %s - nextVertex - %d - %s"
+											 %(currentVertex, curCtg, nextVertex, nextCtg))
 
 			#currentGene, nextGene = ctgpair2genepair(dCtgPair2GenePair, curCtg, nextCtg)
 			currentGene, nextGene = ctgpair2genepair(dCtgPair2GenePair, currentVertex, nextVertex)
@@ -83,7 +88,10 @@ def agouti_update(pathList, contigDict, seqNames,
 				break
 			curGeneID = currentGene.geneID
 			excludeGeneIDs = [preGeneID] + [curGeneID]
-			print ">>>>", scafName, "pre", preGeneID, "current", currentGene.geneID, "next", nextGene.geneID
+			if debug:
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafName - %s" %(scafName))
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tpreGene - %s - curGene - %s - nextGene - %s"
+											 %(preGeneID, currentGene.geneID, nextGene.geneID))
 
 			FR, FF, RR, RF = get_orientation_counts(currentVertex, nextVertex, edgeSenseDict)
 			if currentSense == "-":
@@ -96,44 +104,57 @@ def agouti_update(pathList, contigDict, seqNames,
 				RF = temp2
 			orientation = decide_orientation(FR, FF, RR, RF)
 
-			print ">>>>currentSense", currentSense
-			print ">>>>orientation", currentVertex, nextVertex, curCtg, nextCtg, currentSense, "FF", FF, "RR", RR, "RF", RF, "FR", FR
 			gapStart = gapStop + 1 + len(contigDict[currentVertex])
 			gapStop = gapStart + numNs - 1
-			print ">>>>", "offset", offset, "current Contig length", len(contigDict[currentVertex]), "gapstart", gapStart, "gapstop", gapStop+1
+			if debug:
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurrentSense - %s" %(currentSense))
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tFF - %d - RR - %d - RF - %d - FR - %d"
+											 %(FF, RR, RF, FR))
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\toffset - %d - curCtgLen - %d"
+											 %(offset, len(contigDict[currentVertex])))
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tgapstart - %d - gapstop - %d"
+											 %(gapStart, gapStop+1))
 			valid = 0
 			if orientation == "FR":
 				if curGeneID !=  preGeneID:
 					numMergedGene += 1
 					mergedGene = merge_gene_model(currentGene, nextGene, scafName,
-												  numMergedGene, offset, gapStop)
+												  numMergedGene, offset, gapStop,
+												  debug)
 					dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
 					dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
-					dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
+					dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
+																			  scafName, offset, excludeGeneIDs,
+																			  debug, mergedGene)
 				else:
 					mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
-												  numMergedGene, 0, gapStop)
+												  numMergedGene, 0, gapStop, debug)
 					dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
 					dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 					indexMerged = updatedGeneIDs.index(mergedGene.geneID)
 					dUpdateGFFs[scafName][indexMerged] = mergedGene
-				print "mergedGene", mergedGene.geneID, "dMergedGene2Ctgs", dMergedGene2Ctgs[mergedGene.geneID]
+#				if debug:
+#					agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tmergedGene - %s - dMergedGene2Ctgs - %s"
+#												 %(mergedGene.geneID, str(dMergedGene2Ctgs[mergedGene.geneID])))
 				preMergedGene = mergedGene
 				assemblyList = ((assemblyList, "+"), (nextVertex, "+"))
 				sequence += 'N'*numNs + contigDict[nextVertex]
 				currentSense = "+"
 			elif orientation == "FF":
-				nextGene = reverse_gene_model(nextGene, len(contigDict[nextVertex]))
+				nextGene = reverse_gene_model(nextGene, len(contigDict[nextVertex]), debug)
 				if curGeneID !=  preGeneID:
 					numMergedGene += 1
 					mergedGene = merge_gene_model(currentGene, nextGene, scafName,
-												  numMergedGene, offset, gapStop)
+												  numMergedGene, offset, gapStop,
+												  debug)
 					dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
 					dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
-					dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
+					dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
+																			  scafName, offset, excludeGeneIDs,
+																			  debug, mergedGene)
 				else:
 					mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
-												  numMergedGene, 0, gapStop)
+												  numMergedGene, 0, gapStop, debug)
 					dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
 					dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 					indexMerged = updatedGeneIDs.index(mergedGene.geneID)
@@ -144,30 +165,39 @@ def agouti_update(pathList, contigDict, seqNames,
 				currentSense = "-"
 			elif orientation == "RR":
 				if preGeneID != "":
-					print ">>>>", "preCtg", preCtg, "curCtg", curCtg
-					curToLeft, curToRight = get_gene_index(dGFFs[preCtg]+dGFFs[curCtg], curGeneID, True)
-					print ">>>>", "curToLeft", curToLeft, "curToRight", curToRight
+					#print ">>>>", "preCtg", preCtg, "curCtg", curCtg
+					curToLeft, curToRight = get_gene_index(dGFFs[preCtg]+dGFFs[curCtg], curGeneID, debug, True)
+					if debug:
+						agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurToLeft - %d - curToRight - %d"
+													 %(curToLeft, curToRight))
 					if curToRight < 1:
 						valid = 1
 				else:
 					# the first pair must be always right
 					# no need to check
 					valid = 1
-				print ">>>> RR valid", valid
+				if debug:
+					agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tRR valid - %d" %(valid))
 				if valid:
 					if currentGene.geneID != preGeneID:
-						dGFFs[curCtg] = reverse_gene_models(dGFFs[curCtg], len(contigDict[currentVertex]))
+						dGFFs[curCtg] = reverse_gene_models(dGFFs[curCtg], len(contigDict[currentVertex]), debug)
 						numMergedGene += 1
 						mergedGene = merge_gene_model(currentGene, nextGene, scafName,
-													  numMergedGene, offset, gapStop)
+													  numMergedGene, offset, gapStop,
+													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
 						dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
-						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
+						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
+																				  scafName, offset, excludeGeneIDs,
+																				  debug, mergedGene)
 					else:
-						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
-						dUpdateGFFs[scafName] = reverse_gene_models(dUpdateGFFs[scafName], gapStart-1)
+						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
+																				  scafName, offset, excludeGeneIDs,
+																				  debug)
+						dUpdateGFFs[scafName] = reverse_gene_models(dUpdateGFFs[scafName], gapStart-1, debug)
 						mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
-													  numMergedGene, 0, gapStop)
+													  numMergedGene, 0, gapStop,
+													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
 						dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 						indexMerged = updatedGeneIDs.index(mergedGene.geneID)
@@ -176,7 +206,7 @@ def agouti_update(pathList, contigDict, seqNames,
 					sequence = agSeq.rc_seq(sequence) + \
 							   'N'*numNs + contigDict[nextVertex]
 					preMergedGene = mergedGene
-					print ">>>> RR zone preMergedGene", preMergedGene.geneID, preMergedGene.geneStart, preMergedGene.geneStop
+					#print ">>>> RR zone preMergedGene", preMergedGene.geneID, preMergedGene.geneStart, preMergedGene.geneStop
 				else:
 					currentVertex = nextVertex
 					if path.index(currentVertex) < len(path)-1:
@@ -184,7 +214,7 @@ def agouti_update(pathList, contigDict, seqNames,
 						curCtg = nextCtg
 						currentSense = "+"
 						assemblyList = currentVertex
-						print "delete before", " ".join([x.geneID for x in dUpdateGFFs[scafName]])
+						#print "delete before", " ".join([x.geneID for x in dUpdateGFFs[scafName]])
 						del dUpdateGFFs[scafName]
 						scafPath = []
 						scafName = prefix + "_scaf_%d" %(scafID)
@@ -196,38 +226,51 @@ def agouti_update(pathList, contigDict, seqNames,
 						preGeneID = ""
 						continue
 					else:
-						print "RR", "here is a stop"
+						if debug:
+							agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tRR terminates")
 						break
 				currentSense = "+"
 			elif orientation == "RF":
 				if preGeneID != "":
-					print ">>>>", "preCtg", preCtg, "curCtg", curCtg
-					curToLeft, curToRight = get_gene_index(dGFFs[preCtg]+dGFFs[curCtg], curGeneID, True)
-					print ">>>>", "curToLeft", curToLeft, "curToRight", curToRight
-					nextToLeft, nextToRight = get_gene_index(dGFFs[nextCtg], nextGene.geneID, True)
-					print ">>>>", "nextToLeft", nextToLeft, "nextToRight", nextToRight
+					#print ">>>>", "preCtg", preCtg, "curCtg", curCtg
+					curToLeft, curToRight = get_gene_index(dGFFs[preCtg]+dGFFs[curCtg], curGeneID, debug, True)
+					nextToLeft, nextToRight = get_gene_index(dGFFs[nextCtg], nextGene.geneID, debug, True)
+					if debug:
+						agUPDATEDebug.debuger.debug("UPDATE_MAIN\t\tcurToLeft - %d - curToRight - %d"
+													%(curToLeft, curToRight))
+						agUPDATEDebug.debuger.debug("UPDATE_MAIN\t\tnextToLeft - %d - nextToRight - %d"
+													%(nextToLeft, nextToRight))
 					if curToRight < 1 and nextToLeft < 1:
 						valid = 1
 				else:
 					# the first pair must be always right
 					# no need to check
 					valid = 1
-				print ">>>> RF valid", valid
+				if debug:
+					agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tRF valid - %d" %(valid))
 				if valid:
 					if currentGene.geneID != preGeneID:
-						dGFFs[curCtg] = reverse_gene_models(dGFFs[curCtg], len(contigDict[currentVertex]))
-						nextGene = reverse_gene_model(nextGene, len(contigDict[nextVertex]))
+						dGFFs[curCtg] = reverse_gene_models(dGFFs[curCtg], len(contigDict[currentVertex]), debug)
+						nextGene = reverse_gene_model(nextGene, len(contigDict[nextVertex]), debug)
 						numMergedGene += 1
 						mergedGene = merge_gene_model(currentGene, nextGene, scafName,
-													  numMergedGene, offset, gapStop)
+													  numMergedGene, offset, gapStop,
+													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
 						dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
-						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs, mergedGene)
+						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
+																				  scafName, offset, excludeGeneIDs,
+																				  debug, mergedGene)
 					else:
-						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
-						dUpdateGFFs[scafName] = reverse_gene_models(dUpdateGFFs[scafName], gapStop+len(contigDict[currentVertex]))
+						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
+																				  scafName, offset, excludeGeneIDs,
+																				  debug)
+						dUpdateGFFs[scafName] = reverse_gene_models(dUpdateGFFs[scafName],
+																	gapStop+len(contigDict[currentVertex]),
+																	debug)
 						mergedGene = merge_gene_model(preMergedGene, nextGene, scafName,
-													  numMergedGene, 0, gapStop)
+													  numMergedGene, 0, gapStop,
+													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [nextCtg]
 						dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
 						indexMerged = updatedGeneIDs.index(mergedGene.geneID)
@@ -237,7 +280,7 @@ def agouti_update(pathList, contigDict, seqNames,
 							   'N'*numNs + \
 							   agSeq.rc_seq(contigDict[nextVertex])
 					preMergedGene = mergedGene
-					print ">>>> RF zone preMergedGene", preMergedGene.geneID, preMergedGene.geneStart, preMergedGene.geneStop
+					#print ">>>> RF zone preMergedGene", preMergedGene.geneID, preMergedGene.geneStart, preMergedGene.geneStop
 				else:
 					currentVertex = nextVertex
 					if path.index(currentVertex) < len(path)-1:
@@ -245,7 +288,7 @@ def agouti_update(pathList, contigDict, seqNames,
 						curCtg = nextCtg
 						currentSense = "+"
 						assemblyList = currentVertex
-						print "delete before", " ".join([x.geneID for x in dUpdateGFFs[scafName]])
+						#print "delete before", " ".join([x.geneID for x in dUpdateGFFs[scafName]])
 						del dUpdateGFFs[scafName]
 						scafPath = []
 						scafName = prefix + "_scaf_%d" %(scafID)
@@ -257,11 +300,14 @@ def agouti_update(pathList, contigDict, seqNames,
 						preGeneID = ""
 						continue
 					else:
-						print "RF", "here is a stop"
+						if debug:
+							agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tRF terminates")
 						break
 				currentSense = "-"
-			print "scafPath", scafPath
 			scafPath.append(curCtg)
+			if debug:
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafPath updates- %s"
+											 %(str(scafPath)))
 			mergedGenesPerPath.append(mergedGene.geneID)
 			offset = gapStop
 			preGeneID = nextGene.geneID
@@ -270,20 +316,27 @@ def agouti_update(pathList, contigDict, seqNames,
 			curCtg = seqNames[currentVertex]
 
 		excludeGeneIDs = [preGeneID]
-		print "append last curCtg", curCtg
+		agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tappend last curCtg - %s" %(curCtg))
 		scafPath.append(curCtg)
-		print "last scafPath", scafPath
+		if debug:
+			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafPath - %s"
+										 %(str(scafPath)))
 		scafPaths.append(scafPath)
 		mergedGenes.append(mergedGenesPerPath)
-		dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName], scafName, offset, excludeGeneIDs)
-		print "updatedGeneIDs", updatedGeneIDs
-		print "mergedGenesPerPath", mergedGenesPerPath
+		dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
+																  scafName, offset, excludeGeneIDs,
+																  debug)
 		fOUTFASTA.write(">%s|%dbp|%s\n%s\n" % (scafName, len(sequence), ",".join(scafPath), sequence))
 		seqLens.append(len(sequence))
 		fSCAFFPATH.write("%s\n" %(",".join(scafPath)))
 		nCtgScaffolded += len(scafPath)
 		scaffoldedCtgs.update(dict((contig, 1) for contig in scafPath))
-		print
+		if debug:
+			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tupdatedGeneIDs - %s"
+										 %(str(updatedGeneIDs)))
+			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tmergedGenesPerPath - %s"
+										 %(str(mergedGenesPerPath)))
+			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t-------------------------------------")
 	fSCAFFPATH.close()
 
 	outDotFile = os.path.join(moduleOutDir, "%s.agouti.scaffolding_paths.dot" %(prefix))
@@ -400,20 +453,30 @@ def remove_cycles(pathList, visitedDict):
 					del visitedDict[node]
 	return loop2Remove, visitedDict
 
-def get_gene_index(geneModels, curGeneID, reverse=False):
+def get_gene_index(geneModels, curGeneID, debug=0, reverse=False):
 	currentGeneIndex = -1
 	if reverse:
-		print ">>>> get_gene_index", " ".join([x.geneID for x in geneModels[::-1]]), "curGeneID", curGeneID
 		currentGeneIndex = [x.geneID for x in geneModels[::-1]].index(curGeneID)
+		if debug:
+			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\treversed gene models"
+										 %(" ".join([x.geneID for x in geneModels[::-1]])))
+			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tcurGene - %s - index - %d"
+										 %(curGeneID, currentGeneIndex))
 	else:
 		print ">>>> get_gene_index", " ".join([x.geneID for x in geneModels]), "curGeneID", curGeneID
 		currentGeneIndex = [x.geneID for x in geneModels].index(curGeneID)
+		if debug:
+			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tgene models"
+										 %(" ".join([x.geneID for x in geneModels[::-1]])))
+			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tcurGene - %s - index - %d"
+										 %(curGeneID, currentGeneIndex))
 	toLeft = currentGeneIndex
 	toRight = len(geneModels) - 1 - currentGeneIndex
 	return toLeft, toRight
 
 def merge_gene_model(currentGene, nextGene, scafName,
-					 numMergedGene, currentOffset, nextOffset):
+					 numMergedGene, currentOffset, nextOffset,
+					 debug=0):
 	mergedGene = agGFF.AGOUTI_GFF()
 	mergedGene.geneID = "AGOUTI_Merged_gene_%d" %(numMergedGene)
 	mergedGene.geneStart = currentGene.geneStart + currentOffset
@@ -424,26 +487,35 @@ def merge_gene_model(currentGene, nextGene, scafName,
 		mergedGene.strand = currentGene.strand
 	else:
 		mergedGene.strand = '.'
-	print ">>>> merge", "merged GeneID", mergedGene.geneID, "current LCDS", currentGene.lcds
+	if debug:
+		agUPDATEDebug.debugger.debug("MERGE_GENE_MODEL\t\tmerge cur GeneID - %s - %s"
+									 %(currentGene.geneID, str(currentGene.lcds)))
 	for i in range(len(currentGene.lcds)):
 		currentGene.lcds[i] += currentOffset
-	print ">>>> merge", "next LCDS before", nextGene.lcds
 	for i in range(len(nextGene.lcds)):
 		nextGene.lcds[i] += nextOffset
-	print ">>>> merge", "next LCDS after", nextGene.lcds
+	if debug:
+		agUPDATEDebug.debugger.debug("MERGE_GENE_MODEL\t\tmerge next GeneID - %s - %s"
+									 %(nextGene.geneID, str(nextGene.lcds)))
+	#print ">>>> merge", "next LCDS after", nextGene.lcds
 	mergedGene.lcds = currentGene.lcds + nextGene.lcds
-	print ">>>> merge", "finish merging", mergedGene.lcds
+	if debug:
+		agUPDATEDebug.debugger.debug("MERGE_GENE_MODEL\t\tmerged GeneID - %s - %s"
+									 %(mergedGene.geneID, str(mergedGene.lcds)))
+	#print ">>>> merge", "finish merging", mergedGene.lcds
 	return mergedGene
 
 def update_gene_model(geneModels, updatedGeneModels,
-					  newScafID, offset, excludes,
-					  mergedGene=None):
-	print ">>>> update"
-	print ">>>> excludes to update", excludes
+					  newScafID, offset, excludeIDs,
+					  debug=0, mergedGene=None):
+
+	if debug:
+		agUPDATEDebug.debugger.debug("UPDATE_GENE_MODEL\t\texcludes to update - %s"
+									 %(str(excludeIDs)))
 	tmpGeneModel = agGFF.AGOUTI_GFF()
 	for i in range(len(geneModels)):
 		tmpGeneModel = geneModels[i]
-		if tmpGeneModel.geneID not in excludes:
+		if tmpGeneModel.geneID not in excludeIDs:
 			tmpGeneModel = geneModels[i]
 			tmpGeneModel.ctgID = newScafID
 			tmpGeneModel.geneStart += offset
@@ -451,26 +523,33 @@ def update_gene_model(geneModels, updatedGeneModels,
 			for j in range(len(tmpGeneModel.lcds)):
 				tmpGeneModel.lcds[j] += offset
 			updatedGeneModels.append(tmpGeneModel)
-			print ">>>>", "update", tmpGeneModel.geneID, tmpGeneModel.lcds
+			#print ">>>>", "update", tmpGeneModel.geneID, tmpGeneModel.lcds
 	if mergedGene is not None:
-		print ">>>> mergedGene to update", mergedGene.geneID
+		#print ">>>> mergedGene to update", mergedGene.geneID
 		updatedGeneModels.append(mergedGene)
-		print ">>>>", "update", mergedGene.geneID, mergedGene.lcds
+		if debug:
+			agUPDATEDebug.debugger.debug("UPDATE_GENE_MODEL\t\tUpdate gene - %s - %s"
+										 %(mergedGene.geneID, str(mergedGene.lcds)))
+		#print ">>>>", "update", mergedGene.geneID, mergedGene.lcds
 	updatedGeneIDs = []
 	for i in range(len(updatedGeneModels)):
 		updatedGeneIDs.append(updatedGeneModels[i].geneID)
-	print "updated GeneIDs", updatedGeneIDs
+	if debug:
+		agUPDATEDebug.debugger.debug("UPDATE_GENE_MODEL\t\tupdated GeneIDs - %s"
+									 %(updatedGeneIDs))
 	return updatedGeneModels, updatedGeneIDs
 
-def reverse_gene_models(geneModels, lenCtg, excludeIDs=[]):
+def reverse_gene_models(geneModels, lenCtg, debug=0, excludeIDs=[]):
 	'''
 		reverse gene models
 		call reverse_gene_model() function
 	'''
-	print ">>>>excludes to reverse", excludeIDs
+	if debug:
+		agUPDATEDebug.debugger.debug("REV_GENE_MODELS\t\texcludes to reverse - %s"
+									 %(str(excludeIDs)))
 	for i in xrange(len(geneModels)):
 		if geneModels[i].geneID not in excludeIDs:
-			geneModels[i] = reverse_gene_model(geneModels[i], lenCtg)
+			geneModels[i] = reverse_gene_model(geneModels[i], lenCtg, debug)
 	return geneModels
 
 def exclude_gene_model(geneModels, exclude):
@@ -480,21 +559,24 @@ def exclude_gene_model(geneModels, exclude):
 			tmp.append(geneModels[i])
 	return tmp
 
-def reverse_gene_model(geneModel, lenCtg):
+def reverse_gene_model(geneModel, lenCtg, debug=0):
 	'''
 		reverse each gene, all CDS within the gene
 	'''
-	print ">>>>reverse, %d" %(lenCtg)
 	tmpGeneStop =  lenCtg-geneModel.geneStart+1
 	tmpGeneStart = lenCtg-geneModel.geneStop+1
 	geneModel.geneStart = tmpGeneStart
 	geneModel.geneStop = tmpGeneStop
 	lcds = geneModel.lcds
 	reverseLCDs = []
-	print ">>>> before reverse", geneModel.geneID, "LCDS", lcds
+	if debug:
+		agUPDATEDebug.debugger.debug("REV_GENE_MODEL\t\tbefore reverse - %s - %s"
+										%(geneModel.geneID, str(lcds)))
 	for j in range(len(lcds)-1, -1, -2):
 		reverseLCDs += [lenCtg-lcds[j]+1, lenCtg-lcds[j-1]+1]
-	print ">>>> after reverse", geneModel.geneID, "LCDS", reverseLCDs
+	if debug:
+		agUPDATEDebug.debugger.debug("REV_GENE_MODEL\t\tafter reverse - %s - %s"
+										%(geneModel.geneID, str(reverseLCDs)))
 	geneModel.lcds = reverseLCDs
 	if geneModel.strand == '+':
 		geneModel.strand = '-'
@@ -515,7 +597,7 @@ def ctgpair2genepair(dCtgPair2GenePair, curCtg, nextCtg):
 		nextGene = genePair[0]
 	return currentGene, nextGene
 
-def get_orientation_counts(currentVertex, nextVertex, edgeSenseDict):
+def get_orientation_counts(currentVertex, nextVertex, edgeSenseDict, debug=0):
 	''' get the counts of each orientation '''
 	senseList = []
 	if (currentVertex, nextVertex) in edgeSenseDict:
@@ -527,9 +609,11 @@ def get_orientation_counts(currentVertex, nextVertex, edgeSenseDict):
 		# flip because the from and end vertices fliped
 		FR = senseList.count(("-", "+"))
 		RF = senseList.count(("+", "-"))
-	else:
-		print "do not get strand orientation for these two nodes: %d, %d" %(currentVertex, nextVertex)
-		sys.exit()
+#	else:
+#		if debug:
+#			agUPDATEProgress.debugger.debug("missing orientation for these two nodes: %d, %d"
+#											%(currentVertex, nextVertex)
+#		return -1, -1, -1, -1
 	FF = senseList.count(("+", "+"))
 	RR = senseList.count(("-", "-"))
 	return FR, FF, RR, RF
