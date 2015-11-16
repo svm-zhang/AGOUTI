@@ -13,14 +13,26 @@ def set_module_name(name):
 def agouti_update(pathList, contigDict, seqNames,
 				  edgeSenseDict, dGFFs,
 				  dCtgPair2GenePair, outDir, prefix,
-				  moduleOutDir, numNs=1000):
-	moduleProgressLogFile = os.path.join(moduleOutDir, "%s.agouti_update.progressMeter" %(prefix))
-	moduleDebugLogFile = os.path.join(moduleOutDir, "%s.agouti_update.debug" %(prefix))
-	global moduleProgressLogger
-	moduleProgressLogger = agLOG.AGOUTI_LOG(moduleName).create_logger(moduleProgressLogFile)
-	global moduleDEBUGLogger
-	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(moduleDebugLogFile)
-	moduleProgressLogger.info("[BEGIN] Updating gene models")
+				  moduleOutDir, numNs=1000, debug=0):
+
+	moduleName = os.path.basename(__file__).split('.')[0].upper()
+	moduleOutDir = os.path.join(outDir, "agouti_update")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+
+	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_update.progressMeter" %(prefix))
+	agUPDATEProgress = agLOG.PROGRESS_METER(moduleName)
+	agUPDATEProgress.add_file_handler(progressLogFile)
+	global agUPDATEProgress
+#	agUPDATEProgress.logger = agLOG.AGOUTI_LOG(moduleName).create_logger(progressLogFile)
+	if debug:
+		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_update.debug" %(prefix))
+		agUPDATEDebug = agLOG.DEBUG(moduleName, debugLogFile)
+		global agUPDATEDebug
+
+#	global moduleDEBUGLogger
+#	moduleDEBUGLogger = agLOG.AGOUTI_DEBUG_LOG(moduleName+"_DEBUG").create_logger(debugLogFile)
+	agUPDATEProgress.logger.info("[BEGIN] Updating gene models")
 	scafID = 0
 
 	outScaffPath = os.path.join(moduleOutDir, "%s.agouti.scaffolding_paths.txt" %(prefix))
@@ -295,7 +307,7 @@ def agouti_update(pathList, contigDict, seqNames,
 			fOUTGENEPATH.write(">%s\n%s\n" %(k, ','.join(v)))
 
 	# other contigs need to be output
-	moduleProgressLogger.info("Finalizing sequences")
+	agUPDATEProgress.logger.info("Finalizing sequences")
 	numLeft = 0
 	for vertex in contigDict:
 		if seqNames[vertex] in scaffoldedCtgs:
@@ -313,18 +325,18 @@ def agouti_update(pathList, contigDict, seqNames,
 	dFinalGFFs = dict(dGFFs, **dUpdateGFFs)
 	numGenes = output_gff(dFinalGFFs, dMergedGene2Ctgs, dMergedGene2Genes, outGFF)
 
-	moduleProgressLogger.info("####Summary####")
+	agUPDATEProgress.logger.info("####Summary####")
 
-	moduleProgressLogger.info("number of contigs scaffoled: %d" %(nCtgScaffolded))
-	moduleProgressLogger.info("number of scaffolds: %d" %(scafID))
-	moduleProgressLogger.info("number of contigs found no links: %d" %(numLeft))
-	moduleProgressLogger.info("number of contigs in the final assembly: %d" %(numLeft+scafID))
-	moduleProgressLogger.info("Final assembly N50: %d" %(n50))
-	moduleProgressLogger.info("Final number of genes: %d" %(numGenes))
-	moduleProgressLogger.info("Succeeded")
+	agUPDATEProgress.logger.info("number of contigs scaffoled: %d" %(nCtgScaffolded))
+	agUPDATEProgress.logger.info("number of scaffolds: %d" %(scafID))
+	agUPDATEProgress.logger.info("number of contigs found no links: %d" %(numLeft))
+	agUPDATEProgress.logger.info("number of contigs in the final assembly: %d" %(numLeft+scafID))
+	agUPDATEProgress.logger.info("Final assembly N50: %d" %(n50))
+	agUPDATEProgress.logger.info("Final number of genes: %d" %(numGenes))
+	agUPDATEProgress.logger.info("Succeeded")
 
 def output_graph(scafPaths, mergedGenes, outDotFile):
-	moduleProgressLogger.info("Outputting scaffolding paths")
+	agUPDATEProgress.logger.info("Outputting scaffolding paths")
 	with open(outDotFile, 'w') as fDOT:
 		fDOT.write("graph {\n")
 		for i in range(len(scafPaths)):
@@ -340,7 +352,7 @@ def output_graph(scafPaths, mergedGenes, outDotFile):
 		fDOT.write("}\n")
 
 def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes, outGFF):
-	moduleProgressLogger.info("Outputting updated Gene Moddels")
+	agUPDATEProgress.logger.info("Outputting updated Gene Moddels")
 	numGenes = 0
 	with open(outGFF, 'w') as fOUTGFF:
 		fOUTGFF.write("##gff-version3\n")
