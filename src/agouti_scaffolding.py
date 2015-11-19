@@ -812,7 +812,7 @@ def check_orientation_conflicts(vertexA, vertexB, edgeSenseDict):
 	else:
 		return False
 
-def run_scaffolding(algorithm, vertex2Name, joinPairsFile,
+def run_scaffolding(vertex2Name, joinPairsFile,
 				    dCtgPair2GenePair, outDir, prefix,
 					minSupport, debug=0):
 
@@ -822,18 +822,17 @@ def run_scaffolding(algorithm, vertex2Name, joinPairsFile,
 		os.makedirs(moduleOutDir)
 
 	outGraphFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.graph.dot" %(prefix))
-	scafPaths = []
-	if algorithm == "gene":
-		graph = AGOUTI_Graph(outGraphFile)
-		graph.start_logger(moduleName, moduleOutDir, prefix, debug)
-		scafPaths = graph.start(joinPairsFile, vertex2Name,
-								dCtgPair2GenePair, algorithm,
-								minSupport)
-	elif algorithm == "weight":
-		graph = RNAPATHSTAR_Graph(outGraphFile)
-		graph.start_logger(moduleName, moduleOutDir, prefix, debug)
-		scafPaths = graph.start(joinPairsFile, vertex2Name,
-								dCtgPair2GenePair,
-								minSupport)
+#	if algorithm == "gene":
+#		graph = AGOUTI_Graph(outGraphFile)
+#		graph.start_logger(moduleName, moduleOutDir, prefix, debug)
+#		scafPaths = graph.start(joinPairsFile, vertex2Name,
+#								dCtgPair2GenePair, algorithm,
+#								minSupport)
+#	elif algorithm == "weight":
+	graph = RNAPATHSTAR_Graph(outGraphFile)
+	graph.start_logger(moduleName, moduleOutDir, prefix, debug)
+	scafPaths = graph.start(joinPairsFile, vertex2Name,
+							dCtgPair2GenePair,
+							minSupport)
 
 	return scafPaths, graph.senses
