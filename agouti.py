@@ -49,7 +49,7 @@ def parse_args():
 	parser.add_argument("-algorithm",
 						metavar="STR",
 						dest="algorithm",
-						default="gene",
+						default="weight",
 						help="specify scaffolding algorith: gene model or weight priority [gene]")
 	parser.add_argument("-outdir",
 						metavar="DIR",
