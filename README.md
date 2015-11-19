@@ -50,7 +50,6 @@ optional arguments:
 	-assembly           FILE    specify the assembly in FASTA format
 	-bam                FILE    specify the RNA-seq mapping results in BAM format
 	-gff                FILE    specify the predicted gene model in GFF format
-    -algorithm          STR     specify the scaffolding algorith: gene or weight priority [gene]
 	-outdir             DIR     specify the base directory to store all output files
 	-p                  STR     specify the prefix for all output files [agouti]
 	-k                  INT     minimum number of joining reads pairs supports [5]
