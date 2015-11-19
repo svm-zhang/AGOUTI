@@ -46,11 +46,6 @@ def parse_args():
 						dest="gff",
 						required=True,
 						help="specify the predicted gene model in GFF format")
-	parser.add_argument("-algorithm",
-						metavar="STR",
-						dest="algorithm",
-						default="weight",
-						help="specify scaffolding algorith: gene model or weight priority [gene]")
 	parser.add_argument("-outdir",
 						metavar="DIR",
 						dest="outDir",
@@ -145,9 +140,9 @@ def main():
 																	  prefix, args.minSupport,
 																	  args.debug)
 
-	scafPaths, edgeSenseDict = agSCAFF.run_scaffolding(args.algorithm, vertex2Name, joinPairsFile,
-												   dCtgPair2GenePair, outDir, prefix,
-												   args.minSupport, args.debug)
+	scafPaths, edgeSenseDict = agSCAFF.run_scaffolding(vertex2Name, joinPairsFile,
+													   dCtgPair2GenePair, outDir, prefix,
+													   args.minSupport, args.debug)
 
 	agUPDATE.agouti_update(scafPaths, dSeq, vertex2Name,
 						   edgeSenseDict, dGFFs,
