@@ -236,9 +236,9 @@ def agouti_update(pathList, contigDict, seqNames,
 					curToLeft, curToRight = get_gene_index(dGFFs[preCtg]+dGFFs[curCtg], curGeneID, debug, True)
 					nextToLeft, nextToRight = get_gene_index(dGFFs[nextCtg], nextGene.geneID, debug, True)
 					if debug:
-						agUPDATEDebug.debuger.debug("UPDATE_MAIN\t\tcurToLeft - %d - curToRight - %d"
+						agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurToLeft - %d - curToRight - %d"
 													%(curToLeft, curToRight))
-						agUPDATEDebug.debuger.debug("UPDATE_MAIN\t\tnextToLeft - %d - nextToRight - %d"
+						agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tnextToLeft - %d - nextToRight - %d"
 													%(nextToLeft, nextToRight))
 					if curToRight < 1 and nextToLeft < 1:
 						valid = 1
@@ -458,7 +458,7 @@ def get_gene_index(geneModels, curGeneID, debug=0, reverse=False):
 	if reverse:
 		currentGeneIndex = [x.geneID for x in geneModels[::-1]].index(curGeneID)
 		if debug:
-			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\treversed gene models"
+			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\treversed gene models - %s"
 										 %(" ".join([x.geneID for x in geneModels[::-1]])))
 			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tcurGene - %s - index - %d"
 										 %(curGeneID, currentGeneIndex))
@@ -466,7 +466,7 @@ def get_gene_index(geneModels, curGeneID, debug=0, reverse=False):
 		print ">>>> get_gene_index", " ".join([x.geneID for x in geneModels]), "curGeneID", curGeneID
 		currentGeneIndex = [x.geneID for x in geneModels].index(curGeneID)
 		if debug:
-			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tgene models"
+			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tgene models - %s"
 										 %(" ".join([x.geneID for x in geneModels[::-1]])))
 			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tcurGene - %s - index - %d"
 										 %(curGeneID, currentGeneIndex))
