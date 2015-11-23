@@ -138,7 +138,8 @@ AGOUTI makes the scaffolding graph accessible to users. Under `scaffolding` fold
 ## Contributors
 
 Simo Zhang  
-Luting Zhuo
+Luting Zhuo--
+Matthew Hahn
 
 ## Support
 
