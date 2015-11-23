@@ -24,16 +24,11 @@ def parse_args():
 
 	parser = argparse.ArgumentParser(description=use_message)
 
-#	exclusiveGroup = parser.add_mutually_exclusive_group(required=True)
 	parser.add_argument("-assembly",
 						metavar="FILE",
 						dest="assemblyFile",
 						required=True,
 						help="specify the assembly in FASTA format")
-#	exclusiveGroup.add_argument("-scaffold",
-#						metavar="FILE",
-#						dest="scaffoldFasta",
-#						help="specify the assembly in scaffolds in FASTA format")
 	parser.add_argument("-bam",
 						metavar="FILE",
 						type=argparse.FileType('r'),
@@ -63,9 +58,9 @@ def parse_args():
 						type=int,
 						default=5,
 						help="minimum number of joining reads pair supports [5]")
-	parser.add_argument("-nN",
+	parser.add_argument("-nf",
 						metavar="INT",
-						dest="numNs",
+						dest="nFills",
 						type=int,
 						default=1000,
 						help="number of Ns put in between a pair of contigs [1000]")
@@ -102,7 +97,6 @@ def parse_args():
 	return args
 
 def main():
-
 	args = parse_args()
 
 	bamFile = args.bamFile
@@ -120,7 +114,7 @@ def main():
 	para.logger.info("Output directory: %s" %(outDir))
 	para.logger.info("Output prefix: %s" %(prefix))
 	para.logger.info("Minimum number of supports: %d" %(args.minSupport))
-	para.logger.info("Length of gaps filled: %d" %(args.numNs))
+	para.logger.info("Length of gaps filled: %d" %(args.nFills))
 
 #	if args.assemblyFile:
 	vertex2Name, dSeq = agSeq.read_assembly(args.assemblyFile, outDir,
@@ -147,7 +141,7 @@ def main():
 	agUPDATE.agouti_update(scafPaths, dSeq, vertex2Name,
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
-						   args.numNs, args.debug)
+						   args.nFills, args.debug)
 
 if __name__ == "__main__":
 	main()
