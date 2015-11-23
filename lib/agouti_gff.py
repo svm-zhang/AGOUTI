@@ -15,6 +15,7 @@ class AGOUTI_GFF(object):
 		self.strand = ''
 		self.lcds = []
 		self.fake = 0
+		self.merge = 0
 
 	def setGene(self, geneID, start=0, stop=0, fake=0):
 		self.geneID = geneID
