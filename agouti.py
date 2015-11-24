@@ -116,11 +116,8 @@ def main():
 	para.logger.info("Minimum number of supports: %d" %(args.minSupport))
 	para.logger.info("Length of gaps filled: %d" %(args.nFills))
 
-#	if args.assemblyFile:
-	vertex2Name, dSeq = agSeq.read_assembly(args.assemblyFile, outDir,
-											prefix, args.debug)
-#	elif args.scaffoldFasta:
-#		vertex2Name, dSeq = agSeq.get_scaffolds(args.scaffoldFasta, logLevel)
+	vertex2Name, dSeqs = agSeq.agouti_seq_main(args.assemblyFile, outDir,
+											   prefix, args.debug)
 
 	dGFFs = agGFF.get_gene_models(gffFile, outDir, prefix, args.debug)
 
@@ -138,7 +135,7 @@ def main():
 													   dCtgPair2GenePair, outDir, prefix,
 													   args.minSupport, args.debug)
 
-	agUPDATE.agouti_update(scafPaths, dSeq, vertex2Name,
+	agUPDATE.agouti_update(scafPaths, dSeqs, vertex2Name,
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
 						   args.nFills, args.debug)
