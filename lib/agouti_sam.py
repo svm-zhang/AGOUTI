@@ -153,11 +153,11 @@ def get_joining_pairs(bamStream, outDir, prefix,
 			# reach the end of the file
 			if len(pairA) == 1 or len(pairB) == 1:
 				break
+			readsID = pairA[0]
 			contigA = pairA[2]
 			contigB = pairB[2]
 			nReadsPairs += 1
 			if pairA[0] == pairB[0] and contigA != contigB:
-				readsID = pairA[0]
 				alnLenA = getCIGAR(pairA[5])
 				alnLenB = getCIGAR(pairB[5])
 				leftMostPosA = int(pairA[3])
@@ -207,5 +207,10 @@ def get_joining_pairs(bamStream, outDir, prefix,
 
 	agBAMProgress.logger.info("%d joining pairs parsed" %(nJoinPairs))
 	agBAMProgress.logger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
-	agBAMProgress.logger.info("Succeeded")
+	if nJoinPairs == 0:
+		agBAMProgress.logger.error("No joining pairs extracted")
+		agBAMProgress.logger.error("Cannot SCAFFOLD without joining-pairs")
+		sys.exit(1)
+	else:
+		agBAMProgress.logger.info("Succeeded")
 	return dContigPairs
