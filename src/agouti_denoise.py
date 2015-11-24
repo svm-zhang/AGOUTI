@@ -269,7 +269,8 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 		geneModelsB = dGFFs[ctgB]
 		if genePair is None:
 			nFailGeneModel += 1
-			agDENOISEDebug.debugger.debug("\tFail to find a pair of gene models")
+			if debug:
+				agDENOISEDebug.debugger.debug("\tFail to find a pair of gene models")
 		else:
 			geneIndexA, geneIndexB, endA, endB, intervalsA, intervalsB, senses = genePair
 			sensesCounter = collections.Counter(senses)
