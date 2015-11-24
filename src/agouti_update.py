@@ -314,7 +314,8 @@ def agouti_update(pathList, contigDict, seqNames,
 			curCtg = seqNames[currentVertex]
 
 		excludeGeneIDs = [preGeneID]
-		agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tappend last curCtg - %s" %(curCtg))
+		if debug:
+			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tappend last curCtg - %s" %(curCtg))
 		scafPath.append(curCtg)
 		if debug:
 			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafPath - %s"
