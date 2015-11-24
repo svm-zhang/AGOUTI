@@ -66,9 +66,8 @@ optional arguments:
 
 In it simplest usage, AGOUTI takes three inputs: an initial genome assembly in FASTA format, paired-end RNA-seq reads mapped against the assembly in BAM format, and gene predictions from the initial assembly in GFF3 format. For instance:
 
-    samtools view -F3328 example.bam | \
     python agouti.py -contig example.fasta | \
-    -bam - | \
+    -bam example.bam | \
     -gff example.gff | \
     -outdir ./example
 
@@ -140,7 +139,7 @@ AGOUTI makes the scaffolding graph accessible to users. Under `scaffolding` fold
 ## Contributors
 
 Simo Zhang  
-Luting Zhuo--
+Luting Zhuo  
 Matthew Hahn
 
 ## Support
