@@ -144,4 +144,4 @@ Matthew Hahn
 
 ## Support
 
-Please report any issues or questions here on github or by email to simozhan@indiana.edm
+Please report any issues or questions here on github or by email to simozhan@indiana.edu
