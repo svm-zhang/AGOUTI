@@ -49,7 +49,8 @@ class Graph(object):
 					senseB = tmp_line[6]
 
 					if (vertexA, vertexB) not in self.weights:
-						buildDebug.debugger.debug("Building vertexA %s | vertexB %s" %(contigA, contigB))
+						if self.debug:
+							buildDebug.debugger.debug("Building vertexA %s | vertexB %s" %(contigA, contigB))
 					self.add_vertices(vertexA, vertexB)
 					self.add_edge(vertexA, vertexB)
 					self.update_weight(vertexA, vertexB)
@@ -267,15 +268,18 @@ class RNAPATHSTAR_Graph(Graph):
 			if dVisited.has_key(vertex):
 				pass
 			else:
-				scaffoldingDebug.debugger.debug(">graph walk start from node: %s"
-												%(vertex2Name[vertex]))
+				if self.debug:
+					scaffoldingDebug.debugger.debug(">graph walk start from node: %s"
+													%(vertex2Name[vertex]))
 				path, dVisited = self.walk_graph(vertex, vertex2Name, minSupport, dVisited) #added
 				if len(path) > 1:
-					scaffoldingDebug.debugger.debug("return path: %s"
-													%(",".join(map(str, [vertex2Name[k] for k in path]))))
-					scaffoldingDebug.debugger.debug("pathLen=%d" %(len(path)))
+					if self.debug:
+						scaffoldingDebug.debugger.debug("return path: %s"
+														%(",".join(map(str, [vertex2Name[k] for k in path]))))
+						scaffoldingDebug.debugger.debug("pathLen=%d" %(len(path)))
 					scafPaths.append(path)
-		scaffoldingDebug.debugger.debug("number of paths: %d" %(len(scafPaths)))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("number of paths: %d" %(len(scafPaths)))
 
 		dSense = {}
 		for (fVertex, tVertex), senses in self.senses.iteritems():
@@ -283,28 +287,29 @@ class RNAPATHSTAR_Graph(Graph):
 			sense = sorted(counter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
 			dSense[fVertex, tVertex] = sense
 
-		scaffoldingDebug.debugger.debug("Finding paths from non-leaves")
 		leftOvers = [k for k in startVertices if k not in dVisited]
 		leftOvers += [k for k in self.nonLeaves if k not in dVisited and k not in leftOvers]
-		scaffoldingDebug.debugger.debug("%d leftovers" %(len(leftOvers)))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("%d leftovers" %(len(leftOvers)))
+			scaffoldingDebug.debugger.debug("Finding paths from non-leaves")
 
 		dBestPaths = {}
 		visitedLeftOvers = []
 		for vertex in leftOvers:
 			if vertex not in dVisited:
-				scaffoldingDebug.debugger.debug("%d - %s has not visited yet" %(vertex, vertex2Name[vertex]))
 				path = self.dfs(vertex, vertex2Name, minSupport)
-				scaffoldingDebug.debugger.debug("missing path: %s" %(",".join([vertex2Name[k] for k in path])))
+				if self.debug:
+					scaffoldingDebug.debugger.debug("%d - %s has not visited yet" %(vertex, vertex2Name[vertex]))
+					scaffoldingDebug.debugger.debug("missing path: %s" %(",".join([vertex2Name[k] for k in path])))
 				vertices = ""
 				if len(path) == 1:
 					dVisited[vertex] = ""
 					visitedLeftOvers.append(vertex)
-					scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
+					if self.debug:
+						scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
 				elif len(path) > 1:
-					scaffoldingDebug.debugger.debug("\tbefore %d" %(len(dVisited)))
 					for k in path:
 						dVisited[k] = ""
-					scaffoldingDebug.debugger.debug("\tafter %d" %(len(dVisited)))
 					maxPathLen = 0
 					bestPath = []
 					for i in range(len(path)):
@@ -312,7 +317,8 @@ class RNAPATHSTAR_Graph(Graph):
 							tmpPath = self.dfs(path[i], vertex2Name, minSupport)
 						else:
 							tmpPath = path
-						scaffoldingDebug.debugger.debug("walking path: %s" %(",".join([vertex2Name[k] for k in tmpPath])))
+						if self.debug:
+							scaffoldingDebug.debugger.debug("walking path: %s" %(",".join([vertex2Name[k] for k in tmpPath])))
 
 						curVertex = tmpPath[0]
 						curCtg = vertex2Name[curVertex]
@@ -322,7 +328,8 @@ class RNAPATHSTAR_Graph(Graph):
 						for i in range(1, len(tmpPath)):
 							nextVertex = tmpPath[i]
 							nextCtg = vertex2Name[nextVertex]
-							scaffoldingDebug.debugger.debug("\tcur %s | next %s" %(curCtg, nextCtg))
+							if self.debug:
+								scaffoldingDebug.debugger.debug("\tcur %s | next %s" %(curCtg, nextCtg))
 							if (curVertex, nextVertex) in dSense:
 								ctgPair = (curVertex, nextVertex)
 								genePair = dCtgPair2GenePair[ctgPair]
@@ -331,18 +338,23 @@ class RNAPATHSTAR_Graph(Graph):
 								ctgPair = (nextVertex, curVertex)
 								genePair = dCtgPair2GenePair[ctgPair][::-1]
 								curSensePair = "".join(dSense[ctgPair][::-1])
-								scaffoldingDebug.debugger.debug("\treverse contig pair")
+								if self.debug:
+									scaffoldingDebug.debugger.debug("\treverse contig pair")
 							else:
-								scaffoldingDebug.debugger.debug("\tthe pair has been removed, stop extension")
+								if self.debug:
+									scaffoldingDebug.debugger.debug("\tthe pair has been removed, stop extension")
 								break
-							scaffoldingDebug.debugger.debug("\tgene pair: %s %s" %(genePair[0].geneID, genePair[1].geneID))
+							if self.debug:
+								scaffoldingDebug.debugger.debug("\tgene pair: %s %s" %(genePair[0].geneID, genePair[1].geneID))
 							if preSensePair == "":
 								preSensePair = curSensePair
-								scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
-								scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
+								if self.debug:
+									scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
+									scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
 							else:
-								scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
-								scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
+								if self.debug:
+									scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
+									scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
 								if preSensePair == "+-" and (curSensePair == "+-" or curSensePair == "++"):
 									pass
 								elif preSensePair == "++" and curSensePair == "--":
@@ -357,7 +369,8 @@ class RNAPATHSTAR_Graph(Graph):
 							curVertex = nextVertex
 							curCtg = vertex2Name[curVertex]
 						possiblePath.append(curVertex)
-						scaffoldingDebug.debugger.debug("\tpossiblePath: %s" %(",".join([vertex2Name[k] for k in possiblePath])))
+						if self.debug:
+							scaffoldingDebug.debugger.debug("\tpossiblePath: %s" %(",".join([vertex2Name[k] for k in possiblePath])))
 
 						if len(possiblePath) == len(path):
 							bestPath = possiblePath
@@ -370,20 +383,21 @@ class RNAPATHSTAR_Graph(Graph):
 								if maxPathLen < len(possiblePath):
 									maxPathLen = len(possiblePath)
 									bestPath = possiblePath
-						scaffoldingDebug.debugger.debug("\ttmp bestPath: %s" %(",".join([vertex2Name[k] for k in bestPath])))
-					scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
+						if self.debug:
+							scaffoldingDebug.debugger.debug("\ttmp bestPath: %s" %(",".join([vertex2Name[k] for k in bestPath])))
+					if self.debug:
+						scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
 					scafPaths.append(bestPath)
-					scaffoldingDebug.debugger.debug("\tbefore %d" %(len(dVisited)))
 					for vertex in bestPath:
 						visitedLeftOvers.append(k)
-					scaffoldingDebug.debugger.debug("\tbefore %d" %(len(dVisited)))
-					scaffoldingDebug.debugger.debug("\tafter %d" %(len(dVisited)))
 
-		scaffoldingDebug.debugger.debug("%d visited leftovers %s" %(len(visitedLeftOvers), str([vertex2Name[k] for k in visitedLeftOvers])))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("%d visited leftovers %s"
+											%(len(visitedLeftOvers), str([vertex2Name[k] for k in visitedLeftOvers])))
 
-		scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
-		self.agSCAFProgress.logger.info("number of visited nodes: %d" %(len(dVisited)))
-		scaffoldingDebug.debugger.debug("number of paths scaffolded: %d" %(len(scafPaths)))
+			scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
+			self.agSCAFProgress.logger.info("number of visited nodes: %d" %(len(dVisited)))
+			scaffoldingDebug.debugger.debug("number of paths scaffolded: %d" %(len(scafPaths)))
 		return scafPaths
 
 	def scaffolding_v2(self, vertex2Name, dCtgPair2GenePair, minSupport):
@@ -397,30 +411,35 @@ class RNAPATHSTAR_Graph(Graph):
 			if dVisited.has_key(vertex):
 				pass
 			else:
-				scaffoldingDebug.debugger.debug(">graph walk start from node: %s"
-												%(vertex2Name[vertex]))
+				if self.debug:
+					scaffoldingDebug.debugger.debug(">graph walk start from node: %s"
+													%(vertex2Name[vertex]))
 				subgraph, dVisited = self.walk_graph(vertex, vertex2Name, minSupport, dVisited) #added
 				if len(subgraph) > 1:
-					scaffoldingDebug.debugger.debug("return subgraph: %s"
-													%(",".join(map(str, [vertex2Name[k] for k in subgraph]))))
-					scaffoldingDebug.debugger.debug("number of nodes in this subgraph: %d"
-													%(len(subgraph)))
+					if self.debug:
+						scaffoldingDebug.debugger.debug("return subgraph: %s"
+														%(",".join(map(str, [vertex2Name[k] for k in subgraph]))))
+						scaffoldingDebug.debugger.debug("number of nodes in this subgraph: %d"
+														%(len(subgraph)))
 					subgraphs.append(subgraph)
-		scaffoldingDebug.debugger.debug("number of subgraphs: %d"
-										%(len(subgraphs)))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("number of subgraphs: %d"
+											%(len(subgraphs)))
 
-		scaffoldingDebug.debugger.debug("Finding paths from non-leaves")
 		orphans = [k for k in self.get_vertices() if k not in dVisited]
 		orphans += [k for k in self.nonLeaves if k not in dVisited and k not in orphans]
-		scaffoldingDebug.debugger.debug("Number of orphan vertices left: %d " %(len(orphans)))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("Number of orphan vertices left: %d " %(len(orphans)))
+			scaffoldingDebug.debugger.debug("Finding paths from non-leaves")
 
 		for vertex in orphans:
 			if vertex not in dVisited:
-				scaffoldingDebug.debugger.debug(">graph walk start from node: %s"
-												%(vertex2Name[vertex]))
 				subgraph, dVisited = self.walk_graph(vertex, vertex2Name, minSupport, dVisited)
-				scaffoldingDebug.debugger.debug("missing subgraph: %s"
-												%(",".join([vertex2Name[k] for k in subgraph])))
+				if self.debug:
+					scaffoldingDebug.debugger.debug(">graph walk start from node: %s"
+													%(vertex2Name[vertex]))
+					scaffoldingDebug.debugger.debug("missing subgraph: %s"
+													%(",".join([vertex2Name[k] for k in subgraph])))
 #				vertices = ""
 #				for k in subgraph:
 #					if k in dVisited:
@@ -429,10 +448,12 @@ class RNAPATHSTAR_Graph(Graph):
 #					else:
 #						dVisited[k] = 1
 				if len(subgraph) > 1:
-					scaffoldingDebug.debugger.debug("add to subgraphs: %s"
-													%(str([vertex2Name[k] for k in subgraph])))
+					if self.debug:
+						scaffoldingDebug.debugger.debug("add to subgraphs: %s"
+														%(str([vertex2Name[k] for k in subgraph])))
 					subgraphs.append(subgraph)
-		scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
 		self.agSCAFProgress.logger.info("number of visited nodes: %d" %(len(dVisited)))
 
 		dSense = {}
@@ -441,16 +462,24 @@ class RNAPATHSTAR_Graph(Graph):
 			sense = sorted(counter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
 			dSense[fVertex, tVertex] = sense
 
-		scaffoldingDebug.debugger.debug("Graph Reconciliation")
+		if self.debug:
+			scaffoldingDebug.debugger.debug("Graph Reconciliation")
 		self.agSCAFProgress.logger.info("Graph Reconciliation")
 		scafPaths = []
 		for path in subgraphs:
-			scaffoldingDebug.debugger.debug(">subGraphs: %s" %(str([vertex2Name[k] for k in path])))
-			bestOrder = self.reconcile(path, dVisited, dCtgPair2GenePair, dSense, vertex2Name, minSupport, scaffoldingDebug)
+			if self.debug:
+				scaffoldingDebug.debugger.debug(">subGraphs: %s" %(str([vertex2Name[k] for k in path])))
+				bestOrder = self.reconcile(path, dVisited, dCtgPair2GenePair,
+										   dSense, vertex2Name, minSupport,
+										   scaffoldingDebug)
+			else:
+				bestOrder = self.reconcile(path, dVisited, dCtgPair2GenePair,
+										   dSense, vertex2Name, minSupport)
 			if len(bestOrder) > 1:
 				scafPaths.append(bestOrder)
 
-		scaffoldingDebug.debugger.debug("number of paths scaffolded: %d" %(len(scafPaths)))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("number of paths scaffolded: %d" %(len(scafPaths)))
 		return scafPaths
 
 
@@ -474,7 +503,9 @@ class RNAPATHSTAR_Graph(Graph):
 				path = self.dfs(vertexB, vertex2Name, minSupport, seen, path)
 		return path
 
-	def reconcile(self, path, dVisited, dCtgPair2GenePair, dSense, vertex2Name, minSupport, scaffoldingDebug):
+	def reconcile(self, path, dVisited, dCtgPair2GenePair,
+				  dSense, vertex2Name, minSupport,
+				  scaffoldingDebug=None):
 		maxPathLen = 0
 		dWeight = {}
 		bestPath = []
@@ -483,7 +514,8 @@ class RNAPATHSTAR_Graph(Graph):
 				tmpPath, _ = self.walk_graph(path[i], vertex2Name, minSupport)
 			else:
 				tmpPath = path
-			scaffoldingDebug.debugger.debug("\twalking path: %s" %(",".join([vertex2Name[k] for k in tmpPath])))
+			if self.debug:
+				scaffoldingDebug.debugger.debug("\twalking path: %s" %(",".join([vertex2Name[k] for k in tmpPath])))
 			curVertex = tmpPath[0]
 			curCtg = vertex2Name[curVertex]
 			totalWeight = 0
@@ -493,7 +525,8 @@ class RNAPATHSTAR_Graph(Graph):
 			for i in range(1, len(tmpPath)):
 				nextVertex = tmpPath[i]
 				nextCtg = vertex2Name[nextVertex]
-				scaffoldingDebug.debugger.debug("\t\tcur %s | next %s" %(curCtg, nextCtg))
+				if self.debug:
+					scaffoldingDebug.debugger.debug("\t\tcur %s | next %s" %(curCtg, nextCtg))
 				if (curVertex, nextVertex) in self.weights:
 					if (curVertex, nextVertex) in dSense:
 						ctgPair = (curVertex, nextVertex)
@@ -504,22 +537,28 @@ class RNAPATHSTAR_Graph(Graph):
 						ctgPair = (nextVertex, curVertex)
 						genePair = dCtgPair2GenePair[ctgPair][::-1]
 						curSensePair = "".join(dSense[ctgPair][::-1])
-						scaffoldingDebug.debugger.debug("\t\treverse contig pair")
+						if self.debug:
+							scaffoldingDebug.debugger.debug("\t\treverse contig pair")
 						weight = self.weights[ctgPair]
 					else:
-						scaffoldingDebug.debugger.debug("\t\tthe pair has been removed, stop extension")
+						if self.debug:
+							scaffoldingDebug.debugger.debug("\t\tthe pair has been removed, stop extension")
 						break
 				else:
-					scaffoldingDebug.debugger.debug("\t\tthe edge between these two contigs do not exist")
+					if self.debug:
+						scaffoldingDebug.debugger.debug("\t\tthe edge between these two contigs do not exist")
 					break
-				scaffoldingDebug.debugger.debug("\t\tgene pair: %s %s" %(genePair[0].geneID, genePair[1].geneID))
+				if self.debug:
+					scaffoldingDebug.debugger.debug("\t\tgene pair: %s %s" %(genePair[0].geneID, genePair[1].geneID))
 				if preSensePair == "":
 					preSensePair = curSensePair
-					scaffoldingDebug.debugger.debug("\t\tprevious sense pair: %s" %(str(preSensePair)))
-					scaffoldingDebug.debugger.debug("\t\tcurrent sense pair: %s" %(str(curSensePair)))
+					if self.debug:
+						scaffoldingDebug.debugger.debug("\t\tprevious sense pair: %s" %(str(preSensePair)))
+						scaffoldingDebug.debugger.debug("\t\tcurrent sense pair: %s" %(str(curSensePair)))
 				else:
-					scaffoldingDebug.debugger.debug("\t\tprevious sense pair: %s" %(str(preSensePair)))
-					scaffoldingDebug.debugger.debug("\t\tcurrent sense pair: %s" %(str(curSensePair)))
+					if self.debug:
+						scaffoldingDebug.debugger.debug("\t\tprevious sense pair: %s" %(str(preSensePair)))
+						scaffoldingDebug.debugger.debug("\t\tcurrent sense pair: %s" %(str(curSensePair)))
 					if preSensePair == "+-" and (curSensePair == "+-" or curSensePair == "++"):
 						pass
 					elif preSensePair == "++" and curSensePair == "--":
@@ -535,7 +574,9 @@ class RNAPATHSTAR_Graph(Graph):
 				curVertex = nextVertex
 				curCtg = vertex2Name[curVertex]
 			possiblePath.append(curVertex)
-			scaffoldingDebug.debugger.debug("\tpossiblePath: %s" %(",".join([vertex2Name[k] for k in possiblePath])))
+			if self.debug:
+				scaffoldingDebug.debugger.debug("\tpossiblePath: %s"
+												%(",".join([vertex2Name[k] for k in possiblePath])))
 			if len(possiblePath) == len(path):
 				bestPath = possiblePath
 				break
@@ -551,8 +592,10 @@ class RNAPATHSTAR_Graph(Graph):
 					elif maxPathLen == len(possiblePath):
 						if maxWeight < totalWeight:
 							bestPath = possiblePath
-			scaffoldingDebug.debugger.debug("\ttmp bestPath: %s" %(",".join([vertex2Name[k] for k in bestPath])))
-		scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
+			if self.debug:
+				scaffoldingDebug.debugger.debug("\ttmp bestPath: %s" %(",".join([vertex2Name[k] for k in bestPath])))
+		if self.debug:
+			scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
 		return bestPath
 
 '''
