@@ -7,7 +7,7 @@ import collections
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
-__version__ = "v0.2.1"
+__version__ = "v0.2.2"
 
 from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
@@ -31,7 +31,7 @@ def parse_args():
 						help="specify the assembly in FASTA format")
 	parser.add_argument("-bam",
 						metavar="FILE",
-						type=argparse.FileType('r'),
+						#type=argparse.FileType('r'),
 						dest="bamFile",
 						default="-",
 						required=True,
@@ -121,7 +121,7 @@ def main():
 
 	dGFFs = agGFF.get_gene_models(gffFile, outDir, prefix, args.debug)
 
-	dContigPairs = agBAM.get_joining_pairs(bamFile, outDir, prefix,
+	dContigPairs = agBAM.agouti_sam_main(bamFile, outDir, prefix,
 										   args.overwrite, args.minMQ,
 										   args.minFracOvl, args.maxFracMM,
 										   args.debug)
