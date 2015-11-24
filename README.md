@@ -66,7 +66,7 @@ optional arguments:
 
 In it simplest usage, AGOUTI takes three inputs: an initial genome assembly in FASTA format, paired-end RNA-seq reads mapped against the assembly in BAM format, and gene predictions from the initial assembly in GFF3 format. For instance:
 
-    samtools view example.bam | \
+    samtools view -F3328 example.bam | \
     python agouti.py -contig example.fasta | \
     -bam - | \
     -gff example.gff | \
@@ -81,9 +81,11 @@ This will produce a scaffoled assembly in FASTA format, and a updated gene model
 Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `example.2.fq`, and an initial assembly generated from an assembler of your favorite, `example.fasta`. You will first need to map the RNA-seq data against the assembly using a short-reads mapper, such as BWA. For example,
 
     bwa index example.fasta
-    bwa mem example.fasta example.1.fq example.2.fq | samtools view - > example.bam
+    bwa mem -M example.fasta example.1.fq example.2.fq | samtools view - > example.bam
 
 At the end of reads mapping, you will have the mapping results in BAM format. AGOUTI uses only uniquely mapped joining-pairs by checking mapping quality. For short-reads mappers such as BWA, you can use mapping quality to tell unique or not, e.g. mapQ > 0. If you use other mappers, you can filter out the ambiguous ones prior to input to AGOUTI. In the future version, we will make AGOUTI being able too internally recognize ambiguous reads mapping from different mappers.
+
+AGOUTI expects each reads pair to be next to each other in the SAM/BAM file. Therefore, there is no need to sort the BAM file by coordiantes. In addition, please FILTER secondary and supplementary alignments from the SAM/BAM file. SAMTOOLs can do the filter by specifying -F options.
 
 To run AGOUTI, you will also need a set of gene models predicted from the assembly. For instance,
 
