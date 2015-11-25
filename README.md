@@ -20,7 +20,7 @@ AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gen
 
 To download AGOUTI, please use git to download the most recent development version through:
 
-    git clone git@github.com:svm-zhang/AGOUTI.git
+    git clone https://github.com/svm-zhang/AGOUTI.git
 
 AGOUTI is designed to be light-weight by only requiring SAMtools and python 2.7 or above.
 
