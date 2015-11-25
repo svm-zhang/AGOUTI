@@ -1,5 +1,7 @@
 import os
 import collections
+import re
+import sys
 
 from lib import agouti_log as agLOG
 
@@ -88,15 +90,23 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					geneIndex += 1
+					m = [(m.start(), m.end()) for m in re.finditer("(;)?ID=(.)+(;)?", tmp_line[8])][0]
+					geneID = tmp_line[8][m[0]:m[1]].split('=')[1].strip(';')
 					if geneIndex == 0:
-						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
+						#lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
+						#								   int(tmp_line[3]),
+						#								   int(tmp_line[4]))
+						lobj_GeneModels[geneIndex].setGene(geneID,
 														   int(tmp_line[3]),
 														   int(tmp_line[4]))
 					else:
 						preCtgID = lobj_GeneModels[geneIndex-1].ctgID
 						preGeneID = lobj_GeneModels[geneIndex-1].geneID
 						dGFFs[preCtgID].append(lobj_GeneModels[geneIndex-1])
-						lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
+						#lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
+						#								   int(tmp_line[3]),
+						#								   int(tmp_line[4]))
+						lobj_GeneModels[geneIndex].setGene(geneID,
 														   int(tmp_line[3]),
 														   int(tmp_line[4]))
 					lobj_GeneModels[geneIndex].setProgram(tmp_line[1])
