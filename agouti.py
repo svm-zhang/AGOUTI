@@ -7,7 +7,7 @@ import collections
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
-__version__ = "v0.2.2"
+__version__ = "v0.2.3"
 
 from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
