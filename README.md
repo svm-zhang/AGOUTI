@@ -124,7 +124,7 @@ To shred a given assembly at gaps of at least 25 bp:
 
 This will produce a shredded assembly, example.shred.ctg.fasta, and a info file about the shred, example.shred.info.txt.
 
-**It is very important to use this split assembly in the following reads-mapping and gene prediction. **
+**It is very important to use this split assembly in the following reads-mapping and gene prediction.**
 
 ### SAM/BAM File
 
