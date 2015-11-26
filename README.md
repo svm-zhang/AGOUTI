@@ -99,7 +99,7 @@ optional arguments:
 
 In its simplest usage, AGOUTI takes three inputs: an initial genome assembly in FASTA format, paired-end RNA-seq reads mapped against the assembly in BAM format, and gene predictions from the initial assembly in GFF3 format. For instance:
 
-    python agouti.py \
+    python agouti.py scaffold \
     -assembly example.fasta \
     -bam example.bam \
     -gff example.gff \
@@ -110,6 +110,21 @@ This will produce a scaffoled assembly in FASTA format, and a updated gene model
 ## Prepare Inputs
 
 ### Genome Assembly
+
+AGOUTI accepts assemblies as both contigs and scaffolds. If you have your assembly in contigs, then skip this section and continue to the next two sections.
+
+If in scaffold form, AGOUTI breaks assemblies at gaps of certain lengths, essentially reducing it to contig form (a shredded/split assembly), and keeps records of their connections. AGOUTI scaffolds on split assemblies, and will report inconsistencies between the RNA-based scaffolding it conducts and the original scaffolding.
+
+To shred a given assembly at gaps of at least 25 bp:
+
+    python agouti.py shred \
+    -assembly example.fasta \
+    -p example \
+    -mlg 25
+
+This will produce a shredded assembly, example.shred.ctg.fasta, and a info file about the shred, example.shred.info.txt.
+
+**It is very important to use this split assembly in the following reads-mapping and gene prediction. **
 
 ### SAM/BAM File
 
