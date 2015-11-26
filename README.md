@@ -53,6 +53,11 @@ Commands:
     scaffold    Scaffolding genome assembly and update genome annotation
     shred       Shredding genome assembly into contigs at gaps of a minimum length
 ```
+### Scaffold interface
+
+To run scaffolding using AGOUTI, simply:
+
+    python agouti.py scaffold -h
 
 ```
 usage: agouti.py [-h] -contig FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p STR]
