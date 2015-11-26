@@ -97,7 +97,7 @@ optional arguments:
 
 ## Get Started
 
-In it simplest usage, AGOUTI takes three inputs: an initial genome assembly in FASTA format, paired-end RNA-seq reads mapped against the assembly in BAM format, and gene predictions from the initial assembly in GFF3 format. For instance:
+In its simplest usage, AGOUTI takes three inputs: an initial genome assembly in FASTA format, paired-end RNA-seq reads mapped against the assembly in BAM format, and gene predictions from the initial assembly in GFF3 format. For instance:
 
     python agouti.py \
     -assembly example.fasta \
@@ -109,6 +109,10 @@ This will produce a scaffoled assembly in FASTA format, and a updated gene model
 
 ## Prepare Inputs
 
+### Genome Assembly
+
+### SAM/BAM File
+
 Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `example.2.fq`, and an initial assembly generated from an assembler of your favorite, `example.fasta`. You will first need to map the RNA-seq data against the assembly using a short-reads mapper, such as BWA. For example,
 
     bwa index example.fasta
@@ -118,9 +122,11 @@ At the end of reads mapping, you will have the mapping results in BAM format. AG
 
 AGOUTI expects each reads pair to be next to each other in the SAM/BAM file. Therefore, there is no need to sort the BAM file by coordiantes. In addition, please FILTER secondary and supplementary alignments from the SAM/BAM file. SAMTOOLs can do the filter by specifying -F options.
 
+### Gene Models
+
 To run AGOUTI, you will also need a set of gene models predicted from the assembly. For instance,
 
-    Augustus --AUGUSTUS_CONFIG_PATH=[path to augustus config file] -gff3=on --species=[your sepcies] example.fasta > example.gff
+    augustus --AUGUSTUS_CONFIG_PATH=[path to augustus config file] -gff3=on --species=[your sepcies] example.fasta > example.gff
 
 At the end of gene prediction, you will now have a set of gene models predicted from the assembly. You can choose any * ab inito * gene predictor as long as it spits out the models in GFF3 format. Specifically, AGOUTI looks for the following information in a GFF3 file.
 
