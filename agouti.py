@@ -24,81 +24,121 @@ def parse_args():
 
 	parser = argparse.ArgumentParser(description=use_message)
 
-	parser.add_argument("-assembly",
-						metavar="FILE",
-						dest="assemblyFile",
-						required=True,
-						help="specify the assembly in FASTA format")
-	parser.add_argument("-bam",
-						metavar="FILE",
-						#type=argparse.FileType('r'),
-						dest="bamFile",
-						default="-",
-						required=True,
-						help="specify the RNA-seq mapping results in BAM format")
-	parser.add_argument("-gff",
-						metavar="FILE",
-						dest="gff",
-						required=True,
-						help="specify the predicted gene model in GFF format")
-	parser.add_argument("-outdir",
-						metavar="DIR",
-						dest="outDir",
-						default=".",
-						required=True,
-						help="specify the base directory to store all output files")
-	parser.add_argument("-p",
-						metavar="STR",
-						dest="prefix",
-						default="agouti",
-						help="specify the prefix for all output files [agouti]")
-	parser.add_argument("-k",
-						metavar="INT",
-						dest="minSupport",
-						type=int,
-						default=5,
-						help="minimum number of joining reads pair supports [5]")
-	parser.add_argument("-nf",
-						metavar="INT",
-						dest="nFills",
-						type=int,
-						default=1000,
-						help="number of Ns put in between a pair of contigs [1000]")
-	parser.add_argument("-minMQ",
-						metavar="INT",
-						dest="minMQ",
-						type=int,
-						default=5,
-						help="minimum of mapping quality to use [5]")
-	parser.add_argument("-minFracOvl",
-						metavar="FLOAT",
-						dest="minFracOvl",
-						type=float,
-						default=0.0,
-						help="minimum percentage of alignment length: alnLen/readLen [0.0]")
-	parser.add_argument("-maxFracMM",
-						metavar="FLOAT",
-						dest="maxFracMM",
-						type=float,
-						default=1.0,
-						help="maximum fraction of mismatch of a give alignment [1.0]")
-	parser.add_argument("-debug",
-						action='store_true',
-						help="specify to have info for debugging")
-	parser.add_argument("-overwrite",
-						action='store_true',
-						help="specify whether to overwrite all results from last run")
-	parser.add_argument("-v",
-						"--version",
-						action="version",
-						version="AGOUTI {version}".format(version=__version__))
+	subparsers = parser.add_subparsers(title="Commands",
+									   metavar="",
+									   dest="command")
+	usage = "Scaffolding genome assembly and update genome annotation"
+	scafParser = subparsers.add_parser("scaffold",
+									   formatter_class=argparse.RawTextHelpFormatter,
+									   description=usage,
+									   help="\t"+usage)
+	scafParser.add_argument("-assembly",
+							metavar="FILE",
+							dest="assemblyFile",
+							required=True,
+							help="specify the assembly in FASTA format")
+	scafParser.add_argument("-bam",
+							metavar="FILE",
+							dest="bamFile",
+							default="-",
+							required=True,
+							help="specify the RNA-seq mapping results in BAM format")
+	scafParser.add_argument("-gff",
+							metavar="FILE",
+							dest="gff",
+							required=True,
+							help="specify the predicted gene model in GFF format")
+	scafParser.add_argument("-outdir",
+							metavar="DIR",
+							dest="outDir",
+							default=".",
+							required=True,
+							help="specify the base directory to store all output files")
+	scafParser.add_argument("-p",
+							metavar="STR",
+							dest="prefix",
+							default="agouti",
+							help="specify the prefix for all output files [agouti]")
+	scafParser.add_argument("-k",
+							metavar="INT",
+							dest="minSupport",
+							type=int,
+							default=5,
+							help="minimum number of joining reads pair supports [5]")
+	scafParser.add_argument("-nf",
+							metavar="INT",
+							dest="nFills",
+							type=int,
+							default=1000,
+							help="number of Ns put in between a pair of contigs [1000]")
+	scafParser.add_argument("-minMQ",
+							metavar="INT",
+							dest="minMQ",
+							type=int,
+							default=5,
+							help="minimum of mapping quality to use [5]")
+	scafParser.add_argument("-minFracOvl",
+							metavar="FLOAT",
+							dest="minFracOvl",
+							type=float,
+							default=0.0,
+							help="minimum percentage of alignment length: alnLen/readLen [0.0]")
+	scafParser.add_argument("-maxFracMM",
+							metavar="FLOAT",
+							dest="maxFracMM",
+							type=float,
+							default=1.0,
+							help="maximum fraction of mismatch of a give alignment [1.0]")
+	scafParser.add_argument("-debug",
+							action='store_true',
+							help="specify to have info for debugging")
+	scafParser.add_argument("-overwrite",
+							action='store_true',
+							help="specify whether to overwrite all results from last run")
+	scafParser.add_argument("-v",
+							"--version",
+							action="version",
+							version="AGOUTI {version}".format(version=__version__))
+	scafParser.set_defaults(func=run_scaffolder)
 
-	args = parser.parse_args()
-	return args
+	usage = "Shredding genome assembly into contigs at gaps of a minimum length"
+	shredParser = subparsers.add_parser("shred", help=usage)
+	shredParser.add_argument("-assembly",
+							 metavar="FILE",
+							 dest="assemblyFile",
+							 required=True,
+							 help="specify the assembly in FASTA format. REQUIRED")
+	shredParser.add_argument("-p",
+							 metavar="STR",
+							 dest="prefix",
+							 required=True,
+							 help="specify a output prefix. REQUIRED")
+	shredParser.add_argument("-mlg",
+							 metavar="INT",
+							 dest="minGap",
+							 type=int,
+							 default=5,
+							 help="specify a minimum length of gaps to shred [5]")
+	shredParser.add_argument("-mlc",
+							 metavar="INT",
+							 dest="minCtgLen",
+							 type=int,
+							 default=1000,
+							 help="specify a minimum length of contigs [1000]")
+	shredParser.set_defaults(func=run_shredder)
 
-def main():
-	args = parse_args()
+	return parser.parse_args()
 
+def run_shredder(args):
+	assemblyFile = args.assemblyFile
+	prefix = args.prefix
+	minGap = args.minGap
+	minCtgLen = args.minCtgLen
+
+	agSeq.assembly_breaker(assemblyFile, prefix,
+						   minGap, minCtgLen)
+
+def run_scaffolder(args):
 	bamFile = args.bamFile
 	gffFile = os.path.realpath(args.gff)
 	prefix = args.prefix
@@ -139,6 +179,10 @@ def main():
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
 						   args.nFills, args.debug)
+
+def main():
+	args = parse_args()
+	args.func(args)
 
 if __name__ == "__main__":
 	main()
