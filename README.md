@@ -39,7 +39,6 @@ In any case, please use this version as your reference.
 To get started with AGOUTI, please use `-h` or `--help` for a list of supported options.
 
     python agouti.py -h
-
 ```
 usage: agouti.py [-h] ...
 
@@ -58,7 +57,6 @@ Commands:
 To run scaffolding using AGOUTI, simply:
 
     python agouti.py scaffold -h
-
 ```
 usage: agouti.py [-h] -contig FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p STR]
 
