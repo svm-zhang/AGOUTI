@@ -79,6 +79,22 @@ optional arguments:
     -v, --version               show program's version number and exit
 ```
 
+### Shred interface
+
+To shred your assembly into contigs using AGOUTI, simply:
+    python agouti.py shred -h
+
+```
+usage: agouti.py shred [-h] -assembly FILE -p STR [-mlg INT] [-mlc INT]
+
+optional arguments:
+	-h, --help                  show this help message and exit
+	-assembly           FILE    specify the assembly in FASTA format. REQUIRED
+    -p                  STR     specify a output prefix. REQUIRED
+    -mlg                INT     specify a minimum length of gaps to shred [5]
+    -mlc                INT     specify a minimum length of contig [1000]
+```
+
 ## Get Started
 
 In it simplest usage, AGOUTI takes three inputs: an initial genome assembly in FASTA format, paired-end RNA-seq reads mapped against the assembly in BAM format, and gene predictions from the initial assembly in GFF3 format. For instance:
