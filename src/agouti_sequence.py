@@ -80,20 +80,28 @@ def read_assembly(assemblyFile):
 	with open(assemblyFile, 'r') as fASSEMBLY:
 		seqIter = (k[1] for k in itertools.groupby(fASSEMBLY, lambda line: line[0]== ">"))
 		for header in seqIter:
-			header = header.next()[1:].strip()
+			header = re.split("\W+", header.next()[1:].strip())[0]
 			seq = "".join(s.strip() for s in seqIter.next())
 			yield header, seq
 
-def assembly_breaker(assemblyFile, outFile, minGaps=25, minCtg=1000):
-	with open(outFile, 'w') as fOUT:
+def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
+	outdir = os.path.dirname(os.path.realpath(prefix))
+	if not os.path.exists(outdir):
+		os.makedirs(outdir)
+	outFa = prefix + ".ctg.fasta"
+	outInfo = prefix +".shred.info.txt"
+	with open(outFa, 'w') as fOUTFA, open(outInfo, 'w') as fINFO:
 		genomeSize = 0
 		splitSize = 0
-		for header, seq in read_scaffold(assemblyFile):
+		numContigs = 0
+		contigLens = []
+		for header, seq in read_assembly(assemblyFile):
 #			print header
 			genomeSize += len(seq)
 			gapIndices = [(m.start(), m.end()) for m in re.finditer("[N|n]{%d,}" %(minGaps), seq)]
 			gapIndices.append((len(seq), -1))
 #			print gapIndices
+			gapLens = []
 			intervals = []
 			if len(gapIndices) == 1:
 				intervals.append((0, gapIndices[0][0]))
@@ -102,28 +110,43 @@ def assembly_breaker(assemblyFile, outFile, minGaps=25, minCtg=1000):
 				i = 0
 				for i in range(len(gapIndices)):
 					stop = gapIndices[i][0]
-					if gapIndices[len(gapIndices)-1][0]-start < minCtg and len(gapIndices) > 1:
+					if gapIndices[len(gapIndices)-1][0]-start < minCtgLen and \
+					   len(gapIndices) > 1:
 #						print gapIndices[i][1]
 #						print intervals
 #						print "last short"
 						intervals[-1] = (intervals[-1][0], gapIndices[len(gapIndices)-1][0])
 						break
 #					print start, stop
-					if stop-start+1 < minCtg:
+					if stop-start+1 < minCtgLen:
 #						print "short"
 #						print gapIndices[i-1], gapIndices[i]
 #						print stop-start+1
 						continue
+					if i < len(gapIndices)-1:
+						gapLens.append(gapIndices[i][1]-gapIndices[i][0]+1)
 					intervals.append((start, stop))
 					start = gapIndices[i][1]+1
-#			print intervals
+			#print "intervals", intervals
+			#print "gaps", gapLens
+			contigs = []
 			for i in range(len(intervals)):
 				start = intervals[i][0]
 				stop = intervals[i][1]
 				splitSize += (stop-start)
-				fOUT.write(">%s_%d\n%s\n" %(header, i, seq[start:stop]))
-		print genomeSize
-		print splitSize
+				contigID = "%s_%d" %(header, i)
+				contigs.append(contigID)
+				contigLens.append(stop-start)
+				fOUTFA.write(">%s\n%s\n" %(contigID, seq[start:stop]))
+			numContigs += len(contigs)
+			fINFO.write(">%s\n" %(header))
+			for i in range(1, len(contigs)):
+				fINFO.write("%s\t%s\t%d\n" %(contigs[i-1], contigs[i], gapLens[i-1]))
+		n50 = get_assembly_NXX(contigLens)
+		print "Total length of the given assembly: %d" %(genomeSize)
+		print "Total length of the shred assembly: %d" %(splitSize)
+		print "Number of sequences in the shred assembly: %d" %(numContigs)
+		print "N50 of the shred assembly: %d" %(n50)
 
 def rc_seq(seq):
 	"""
