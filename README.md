@@ -74,8 +74,6 @@ In it simplest usage, AGOUTI takes three inputs: an initial genome assembly in F
 
 This will produce a scaffoled assembly in FASTA format, and a updated gene models in GFF3 format. All files (including the intermediate files) will be stored under a directory specified by `-outdir`, "example" in this case.
 
-**Note** AGOUTI does not need header information from the BAM file. So `-h` needs not to be specified.
-
 ## Prepare Inputs
 
 Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `example.2.fq`, and an initial assembly generated from an assembler of your favorite, `example.fasta`. You will first need to map the RNA-seq data against the assembly using a short-reads mapper, such as BWA. For example,
