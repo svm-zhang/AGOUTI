@@ -41,6 +41,20 @@ To get started with AGOUTI, please use `-h` or `--help` for a list of supported 
     python agouti.py -h
 
 ```
+usage: agouti.py [-h] ...
+
+Welcome to AGOUTI!
+
+optional arguments:
+    -h, --help  show this help message and exit
+
+Commands:
+
+    scaffold    Scaffolding genome assembly and update genome annotation
+    shred       Shredding genome assembly into contigs at gaps of a minimum length
+```
+
+```
 usage: agouti.py [-h] -contig FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p STR]
 
 Welcome to AGOUTI!
