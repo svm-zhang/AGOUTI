@@ -139,12 +139,3 @@ def get_assembly_NXX(seqLens, nXX=50):
 			nXXLen = seqLens[i]
 			break
 	return nXXLen
-
-#def main():
-#	assemblyFile = sys.argv[1]
-#	outFile = sys.argv[2]
-#
-#	assembly_breaker(assemblyFile, outFile)
-#
-#if __name__ == "__main__":
-#	main()
