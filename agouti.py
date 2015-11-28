@@ -48,6 +48,11 @@ def parse_args():
 							dest="gff",
 							required=True,
 							help="specify the predicted gene model in GFF format")
+	scafParser.add_argument("-shredpath",
+							metavar="FILE",
+							dest="oriScafPath",
+							help=("specify the original scaffolding path "
+								  "obtained from genome shredding"))
 	scafParser.add_argument("-outdir",
 							metavar="DIR",
 							dest="outDir",
@@ -174,6 +179,11 @@ def run_scaffolder(args):
 	scafPaths, edgeSenseDict = agSCAFF.run_scaffolding(vertex2Name, joinPairsFile,
 													   dCtgPair2GenePair, outDir, prefix,
 													   args.minSupport, args.debug)
+
+	if args.oriScafPath:
+		agSCAFF.report_inconsistencies(args.oriScafPath, scafPaths,
+									   vertex2Name, outDir,
+									   prefix, args.debug)
 
 	agUPDATE.agouti_update(scafPaths, dSeqs, vertex2Name,
 						   edgeSenseDict, dGFFs,
