@@ -20,7 +20,7 @@ def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 	contigs = []
 	seqLens = []
 	seqIndex = 0
-	for header, seq in read_assembly(assemblyFile):
+	for header, seq in read_fasta(assemblyFile):
 		# split header on any non-alphabetic character
 		# use only the first of the return list
 		header = re.split("\W+", header)[0]
@@ -42,7 +42,7 @@ def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 	agSeqProgress.logger.info("[DONE]")
 	return contigs, dSeqs
 
-def read_assembly(assemblyFile):
+def read_fasta(assemblyFile):
 	with open(assemblyFile, 'r') as fASSEMBLY:
 		seqIter = (k[1] for k in itertools.groupby(fASSEMBLY, lambda line: line[0]== ">"))
 		for header in seqIter:
@@ -61,7 +61,7 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 		splitSize = 0
 		numContigs = 0
 		contigLens = []
-		for header, seq in read_assembly(assemblyFile):
+		for header, seq in read_fasta(assemblyFile):
 #			print header
 			genomeSize += len(seq)
 			gapIndices = [(m.start(), m.end()) for m in re.finditer("[N|n]{%d,}" %(minGaps), seq)]
