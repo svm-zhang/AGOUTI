@@ -5,39 +5,6 @@ import re
 
 from lib import agouti_log as agLOG
 
-def get_contigs(assemblyFile, agSeqProgress):
-	agSeqProgress.logger.info("[BEGIN] Reading the initial assembly")
-	seq = ""
-	contigs = []
-	seqLens = []
-	dSeqs = {}
-	contigIndex = 0
-	with open(assemblyFile, 'r') as fCONTIG:
-		for line in fCONTIG:
-			if line.startswith('>'):
-				if seq != "":
-					dSeqs[contigIndex] = seq
-					agSeqProgress.logger.debug("%s\t%d" %(contig, len(seq)))
-					seqLens.append(len(seq))
-					contigIndex += 1
-					seq = ""
-				contig = line.strip()[1:]
-				contigs.append(contig)
-			else:
-				seq += line.strip()
-	# read one last sequence
-	agSeqProgress.logger.debug("%s\t%d" %(contig, len(seq)))
-	dSeqs[contigIndex] = seq
-	seqLens.append(len(seq))
-
-	n50 = get_assembly_NXX(seqLens)
-
-	agSeqProgress.logger.info("%d sequences parsed" %(len(dSeqs)))
-	agSeqProgress.logger.info("The given assembly N50: %d" %(n50))
-	agSeqProgress.logger.info("[DONE]")
-
-	return contigs, dSeqs
-
 def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 	moduleName = os.path.basename(__file__).split('.')[0].upper()
 	moduleOutDir = os.path.join(outDir, "agouti_seq")
@@ -76,7 +43,6 @@ def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 	return contigs, dSeqs
 
 def read_assembly(assemblyFile):
-	dSeq = {}
 	with open(assemblyFile, 'r') as fASSEMBLY:
 		seqIter = (k[1] for k in itertools.groupby(fASSEMBLY, lambda line: line[0]== ">"))
 		for header in seqIter:
