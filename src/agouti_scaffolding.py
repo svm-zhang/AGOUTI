@@ -834,27 +834,6 @@ class AGOUTI_Graph(Graph):
 		self.agSCAFProgress.logger.info("%d paths scaffolded" %(len(scafPaths)))
 		return scafPaths
 
-def check_orientation_conflicts(vertexA, vertexB, edgeSenseDict):
-	fr, ff, rr, rf = 0, 0, 0, 0
-	if (vertexA, vertexB) in edgeSenseDict:
-		ff += edgeSenseDict[vertexA, vertexB].count(('+', '+'))
-		fr += edgeSenseDict[vertexA, vertexB].count(('+', '-'))
-		rr += edgeSenseDict[vertexA, vertexB].count(('-', '-'))
-		rf += edgeSenseDict[vertexA, vertexB].count(('-', '+'))
-	elif (vertexB, vertexA) in edgeSenseDict:
-		ff += edgeSenseDict[vertexB, vertexA].count(('+', '+'))
-		fr += edgeSenseDict[vertexB, vertexA].count(('+', '-'))
-		rr += edgeSenseDict[vertexB, vertexA].count(('-', '-'))
-		rf += edgeSenseDict[vertexB, vertexA].count(('-', '+'))
-	counts = [fr, ff, rr, rf]
-	print "vertexA", vertexA, "vertexB", vertexB, "counts", counts
-	counts.sort(reverse=True)
-	print "vertexA", vertexA, "vertexB", vertexB, "counts", counts
-	if float(counts[1])/float(counts[0]) > 0.3:
-		return True
-	else:
-		return False
-
 def run_scaffolding(vertex2Name, joinPairsFile,
 				    dCtgPair2GenePair, outDir, prefix,
 					minSupport, debug=0):
