@@ -257,149 +257,6 @@ class RNAPATHSTAR_Graph(Graph):
 					return returnPath, visitedDict
 		return returnPath, visitedDict
 
-	def scaffolding(self, vertex2Name, dCtgPair2GenePair, minSupport):
-		if self.debug:
-			scaffoldingDebug = agLOG.DEBUG("SCAFFOLDING", self.debugLogFile, 'a')
-
-		scafPaths = []
-		dVisited = {}
-		startVertices = self.leaves
-		for vertex in startVertices:
-			if dVisited.has_key(vertex):
-				pass
-			else:
-				if self.debug:
-					scaffoldingDebug.debugger.debug(">graph walk start from node: %s"
-													%(vertex2Name[vertex]))
-				path, dVisited = self.walk_graph(vertex, vertex2Name, minSupport, dVisited) #added
-				if len(path) > 1:
-					if self.debug:
-						scaffoldingDebug.debugger.debug("return path: %s"
-														%(",".join(map(str, [vertex2Name[k] for k in path]))))
-						scaffoldingDebug.debugger.debug("pathLen=%d" %(len(path)))
-					scafPaths.append(path)
-		if self.debug:
-			scaffoldingDebug.debugger.debug("number of paths: %d" %(len(scafPaths)))
-
-		dSense = {}
-		for (fVertex, tVertex), senses in self.senses.iteritems():
-			counter = collections.Counter(senses)
-			sense = sorted(counter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
-			dSense[fVertex, tVertex] = sense
-
-		leftOvers = [k for k in startVertices if k not in dVisited]
-		leftOvers += [k for k in self.nonLeaves if k not in dVisited and k not in leftOvers]
-		if self.debug:
-			scaffoldingDebug.debugger.debug("%d leftovers" %(len(leftOvers)))
-			scaffoldingDebug.debugger.debug("Finding paths from non-leaves")
-
-		dBestPaths = {}
-		visitedLeftOvers = []
-		for vertex in leftOvers:
-			if vertex not in dVisited:
-				path = self.dfs(vertex, vertex2Name, minSupport)
-				if self.debug:
-					scaffoldingDebug.debugger.debug("%d - %s has not visited yet" %(vertex, vertex2Name[vertex]))
-					scaffoldingDebug.debugger.debug("missing path: %s" %(",".join([vertex2Name[k] for k in path])))
-				vertices = ""
-				if len(path) == 1:
-					dVisited[vertex] = ""
-					visitedLeftOvers.append(vertex)
-					if self.debug:
-						scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
-				elif len(path) > 1:
-					for k in path:
-						dVisited[k] = ""
-					maxPathLen = 0
-					bestPath = []
-					for i in range(len(path)):
-						if i > 0:
-							tmpPath = self.dfs(path[i], vertex2Name, minSupport)
-						else:
-							tmpPath = path
-						if self.debug:
-							scaffoldingDebug.debugger.debug("walking path: %s" %(",".join([vertex2Name[k] for k in tmpPath])))
-
-						curVertex = tmpPath[0]
-						curCtg = vertex2Name[curVertex]
-						curSensePair = ""
-						possiblePath = []
-						preSensePair = ""
-						for i in range(1, len(tmpPath)):
-							nextVertex = tmpPath[i]
-							nextCtg = vertex2Name[nextVertex]
-							if self.debug:
-								scaffoldingDebug.debugger.debug("\tcur %s | next %s" %(curCtg, nextCtg))
-							if (curVertex, nextVertex) in dSense:
-								ctgPair = (curVertex, nextVertex)
-								genePair = dCtgPair2GenePair[ctgPair]
-								curSensePair = "".join(dSense[ctgPair])
-							elif (nextVertex, curVertex) in dSense:
-								ctgPair = (nextVertex, curVertex)
-								genePair = dCtgPair2GenePair[ctgPair][::-1]
-								curSensePair = "".join(dSense[ctgPair][::-1])
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\treverse contig pair")
-							else:
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\tthe pair has been removed, stop extension")
-								break
-							if self.debug:
-								scaffoldingDebug.debugger.debug("\tgene pair: %s %s" %(genePair[0].geneID, genePair[1].geneID))
-							if preSensePair == "":
-								preSensePair = curSensePair
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
-									scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
-							else:
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
-									scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
-								if preSensePair == "+-" and (curSensePair == "+-" or curSensePair == "++"):
-									pass
-								elif preSensePair == "++" and curSensePair == "--":
-									pass
-								elif preSensePair == "--" and curSensePair == "+-":
-									pass
-								elif preSensePair == "-+" and (curSensePair == "-+" or curSensePair == "--"):
-									pass
-								else:
-									break
-							possiblePath.append(curVertex)
-							curVertex = nextVertex
-							curCtg = vertex2Name[curVertex]
-						possiblePath.append(curVertex)
-						if self.debug:
-							scaffoldingDebug.debugger.debug("\tpossiblePath: %s" %(",".join([vertex2Name[k] for k in possiblePath])))
-
-						if len(possiblePath) == len(path):
-							bestPath = possiblePath
-							break
-						else:
-							if maxPathLen == 0:
-								maxPathLen = len(possiblePath)
-								bestPath = possiblePath
-							else:
-								if maxPathLen < len(possiblePath):
-									maxPathLen = len(possiblePath)
-									bestPath = possiblePath
-						if self.debug:
-							scaffoldingDebug.debugger.debug("\ttmp bestPath: %s" %(",".join([vertex2Name[k] for k in bestPath])))
-					if self.debug:
-						scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
-					scafPaths.append(bestPath)
-					for vertex in bestPath:
-						visitedLeftOvers.append(k)
-
-		if self.debug:
-			scaffoldingDebug.debugger.debug("%d visited leftovers %s"
-											%(len(visitedLeftOvers), str([vertex2Name[k] for k in visitedLeftOvers])))
-
-			scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
-			self.agSCAFProgress.logger.info("number of visited nodes: %d" %(len(dVisited)))
-			scaffoldingDebug.debugger.debug("number of paths scaffolded: %d" %(len(scafPaths)))
-		return scafPaths
-
 	def scaffolding_v2(self, vertex2Name, dCtgPair2GenePair, minSupport):
 		if self.debug:
 			scaffoldingDebug = agLOG.DEBUG("SCAFFOLDING", self.debugLogFile, 'a')
@@ -481,7 +338,6 @@ class RNAPATHSTAR_Graph(Graph):
 		if self.debug:
 			scaffoldingDebug.debugger.debug("number of paths scaffolded: %d" %(len(scafPaths)))
 		return scafPaths
-
 
 	def dfs(self, vertex, vertex2Name, minSupport, seen=None, path=None):
 		"""
@@ -766,3 +622,6 @@ def run_scaffolding(vertex2Name, joinPairsFile,
 							minSupport)
 
 	return scafPaths, graph.senses
+
+def report_inconsistencies(oriScafPath):
+	pass
