@@ -32,9 +32,9 @@ You should see, for example, something like this:
 
     AGOUTI v0.2
 
-**AGOUTI is under active active development. Please checkout the lastest version**
-
 In any case, please use this version as your reference.
+
+**AGOUTI is under active active development. Please checkout the lastest version**
 
 ## Command-line interface
 
