@@ -106,6 +106,9 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 				fOUTFA.write(">%s\n%s\n" %(contigID, seq[start:stop]))
 			numContigs += len(contigs)
 			fINFO.write(">%s\n" %(header))
+			if len(contigs) == 1:
+				fINFO.write("%s\tNA\tNA\n" %(contigs[0]))
+				continue
 			for i in range(1, len(contigs)):
 				fINFO.write("%s\t%s\t%d\n" %(contigs[i-1], contigs[i], gapLens[i-1]))
 		n50 = get_assembly_NXX(contigLens)
