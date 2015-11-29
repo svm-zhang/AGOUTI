@@ -1,7 +1,6 @@
 import os
 import sys
 import math
-import string
 import collections
 import itertools
 import operator
@@ -614,7 +613,6 @@ def run_scaffolding(vertex2Name, joinPairsFile,
 #		scafPaths = graph.start(joinPairsFile, vertex2Name,
 #								dCtgPair2GenePair, algorithm,
 #								minSupport)
-#	elif algorithm == "weight":
 	graph = RNAPATHSTAR_Graph(outGraphFile)
 	graph.start_logger(moduleName, moduleOutDir, prefix, debug)
 	scafPaths = graph.start(joinPairsFile, vertex2Name,
@@ -622,6 +620,3 @@ def run_scaffolding(vertex2Name, joinPairsFile,
 							minSupport)
 
 	return scafPaths, graph.senses
-
-def report_inconsistencies(oriScafPath):
-	pass
