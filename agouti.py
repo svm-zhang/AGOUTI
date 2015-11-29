@@ -180,14 +180,10 @@ def run_scaffolder(args):
 													   dCtgPair2GenePair, outDir, prefix,
 													   args.minSupport, args.debug)
 
-	if args.oriScafPath:
-		agSCAFF.report_inconsistencies(args.oriScafPath, scafPaths,
-									   vertex2Name, outDir,
-									   prefix, args.debug)
-
 	agUPDATE.agouti_update(scafPaths, dSeqs, vertex2Name,
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
+						   args.oriScafPath,
 						   args.nFills, args.debug)
 
 def main():
