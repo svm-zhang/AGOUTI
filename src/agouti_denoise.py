@@ -83,6 +83,8 @@ def find_gene_overlap(interval, geneModel_5, geneModel_3, debug=0):
 	else:
 		if debug:
 			agDENOISEDebug.debugger.debug("FINDOVERLAP\tmultiple gene contig")
+			agDENOISEDebug.debugger.debug("FINDOVERLAP\tmapping interval: %s"
+										  %(str(interval)))
 			agDENOISEDebug.debugger.debug("FINDOVERLAP\tgeneModel_5 - %s - %d - %d"
 										  %(geneModel_5.geneID, geneModel_5.geneStart, geneModel_5.geneStop))
 			agDENOISEDebug.debugger.debug("FINDOVERLAP\tgeneModel_3 - %s - %d - %d"
@@ -103,6 +105,11 @@ def find_gene_overlap(interval, geneModel_5, geneModel_3, debug=0):
 				return 1, 3
 			elif ovl_5 == 1 and ovl_3 == -1:
 				return -2, -2
+			elif ovl_5 == -1 and ovl_3 == 1:
+				agDENOISEProgress.logger.error("gene models are out of orders on contig %s"
+											   %(geneModel_5.ctgID))
+				agDENOISEProgress.logger.error("sorting gene model from agouti_GFF failed")
+				sys.exit(1)
 			elif ovl_5 == 0 and ovl_3 == 0:
 				#!!! should merge two genes
 				return 0, 0
@@ -139,7 +146,7 @@ def mapping_to_geneModel(geneModelsA, geneModelsB,
 		geneIndexA, endA = find_gene_overlap(clusterA, geneModelA_5, geneModelA_3, debug)
 		geneIndexB, endB = find_gene_overlap(clusterB, geneModelB_5, geneModelB_3, debug)
 		if debug:
-			agDENOISEDebug.debugger.debug("MAP2GENE\tclusterA - %s - clusterB -%s - nSupport - %d"
+			agDENOISEDebug.debugger.debug("MAP2GENE\t\tclusterA - %s - clusterB -%s - nSupport - %d"
 										  %(clusterA, clusterB, nSupport))
 		if geneIndexA == 0 and geneIndexB == 0:
 			# save and go on
@@ -180,9 +187,6 @@ def mapping_to_geneModel(geneModelsA, geneModelsB,
 
 def get_genePair_for_contigPair(dGFFs, ctgA, ctgB, mapIntervalsA,
 								mapIntervalsB, senses, debug=0):
-#	agDENOISEDebug = None
-#	if debugLogFile != "":
-#		agDENOISEDebug = agLOG.DEBUG("get_genePair_main", debugLogFile, 'a')
 	geneModelsA = []
 	geneModelsB = []
 	createA, createB = 0, 0
@@ -247,7 +251,7 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 		ctgA = ctgPair[0]
 		ctgB = ctgPair[1]
 		if debug:
-			agDENOISEDebug.debugger.debug(">contigA - %s - contigB - %s"
+			agDENOISEDebug.debugger.debug("DENOISE_MAIN\t>contigA - %s - contigB - %s"
 										  %(ctgA, ctgB))
 		pairToRemove = []
 		mapIntervalsA = []
@@ -270,12 +274,13 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 		if genePair is None:
 			nFailGeneModel += 1
 			if debug:
-				agDENOISEDebug.debugger.debug("\tFail to find a pair of gene models")
+				agDENOISEDebug.debugger.debug("DENOISE_MAIN\tFail to find a pair of gene models")
+				agDENOISEDebug.debugger.debug("DENOISE_MAIN\t----------------------------------")
 		else:
 			geneIndexA, geneIndexB, endA, endB, intervalsA, intervalsB, senses = genePair
 			sensesCounter = collections.Counter(senses)
 			if debug:
-				agDENOISEDebug.debugger.debug("\tsensesCounter: %s" %(str(sensesCounter)))
+				agDENOISEDebug.debugger.debug("DENOISE_MAIN\tsensesCounter: %s" %(str(sensesCounter)))
 			if geneIndexB != 0:
 				# create gene model according to endB using intervalsB
 				if geneIndexB == -1 and (endB == 5 or endB == 0):
@@ -307,14 +312,14 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 				elif endA == 3:
 					geneIndexA = len(dGFFs[ctgA])-1
 			if debug:
-				agDENOISEDebug.debugger.debug("\tgenePair: %s" %(str(genePair)))
-				agDENOISEDebug.debugger.debug("\t# models on ctgA - %d - # models on ctgB - %d"
+				agDENOISEDebug.debugger.debug("DENOISE_MAIN\tgenePair: %s" %(str(genePair)))
+				agDENOISEDebug.debugger.debug("DENOISE_MAIN\t# models on ctgA - %d - # models on ctgB - %d"
 											  %(len(dGFFs[ctgA]), len(dGFFs[ctgB])))
-				agDENOISEDebug.debugger.debug("\tgeneIndexA - %d - endA - %d - geneIndexB - %d - endB - %d"
+				agDENOISEDebug.debugger.debug("DENOISE_MAIN\tgeneIndexA - %d - endA - %d - geneIndexB - %d - endB - %d"
 											  %(geneIndexA, endA, geneIndexB, endB))
 			sense = sorted(sensesCounter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
 			if debug:
-				agDENOISEDebug.debugger.debug("\tsensePair - %s" %(str(sense)))
+				agDENOISEDebug.debugger.debug("DENOISE_MAIN\tsensePair - %s" %(str(sense)))
 			if (geneIndexA == len(dGFFs[ctgA])-1 and endA == 3) and \
 			   (geneIndexB == 0 and endB == 5) and sense == ('+', '-'):
 					# FR + 3'-5'
@@ -339,17 +344,17 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 					# only one gene on the contig
 					# it doesn't matter which end
 					keep = 1
-			if debug:
-				agDENOISEDebug.debugger.debug("\tNOISE-FREE")
 			if keep:
 				geneA = dGFFs[ctgA][geneIndexA]
 				geneB = dGFFs[ctgB][geneIndexB]
 				dCtgPair2GenePair[vertex2Name.index(ctgA), vertex2Name.index(ctgB)] = [geneA, geneB]
 				if debug:
-					agDENOISEDebug.debugger.debug("\tgeneA ID - %s - startA - %d - stopA = %d"
+					agDENOISEDebug.debugger.debug("DENOISE_MAIN\tNOISE-FREE")
+					agDENOISEDebug.debugger.debug("DENOISE_MAIN\tgeneA ID - %s - startA - %d - stopA = %d"
 												  %(geneA.geneID, geneA.geneStart, geneA.geneStop))
-					agDENOISEDebug.debugger.debug("\tgeneB ID - %s - startB - %d - stopB = %d"
+					agDENOISEDebug.debugger.debug("DENOISE_MAIN\tgeneB ID - %s - startB - %d - stopB = %d"
 												  %(geneB.geneID, geneB.geneStart, geneB.geneStop))
+					agDENOISEDebug.debugger.debug("DENOISE_MAIN\t----------------------------------")
 				senseA = sense[0]
 				senseB = sense[1]
 				for i in xrange(len(pairInfo)):
