@@ -90,8 +90,8 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					geneIndex += 1
-					m = [(m.start(), m.end()) for m in re.finditer("(;)?ID=(.)+(;)?", tmp_line[8])][0]
-					geneID = tmp_line[8][m[0]:m[1]].split('=')[1].strip(';')
+					m = re.search(";ID=.+;|ID=.+;|ID=.+|;ID=.+", tmp_line[8])
+					geneID = m.group().strip(';').split('=')[1]
 					if geneIndex == 0:
 						#lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
 						#								   int(tmp_line[3]),
@@ -127,6 +127,7 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 
 	nGeneModels = 0
 	for k, v in sorted(dGFFs.items()):
+		
 		nGeneModels += len(v)
 		if debug:
 			agGFFDebug.debugger.debug("%s\t%d" %(k, len(v)))
