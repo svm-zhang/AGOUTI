@@ -127,10 +127,16 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 
 	nGeneModels = 0
 	for k, v in sorted(dGFFs.items()):
-		
-		nGeneModels += len(v)
+		genes = [(gene.geneStart, gene.geneStop) for gene in v]
+		soGenes = sorted(xrange(len(genes)), key=lambda k:genes[k])
+		tmpV = []
+		for i in xrange(len(soGenes)):
+			index = soGenes[i]
+			tmpV.append(v[index])
+		dGFFs[k] = tmpV
+		nGeneModels += len(tmpV)
 		if debug:
-			agGFFDebug.debugger.debug("%s\t%d" %(k, len(v)))
+			agGFFDebug.debugger.debug("%s\t%d" %(k, len(tmpV)))
 
 	agGFFProgress.logger.info("%d Gene Models parsed" %(nGeneModels))
 	agGFFProgress.logger.info("[DONE]")
