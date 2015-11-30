@@ -60,7 +60,7 @@ To run scaffolding using AGOUTI, simply:
 
     python agouti.py scaffold -h
 ```
-usage: agouti.py [-h] -contig FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p STR]
+usage: agouti.py [-h] -assembly FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p STR]
 
 Welcome to AGOUTI!
 
