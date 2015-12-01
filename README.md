@@ -60,10 +60,7 @@ To run scaffolding using AGOUTI, simply:
 
     python agouti.py scaffold -h
 ```
-usage: agouti.py [-h] -assembly FILE -bam FILE -gff FILE -out DIR [-mnl INT] [-p STR]
-
-Welcome to AGOUTI!
-
+Scaffolding genome assembly and update genome annotation
 optional arguments:
 	-h, --help                  show this help message and exit
 	-assembly           FILE    specify the assembly in FASTA format
