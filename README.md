@@ -40,8 +40,9 @@ In any case, please use this version as your reference.
 
 To get started with AGOUTI, please use `-h` or `--help` for a list of supported options.
 
-    python agouti.py -h
 ```
+python agouti.py -h
+
 usage: agouti.py [-h] ...
 
 Welcome to AGOUTI!
@@ -83,9 +84,10 @@ optional arguments:
 ### Shred interface
 
 To shred your assembly into contigs using AGOUTI, simply:
-    python agouti.py shred -h
 
 ```
+python agouti.py shred -h
+
 usage: agouti.py shred [-h] -assembly FILE -p STR [-mlg INT] [-mlc INT]
 
 optional arguments:
