@@ -21,8 +21,11 @@ def parse_args():
 	Welcome to AGOUTI!\n
 	'''
 
-	parser = MyParser(description=use_message)
+	parser = argparse.ArgumentParser(description=use_message)
 
+	parser.add_argument("--version",
+							action="version",
+							version="AGOUTI {version}".format(version=__version__))
 	subparsers = parser.add_subparsers(title="Commands",
 									   metavar="",
 									   dest="command")
@@ -100,9 +103,6 @@ def parse_args():
 	scafParser.add_argument("-overwrite",
 							action='store_true',
 							help="specify whether to overwrite all results from last run")
-	scafParser.add_argument("--version",
-							action="version",
-							version="AGOUTI {version}".format(version=__version__))
 	scafParser.set_defaults(func=run_scaffolder)
 
 	usage = "Shredding genome assembly into contigs at gaps of a minimum length"
