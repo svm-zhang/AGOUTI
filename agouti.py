@@ -1,8 +1,7 @@
 import os
 import sys
 import argparse
-import logging
-import collections
+import subprocess as sp
 
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
@@ -192,6 +191,16 @@ def run_scaffolder(args):
 						   dCtgPair2GenePair, outDir, prefix,
 						   args.oriScafPath,
 						   args.nFills, args.debug)
+
+def check_version():
+	checkRemote = "git ls-remote origin master"
+	output = sp.check_output(shlex.split(checkRemote))
+	remoteVersion = output.strip().split("\t")[0]
+	checkLocal = "git log -n 1 --pretty=\"%H\""
+	localVersion = sp.check_output(shlex.split(checkLocal))
+	if remoteVersion != localVersion:
+		return True
+	return False
 
 def main():
 	args = parse_args()
