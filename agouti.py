@@ -132,6 +132,11 @@ def parse_args():
 							 help="specify a minimum length of contigs [1000]")
 	shredParser.set_defaults(func=run_shredder)
 
+	if len(sys.argv) == 1:
+		# exit when no command provided
+		parser.print_help()
+		sys.exit(1)
+
 	return parser.parse_args()
 
 def run_shredder(args):
@@ -158,8 +163,10 @@ def run_scaffolder(args):
 	para.logger.info("Gene Model: %s" %(gffFile))
 	para.logger.info("Output directory: %s" %(outDir))
 	para.logger.info("Output prefix: %s" %(prefix))
-	para.logger.info("Minimum number of supports: %d" %(args.minSupport))
-	para.logger.info("Length of gaps filled: %d" %(args.nFills))
+	para.logger.info("Minimum number of supports: %d"
+					 %(args.minSupport))
+	para.logger.info("Length of gaps to fill between contigs: %d"
+					 %(args.nFills))
 
 	vertex2Name, dSeqs = agSeq.agouti_seq_main(args.assemblyFile, outDir,
 											   prefix, args.debug)
