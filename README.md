@@ -26,7 +26,7 @@ AGOUTI is designed to be light-weight by only requiring SAMtools and python 2.7 
 
 To get the current version of the download, simply do
 
-    python agouti.py -v
+    python agouti.py --version
 
 You should see, for example, something like this:
 
