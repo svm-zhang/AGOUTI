@@ -58,9 +58,11 @@ Commands:
 
 To run scaffolding using AGOUTI, simply:
 
-    python agouti.py scaffold -h
 ```
+python agouti.py scaffold -h
+
 Scaffolding genome assembly and update genome annotation
+
 optional arguments:
 	-h, --help                  show this help message and exit
 	-assembly           FILE    specify the assembly in FASTA format
