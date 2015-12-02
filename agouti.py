@@ -162,7 +162,7 @@ def run_scaffolder(args):
 		os.makedirs(outDir)
 
 	paraLogFile = os.path.join(outDir, "%s.parameters.txt" %(args.prefix))
-	para = aglog.progress_meter(parse_args.__name__)
+	para = agLOG.PROGRESS_METER(parse_args.__name__)
 	para.add_file_handler(paraLogFile)
 	para.logger.info("Assembly: %s" %(os.path.realpath(args.assemblyFile)))
 	para.logger.info("Gene Model: %s" %(gffFile))
@@ -203,7 +203,7 @@ def check_version():
 	output = sp.check_output(shlex.split(checkRemote))
 	remoteVersion = output.strip().split("\t")[0]
 	checkLocal = "git log -n 1 --pretty=\"%H\""
-	localVersion = sp.check_output(shlex.split(checkLocal))
+	localVersion = sp.check_output(shlex.split(checkLocal)).strip()
 	if remoteVersion != localVersion:
 		return True
 	return False
@@ -213,22 +213,30 @@ def update_local():
 		update to latest version
 	'''
 	gitCmd = "git ls-remote origin"
-	heads = sp.check_output(shlex.split(gitCmd))
+	heads = sp.check_output(shlex.split(gitCmd)).split("\n")
+	print heads
+	print heads[1]
+	tags = []
 	for line in heads:
-		tmpLine = line.strip().split("\t")
-		if re.search("refs/tag", tmpLine[1]):
-			tags.append(tmpLine[1])
+		if line:
+			tmpLine = line.strip().split("\t")
+			if re.search("refs/tag", tmpLine[1]):
+				tags.append(tmpLine[1])
+	print tags
 	latesTag = sorted(tags)[0]
-	gitCmd = "git fetch -all && git checkout -q %s" %(latesTag)
-	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
-	_, perr = p.communicate()
+	print latesTag
+	sys.exit()
+	gitCmd = "git fetch --all && git checkout -q %s" %(latesTag)
+	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
+	pout, perr = p.communicate()
 	if p.returncode:
 		print "Update error:", perr
+		print pout
 		sys.exit()
 
 def main():
 	args = parse_args()
-	para = aglog.progress_meter("MAIN")
+	para = agLOG.PROGRESS_METER("MAIN")
 	if check_version():
 		if not args.justrun:
 			update_local()
