@@ -240,7 +240,7 @@ def update_local(args):
 			tmpLine = line.strip().split("\t")
 			if re.search("refs/tag", tmpLine[1]):
 				if re.search("\^\{\}$", tmpLine[1]):
-					dVersions[tmpLine[1].strip("^{}") = tmpLine[0]
+					dVersions[tmpLine[1].strip("^{}")] = tmpLine[0]
 				else:
 					dVersions[tmpLine[1]] = ""
 				tags.append(tmpLine[1])
