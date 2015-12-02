@@ -237,6 +237,7 @@ def update_local():
 	pout, perr = p.communicate()
 	if p.returncode:
 		print "git checkout error:", perr
+		print pout
 		sys.exit()
 
 def main():
