@@ -150,7 +150,7 @@ Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `exa
 
 At the end of reads mapping, you will have the mapping results in BAM format. AGOUTI uses only uniquely mapped joining-pairs by checking mapping quality. For short-reads mappers such as BWA, you can use mapping quality to tell unique or not, e.g. mapQ > 0. If you use other mappers, you can filter out the ambiguous ones prior to input to AGOUTI. In the future version, we will make AGOUTI being able too internally recognize ambiguous reads mapping from different mappers.
 
-AGOUTI expects each reads pair to be next to each other in the SAM/BAM file. Therefore, there is no need to sort the BAM file by coordiantes. In addition, please FILTER secondary and supplementary alignments from the SAM/BAM file. SAMTOOLs can do the filter by specifying -F options.
+**Please make sure the SAM/BAM is sorted by reads name, not coordinates**
 
 ### Gene Models
 
