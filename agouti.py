@@ -226,12 +226,17 @@ def update_local():
 				tags.append(tmpLine[1])
 	latesTag = sorted(tags)[-1]
 	print latesTag
-	gitCmd = "git fetch --all && git checkout -q %s" %(latesTag)
-	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
+	gitCmd = "git fetch --all"
+	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
 	pout, perr = p.communicate()
 	if p.returncode:
-		print "Update error:", perr
-		print pout
+		print "git fetch error:", perr
+		sys.exit()
+	gitCmd = "git checkout -q %s" %(latesTag)
+	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
+	pout, perr = p.communicate()
+	if p.returncode:
+		print "git checkout error:", perr
 		sys.exit()
 
 def main():
@@ -242,6 +247,7 @@ def main():
 	if check_version():
 		if not args.justrun:
 			update_local()
+			version.logger.info("Update successful")
 	args.func(args)
 
 if __name__ == "__main__":
