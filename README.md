@@ -32,7 +32,7 @@ You should see, for example, something like this:
 
     AGOUTI v0.2.4-dirty
 
-To check if there is a new version, you can simply run:
+Since v0.2.4, you can check if there is a new version by running:
 
     python agouti.py update
 
