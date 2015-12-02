@@ -236,7 +236,9 @@ def update_local():
 
 def main():
 	args = parse_args()
-	para = agLOG.PROGRESS_METER("MAIN")
+	version = agLOG.PROGRESS_METER("MAIN")
+	version.logger.info("Checking available updates of AGOUTI")
+
 	if check_version():
 		if not args.justrun:
 			update_local()
