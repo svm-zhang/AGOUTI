@@ -251,6 +251,7 @@ def update_local(version, repoDir):
 		sys.exit(0)
 	return
 #		version.logger.info("Please re-run AGOUTI with the latest version")
+#
 
 def main(update):
 	args = parse_args()
