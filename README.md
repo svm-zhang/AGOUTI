@@ -18,11 +18,11 @@ AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gen
 
 ## Obtain AGOUTI
 
-To download AGOUTI, please use git to download the most recent development version through:
+AGOUTI is designed to be light-weight by only requiring SAMtools and python 2.7 or above.
+
+To download AGOUTI, please use:
 
     git clone https://github.com/svm-zhang/AGOUTI.git
-
-AGOUTI is designed to be light-weight by only requiring SAMtools and python 2.7 or above.
 
 To get the current version of the download, simply do
 
@@ -32,9 +32,16 @@ You should see, for example, something like this:
 
     AGOUTI v0.2
 
-In any case, please use this version as your reference.
+In the future, this version ID will be consistent with the git version ID. Now it is manually curated.
 
-**AGOUTI is under active active development. Please checkout the lastest version**
+AGOUTI has the function to compare the version of your local copy with the one hosted on github. It will check out the latest version and update your local copy. This behavior can be avoided by specifying `--justrun` option in the command line.
+
+If you wish to use a specific version of AGOUTI, you can first fetch all the versions available:
+    git fetch --all
+Then show all available versions:
+    git tag
+Next you simply need to specify a version. For example, if you'd like to use v0.2.4:
+    git checkout v0.2.4 -d v0.2.4
 
 ## Command-line interface
 
