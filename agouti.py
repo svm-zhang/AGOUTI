@@ -266,7 +266,7 @@ def main(update):
 #		if not args.justrun:
 #			update_local(version)
 #			sys.exit(0)
-	version.logger.info("Running AGOUTI with current version: %s" %(__version__))
+	version.logger.info("Running AGOUTI with current version: %s" %(__version__.strip()))
 	args.func(args)
 
 if __name__ == "__main__":
