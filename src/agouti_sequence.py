@@ -51,6 +51,8 @@ def read_fasta(assemblyFile):
 			yield header, seq
 
 def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
+	breakerProgress = agLog.PROGRESS_METER("SHREDDER")
+	breakerProgress.logger.info("[BEGIN] Shredding assembly")
 	outdir = os.path.dirname(os.path.realpath(prefix))
 	if not os.path.exists(outdir):
 		os.makedirs(outdir)
@@ -112,10 +114,13 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 			for i in range(1, len(contigs)):
 				fINFO.write("%s\t%s\t%d\n" %(contigs[i-1], contigs[i], gapLens[i-1]))
 		n50 = get_assembly_NXX(contigLens)
-		print "Total length of the given assembly: %d" %(genomeSize)
-		print "Total length of the shred assembly: %d" %(splitSize)
-		print "Number of sequences in the shred assembly: %d" %(numContigs)
-		print "N50 of the shred assembly: %d" %(n50)
+		breakerProgress.logger.info("Total length of the given assembly: %d"
+									%(genomeSize))
+		breakerProgress.logger.info("Total length of the shred assembly: %d"
+									%(splitSize))
+		breakerProgress.logger.info("Number of sequences in the shred assembly: %d"
+									%(numContigs))
+		breakerProgress.logger.info("N50 of the shred assembly: %d" %(n50))
 
 def rc_seq(seq):
 	"""
