@@ -252,9 +252,6 @@ def update_local(version, repoDir):
 	return
 #		version.logger.info("Please re-run AGOUTI with the latest version")
 
-#		return True
-#	return False
-
 def main(update):
 	args = parse_args()
 	version = agLOG.PROGRESS_METER("MAIN")
