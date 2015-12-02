@@ -161,7 +161,7 @@ def run_scaffolder(args):
 		os.makedirs(outDir)
 
 	paraLogFile = os.path.join(outDir, "%s.parameters.txt" %(args.prefix))
-	para = agLOG.PROGRESS_METER(parse_args.__name__)
+	para = aglog.progress_meter(parse_args.__name__)
 	para.add_file_handler(paraLogFile)
 	para.logger.info("Assembly: %s" %(os.path.realpath(args.assemblyFile)))
 	para.logger.info("Gene Model: %s" %(gffFile))
@@ -227,6 +227,7 @@ def update_local():
 
 def main():
 	args = parse_args()
+	para = aglog.progress_meter("MAIN")
 	if check_version():
 		if not args.justrun:
 			update_local()
