@@ -3,6 +3,7 @@ import sys
 import argparse
 import subprocess as sp
 import shlex
+import re
 
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
