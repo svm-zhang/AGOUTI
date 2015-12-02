@@ -18,7 +18,7 @@ AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gen
 
 ## Obtain AGOUTI
 
-AGOUTI is designed to be light-weight by only requiring SAMtools and python 2.7 or above.
+AGOUTI is designed to be light-weight by only requiring SAMtools, python 2.7 or above, and git 1.8.5 or later.
 
 To download AGOUTI, please use:
 
@@ -32,7 +32,11 @@ You should see, for example, something like this:
 
     AGOUTI v0.2.4-dirty
 
-AGOUTI has the function to compare the version of your local copy with the one hosted on github. It will check out the latest version and update your local copy. This behavior can be avoided by specifying `--justrun` option in the command line.
+To check if there is a new version, you can simply run:
+
+    python agouti.py update
+
+**It is RECOMMENDED to run update before you run AGOUTI.**
 
 If you wish to use a specific version of AGOUTI, you can first fetch all the versions available:
 
@@ -62,15 +66,13 @@ Welcome to AGOUTI!
 optional arguments:
     -h, --help  show this help message and exit
     --version   show program's version number and exit
-    --justrun   specify to just run AGOUTI without updating to latest version
 
 Commands:
 
     scaffold    Scaffolding genome assembly and update genome annotation
     shred       Shredding genome assembly into contigs at gaps of a minimum length
+    update      update AGOUTI to the latest stable version
 ```
-
-**For now, please run AGOUTI from the folder where agouti.py is located**
 
 ### Scaffold interface
 
