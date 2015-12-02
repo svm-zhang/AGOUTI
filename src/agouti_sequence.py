@@ -51,7 +51,7 @@ def read_fasta(assemblyFile):
 			yield header, seq
 
 def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
-	breakerProgress = agLog.PROGRESS_METER("SHREDDER")
+	breakerProgress = agLOG.PROGRESS_METER("SHREDDER")
 	breakerProgress.logger.info("[BEGIN] Shredding assembly")
 	outdir = os.path.dirname(os.path.realpath(prefix))
 	if not os.path.exists(outdir):
