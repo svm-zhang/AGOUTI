@@ -221,9 +221,11 @@ def update_local():
 		if line:
 			tmpLine = line.strip().split("\t")
 			if re.search("refs/tag", tmpLine[1]):
+				if re.search("\^\{\}$", tmpLine[1]):
+					continue
 				tags.append(tmpLine[1])
 	print tags
-	latesTag = sorted(tags)[0]
+	latesTag = sorted(tags)[-1]
 	print latesTag
 	gitCmd = "git fetch --all && git checkout -q %s" %(latesTag)
 	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
