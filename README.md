@@ -24,7 +24,7 @@ To download AGOUTI, please use:
 
     git clone https://github.com/svm-zhang/AGOUTI.git
 
-To get the current version of the download, simply do
+To get the current version of the download, simply go to AGOUTI folder and do
 
     python agouti.py --version
 
@@ -44,7 +44,7 @@ Then show all available versions using:
 
 Next you simply need to specify a version. For example, if you'd like to use v0.2.3:
 
-    git checkout v0.2.3 -d v0.2.3
+    git checkout v0.2.3 -b v0.2.3
 
 You can also click on releases from AGOUTI github page to see all available versions.
 
@@ -69,6 +69,9 @@ Commands:
     scaffold    Scaffolding genome assembly and update genome annotation
     shred       Shredding genome assembly into contigs at gaps of a minimum length
 ```
+
+**For now, please run AGOUTI from the folder where agouti.py is located**
+
 ### Scaffold interface
 
 To run scaffolding using AGOUTI, simply:
