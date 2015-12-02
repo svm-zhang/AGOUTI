@@ -142,6 +142,12 @@ def parse_args():
 						help="specify to just run AGOUTI without updating to latest version")
 	shredParser.set_defaults(func=run_shredder)
 
+	usage = "update AGOUTI to the latest stable version"
+	updateParser = subparsers.add_parser("update",
+										 formatter_class=argparse.RawTextHelpFormatter,
+										 help="\t"+usage)
+	updateParser.set_defaults(func=update_local)
+
 	if len(sys.argv) == 1:
 		# exit when no command provided
 		parser.print_help()
@@ -203,40 +209,44 @@ def run_scaffolder(args):
 						   args.oriScafPath,
 						   args.nFills, args.debug)
 
-def check_version(repoDir):
-	pass
-
-def update_local(version, repoDir):
+def update_local(args):
 	'''
 		update to latest version
 	'''
+	version = agLOG.PROGRESS_METER("UPDATE")
+	repoDir = os.path.dirname(os.path.realpath(__file__))
 	# first check git availability
 	checkGitVersion = "git --version"
 	p = sp.Popen(shlex.split(checkGitVersion), stdout=sp.PIPE, stderr=sp.PIPE)
 	pout, perr = p.communicate()
 	if p.returncode:
 		version.logger.info("Please check your PATH for git")
-		version.logger.info("Skip trying to update AGOUTI")
-		return
+		version.logger.info("Update unsuccessful")
+		sys.exit(1)
 	# Then compare local with remote
 	version.logger.info("Checking available updates of AGOUTI")
-	checkRemote = "git -C %s ls-remote origin master" %(repoDir)
-	output = sp.check_output(shlex.split(checkRemote))
-	remoteVersion = output.strip().split("\t")[0]
+#	checkRemote = "git -C %s ls-remote origin master" %(repoDir)
+#	output = sp.check_output(shlex.split(checkRemote))
+#	remoteVersion = output.strip().split("\t")[0]
 	checkLocal = "git -C %s log -n 1 --pretty=\"%%H\"" %(repoDir)
 	localVersion = sp.check_output(shlex.split(checkLocal)).strip()
-	if remoteVersion != localVersion:
-		gitCmd = "git -C %s ls-remote origin" %(repoDir)
-		heads = sp.check_output(shlex.split(gitCmd)).split("\n")
-		tags = []
-		for line in heads:
-			if line:
-				tmpLine = line.strip().split("\t")
-				if re.search("refs/tag", tmpLine[1]):
-					if re.search("\^\{\}$", tmpLine[1]):
-						continue
-					tags.append(tmpLine[1])
-		latesTag = sorted(tags)[-1]
+#	if remoteVersion != localVersion:
+	gitCmd = "git -C %s ls-remote origin" %(repoDir)
+	heads = sp.check_output(shlex.split(gitCmd)).split("\n")
+	tags = []
+	hashes = []
+	for line in heads:
+		if line:
+			tmpLine = line.strip().split("\t")
+			if re.search("refs/tag", tmpLine[1]):
+				if re.search("\^\{\}$", tmpLine[1]):
+					continue
+				tags.append(tmpLine[1])
+				hashes.append(tmpLine[0])
+	latesTag = sorted(tags)[-1]
+	latestHash = hashes[tags.index(latesTag)]
+	sys.exit()
+	if latestHash != localVersion:
 		gitCmd = "git -C %s fetch --all" %(repoDir)
 		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
 		pout, perr = p.communicate()
@@ -250,27 +260,23 @@ def update_local(version, repoDir):
 			version.logger.error("git checkout error: %s" %(perr))
 			sys.exit(1)
 		version.logger.info("Update successful")
-		version.logger.info("Rebootting AGOUTI")
-		main(0)
 		sys.exit(0)
-	return
-#		version.logger.info("Please re-run AGOUTI with the latest version")
-#
+	version.logger.info("Current version is the LATEST. No need to update")
 
-def main(update):
+def main():
 	args = parse_args()
-	version = agLOG.PROGRESS_METER("MAIN")
-	version.logger.info("update: %d" %(update))
-	if update and not args.justrun:
-		repoDir = os.path.dirname(os.path.realpath(__file__))
-		update_local(version, repoDir)
+	args.func(args)
+#	version = agLOG.PROGRESS_METER("MAIN")
+#	version.logger.info("update: %d" %(update))
+#	if update and not args.justrun:
+#		repoDir = os.path.dirname(os.path.realpath(__file__))
+#		update_local(version, repoDir)
 #		if check_version(repoDir):
 #	if check_version():
 #		if not args.justrun:
 #			update_local(version)
 #			sys.exit(0)
-	version.logger.info("Running AGOUTI with current version: %s" %(__version__.strip()))
-	args.func(args)
+#	version.logger.info("Running AGOUTI with current version: %s" %(__version__.strip()))
 
 if __name__ == "__main__":
-	main(1)
+	main()
