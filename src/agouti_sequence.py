@@ -43,6 +43,11 @@ def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 	return contigs, dSeqs
 
 def read_fasta(assemblyFile):
+	'''
+		Thanks to brentp and code monk
+		sharing this elegant way to read
+		Fasta file
+	'''
 	with open(assemblyFile, 'r') as fASSEMBLY:
 		seqIter = (k[1] for k in itertools.groupby(fASSEMBLY, lambda line: line[0]== ">"))
 		for header in seqIter:
