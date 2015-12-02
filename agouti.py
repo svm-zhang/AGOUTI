@@ -229,13 +229,14 @@ def update_local(version):
 	if p.returncode:
 		version.logger.error("git fetch error: %s" %(perr))
 		sys.exit(1)
-	gitCmd = "git checkout -q %s" %(latesTag)
+	gitCmd = "git checkout -q %s -b %s" %(latesTag, latesTag.split("/")[-1])
 	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
 	pout, perr = p.communicate()
 	if p.returncode:
 		version.logger.error("git checkout error: %s" %(perr))
 		sys.exit(1)
 	version.logger.info("Update successful")
+	version.logger.info("Please re-run AGOUTI with the latest version")
 
 def main():
 	args = parse_args()
@@ -244,9 +245,7 @@ def main():
 	if check_version():
 		if not args.justrun:
 			update_local(version)
-			version.logger.info("Restarting main")
-			main()
-			return
+			sys.exit(0)
 	args.func(args)
 
 if __name__ == "__main__":
