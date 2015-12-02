@@ -2,6 +2,7 @@ import os
 import sys
 import argparse
 import subprocess as sp
+import shlex
 
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
@@ -24,8 +25,12 @@ def parse_args():
 	parser = argparse.ArgumentParser(description=use_message)
 
 	parser.add_argument("--version",
-							action="version",
-							version="AGOUTI {version}".format(version=__version__))
+						action="version",
+						version="AGOUTI {version}".format(version=__version__))
+	parser.add_argument("--justrun",
+						action="store_true",
+						help="specify to just run AGOUTI without updating to latest version")
+
 	subparsers = parser.add_subparsers(title="Commands",
 									   metavar="",
 									   dest="command")
@@ -98,10 +103,10 @@ def parse_args():
 							default=1.0,
 							help="maximum fraction of mismatch of a give alignment [1.0]")
 	scafParser.add_argument("-debug",
-							action='store_true',
+							action="store_true",
 							help="specify to have info for debugging")
 	scafParser.add_argument("-overwrite",
-							action='store_true',
+							action="store_true",
 							help="specify whether to overwrite all results from last run")
 	scafParser.set_defaults(func=run_scaffolder)
 
