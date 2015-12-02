@@ -241,11 +241,15 @@ def update_local(args):
 			if re.search("refs/tag", tmpLine[1]):
 				if re.search("\^\{\}$", tmpLine[1]):
 					dVersions[tmpLine[1].strip("^{}")] = tmpLine[0]
+					continue
 				else:
 					dVersions[tmpLine[1]] = ""
 				tags.append(tmpLine[1])
 	latesTag = sorted(tags)[-1]
 	latestHash = dVersions[latesTag]
+	print latesTag
+	print latestHash
+	print localVersion
 	if latestHash != localVersion:
 		gitCmd = "git -C %s fetch --all" %(repoDir)
 		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
