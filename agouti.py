@@ -107,9 +107,6 @@ def parse_args():
 	scafParser.add_argument("-overwrite",
 							action="store_true",
 							help="specify whether to overwrite all results from last run")
-	scafParser.add_argument("--justrun",
-						action="store_true",
-						help="specify to just run AGOUTI without updating to latest version")
 	scafParser.set_defaults(func=run_scaffolder)
 
 	usage = "Shredding genome assembly into contigs at gaps of a minimum length"
@@ -137,9 +134,6 @@ def parse_args():
 							 type=int,
 							 default=1000,
 							 help="specify a minimum length of contigs [1000]")
-	shredParser.add_argument("--justrun",
-						action="store_true",
-						help="specify to just run AGOUTI without updating to latest version")
 	shredParser.set_defaults(func=run_shredder)
 
 	usage = "update AGOUTI to the latest stable version"
