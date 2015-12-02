@@ -225,9 +225,6 @@ def update_local(args):
 		sys.exit(1)
 	# Then compare local with remote
 	version.logger.info("Checking available updates of AGOUTI")
-#	checkRemote = "git -C %s ls-remote origin master" %(repoDir)
-#	output = sp.check_output(shlex.split(checkRemote))
-#	remoteVersion = output.strip().split("\t")[0]
 	checkLocal = "git -C %s log -n 1 --pretty=\"%%H\"" %(repoDir)
 	localVersion = sp.check_output(shlex.split(checkLocal)).strip()
 #	if remoteVersion != localVersion:
@@ -247,9 +244,6 @@ def update_local(args):
 				tags.append(tmpLine[1])
 	latesTag = sorted(tags)[-1]
 	latestHash = dVersions[latesTag]
-	print latesTag
-	print latestHash
-	print localVersion
 	if latestHash != localVersion:
 		gitCmd = "git -C %s fetch --all" %(repoDir)
 		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
@@ -270,17 +264,6 @@ def update_local(args):
 def main():
 	args = parse_args()
 	args.func(args)
-#	version = agLOG.PROGRESS_METER("MAIN")
-#	version.logger.info("update: %d" %(update))
-#	if update and not args.justrun:
-#		repoDir = os.path.dirname(os.path.realpath(__file__))
-#		update_local(version, repoDir)
-#		if check_version(repoDir):
-#	if check_version():
-#		if not args.justrun:
-#			update_local(version)
-#			sys.exit(0)
-#	version.logger.info("Running AGOUTI with current version: %s" %(__version__.strip()))
 
 if __name__ == "__main__":
 	main()
