@@ -245,7 +245,7 @@ def update_local(args):
 					dVersions[tmpLine[1]] = ""
 				tags.append(tmpLine[1])
 	latesTag = sorted(tags)[-1]
-	latestHash = dVersions[latesTag)
+	latestHash = dVersions[latesTag]
 	if latestHash != localVersion:
 		gitCmd = "git -C %s fetch --all" %(repoDir)
 		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
