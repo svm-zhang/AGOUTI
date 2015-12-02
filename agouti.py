@@ -224,7 +224,6 @@ def update_local():
 				if re.search("\^\{\}$", tmpLine[1]):
 					continue
 				tags.append(tmpLine[1])
-	print tags
 	latesTag = sorted(tags)[-1]
 	print latesTag
 	gitCmd = "git fetch --all && git checkout -q %s" %(latesTag)
