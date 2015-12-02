@@ -21,7 +21,7 @@ def parse_args():
 	Welcome to AGOUTI!\n
 	'''
 
-	parser = MyParser(description=use_message)
+	parser = argparse.ArgumentParser(description=use_message)
 
 	subparsers = parser.add_subparsers(title="Commands",
 									   metavar="",
