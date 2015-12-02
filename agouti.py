@@ -207,8 +207,29 @@ def check_version():
 		return True
 	return False
 
+def update_local():
+	'''
+		update to latest version
+	'''
+	gitCmd = "git ls-remote origin"
+	heads = sp.check_output(shlex.split(gitCmd))
+	for line in heads:
+		tmpLine = line.strip().split("\t")
+		if re.search("refs/tag", tmpLine[1]):
+			tags.append(tmpLine[1])
+	latesTag = sorted(tags)[0]
+	gitCmd = "git fetch -all && git checkout -q %s" %(latesTag)
+	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
+	_, perr = p.communicate()
+	if p.returncode:
+		print "Update error:", perr
+		sys.exit()
+
 def main():
 	args = parse_args()
+	if check_version():
+		if not args.justrun:
+			update_local()
 	args.func(args)
 
 if __name__ == "__main__":
