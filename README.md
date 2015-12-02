@@ -155,7 +155,7 @@ Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `exa
     bwa index example.fasta
     bwa mem -M example.fasta example.1.fq example.2.fq | samtools view - > example.bam
 
-At the end of reads mapping, you will have the mapping results in BAM format. AGOUTI uses only uniquely mapped joining-pairs by checking mapping quality. For short-reads mappers such as BWA, you can use mapping quality to tell unique or not, e.g. mapQ > 0. If you use other mappers, you can filter out the ambiguous ones prior to input to AGOUTI. In the future version, we will make AGOUTI being able too internally recognize ambiguous reads mapping from different mappers.
+At the end of reads mapping, you will have the mapping results in BAM format. AGOUTI uses only uniquely mapped joining-pairs by checking mapping quality. For short-reads mappers such as BWA, Bowtie2, you can use mapping quality to tell unique or not, e.g. mapQ > 0. If the mapper you are using does not use quality to mark ambiguous mapping, then you can first process your SAM/BAM file and feed AGOUTI with the unique ones.
 
 **Please make sure the SAM/BAM is sorted by reads name, not coordinates.**
 
