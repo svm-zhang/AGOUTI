@@ -244,6 +244,7 @@ def main():
 	if check_version():
 		if not args.justrun:
 			update_local(version)
+			main()
 	args.func(args)
 
 if __name__ == "__main__":
