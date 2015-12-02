@@ -255,6 +255,7 @@ def update_local(version, repoDir):
 def main(update):
 	args = parse_args()
 	version = agLOG.PROGRESS_METER("MAIN")
+	version.logger.info("update: %d" %(update))
 	if update and not args.justrun:
 		repoDir = os.path.dirname(os.path.realpath(__file__))
 		update_local(version, repoDir)
