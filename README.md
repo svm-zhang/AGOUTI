@@ -61,6 +61,8 @@ Welcome to AGOUTI!
 
 optional arguments:
     -h, --help  show this help message and exit
+    --version   show program's version number and exit
+    --justrun   specify to just run AGOUTI without updating to latest version
 
 Commands:
 
@@ -150,7 +152,7 @@ Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `exa
 
 At the end of reads mapping, you will have the mapping results in BAM format. AGOUTI uses only uniquely mapped joining-pairs by checking mapping quality. For short-reads mappers such as BWA, you can use mapping quality to tell unique or not, e.g. mapQ > 0. If you use other mappers, you can filter out the ambiguous ones prior to input to AGOUTI. In the future version, we will make AGOUTI being able too internally recognize ambiguous reads mapping from different mappers.
 
-**Please make sure the SAM/BAM is sorted by reads name, not coordinates**
+**Please make sure the SAM/BAM is sorted by reads name, not coordinates.**
 
 ### Gene Models
 
