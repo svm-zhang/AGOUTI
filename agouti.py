@@ -236,7 +236,6 @@ def update_local(version):
 		version.logger.error("git checkout error: %s" %(perr))
 		sys.exit(1)
 	version.logger.info("Update successful")
-	#version.logger.info("Please re-run AGOUTI with the latest version")
 
 def main():
 	args = parse_args()
