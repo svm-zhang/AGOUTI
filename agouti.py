@@ -8,7 +8,7 @@ import re
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
-__version__ = "v0.2.3"
+__version__ = sp.check_output(shlex.split("git describe --tag --always --dirty"))
 
 from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
