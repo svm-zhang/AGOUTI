@@ -208,14 +208,12 @@ def check_version():
 		return True
 	return False
 
-def update_local():
+def update_local(version):
 	'''
 		update to latest version
 	'''
 	gitCmd = "git ls-remote origin"
 	heads = sp.check_output(shlex.split(gitCmd)).split("\n")
-	print heads
-	print heads[1]
 	tags = []
 	for line in heads:
 		if line:
@@ -225,30 +223,27 @@ def update_local():
 					continue
 				tags.append(tmpLine[1])
 	latesTag = sorted(tags)[-1]
-	print latesTag
 	gitCmd = "git fetch --all"
 	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
 	pout, perr = p.communicate()
 	if p.returncode:
-		print "git fetch error:", perr
+		version.logger.error("git fetch error: %s" %(perr))
 		sys.exit()
 	gitCmd = "git checkout -q %s" %(latesTag)
 	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
 	pout, perr = p.communicate()
 	if p.returncode:
-		print "git checkout error:", perr
-		print pout
+		version.logger.error("git checkout error: %s" %(perr))
 		sys.exit()
+	version.logger.info("Update successful")
 
 def main():
 	args = parse_args()
 	version = agLOG.PROGRESS_METER("MAIN")
 	version.logger.info("Checking available updates of AGOUTI")
-
 	if check_version():
 		if not args.justrun:
-			update_local()
-			version.logger.info("Update successful")
+			update_local(version)
 	args.func(args)
 
 if __name__ == "__main__":
