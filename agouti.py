@@ -8,7 +8,8 @@ import re
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
-__version__ = sp.check_output(shlex.split("git describe --tag --always --dirty"))
+__version__ = sp.check_output(shlex.split("git -C %s describe --tag --always --dirty"
+										  %(os.path.dirname(os.path.realpath(__file__)))))
 
 from lib import agouti_log as agLOG
 from src import agouti_sequence as agSeq
@@ -198,55 +199,75 @@ def run_scaffolder(args):
 						   args.oriScafPath,
 						   args.nFills, args.debug)
 
-def check_version():
-	checkRemote = "git ls-remote origin master"
-	output = sp.check_output(shlex.split(checkRemote))
-	remoteVersion = output.strip().split("\t")[0]
-	checkLocal = "git log -n 1 --pretty=\"%H\""
-	localVersion = sp.check_output(shlex.split(checkLocal)).strip()
-	if remoteVersion != localVersion:
-		return True
-	return False
+def check_version(repoDir):
+	pass
 
-def update_local(version):
+def update_local(version, repoDir):
 	'''
 		update to latest version
 	'''
-	gitCmd = "git ls-remote origin"
-	heads = sp.check_output(shlex.split(gitCmd)).split("\n")
-	tags = []
-	for line in heads:
-		if line:
-			tmpLine = line.strip().split("\t")
-			if re.search("refs/tag", tmpLine[1]):
-				if re.search("\^\{\}$", tmpLine[1]):
-					continue
-				tags.append(tmpLine[1])
-	latesTag = sorted(tags)[-1]
-	gitCmd = "git fetch --all"
-	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
+	# first check git availability
+	checkGitVersion = "git --version"
+	p = sp.Popen(shlex.split(checkGitVersion), stdout=sp.PIPE, stderr=sp.PIPE)
 	pout, perr = p.communicate()
 	if p.returncode:
-		version.logger.error("git fetch error: %s" %(perr))
-		sys.exit(1)
-	gitCmd = "git checkout -q %s -b %s" %(latesTag, latesTag.split("/")[-1])
-	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
-	pout, perr = p.communicate()
-	if p.returncode:
-		version.logger.error("git checkout error: %s" %(perr))
-		sys.exit(1)
-	version.logger.info("Update successful")
-	version.logger.info("Please re-run AGOUTI with the latest version")
+		version.logger.info("Please check your PATH for git")
+		version.logger.info("Skip trying to update AGOUTI")
+		return
+	# Then compare local with remote
+	version.logger.info("Checking available updates of AGOUTI")
+	checkRemote = "git -C %s ls-remote origin master" %(repoDir)
+	output = sp.check_output(shlex.split(checkRemote))
+	remoteVersion = output.strip().split("\t")[0]
+	checkLocal = "git -C %s log -n 1 --pretty=\"%%H\"" %(repoDir)
+	localVersion = sp.check_output(shlex.split(checkLocal)).strip()
+	if remoteVersion != localVersion:
+		gitCmd = "git -C %s ls-remote origin" %(repoDir)
+		heads = sp.check_output(shlex.split(gitCmd)).split("\n")
+		tags = []
+		for line in heads:
+			if line:
+				tmpLine = line.strip().split("\t")
+				if re.search("refs/tag", tmpLine[1]):
+					if re.search("\^\{\}$", tmpLine[1]):
+						continue
+					tags.append(tmpLine[1])
+		latesTag = sorted(tags)[-1]
+		gitCmd = "git -C %s fetch --all" %(repoDir)
+		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
+		pout, perr = p.communicate()
+		if p.returncode:
+			version.logger.error("git fetch error: %s" %(perr))
+			sys.exit(1)
+		gitCmd = "git -C %s checkout -q %s -b %s" %(repoDir, latesTag, latesTag.split("/")[-1])
+		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
+		pout, perr = p.communicate()
+		if p.returncode:
+			version.logger.error("git checkout error: %s" %(perr))
+			sys.exit(1)
+		version.logger.info("Update successful")
+		version.logger.info("Rebootting AGOUTI")
+		main(0)
+		sys.exit(0)
+	return
+#		version.logger.info("Please re-run AGOUTI with the latest version")
 
-def main():
+#		return True
+#	return False
+
+def main(update):
 	args = parse_args()
 	version = agLOG.PROGRESS_METER("MAIN")
-	version.logger.info("Checking available updates of AGOUTI")
-	if check_version():
-		if not args.justrun:
-			update_local(version)
-			sys.exit(0)
+	if update and not args.justrun:
+		repoDir = os.path.dirname(os.path.realpath(__file__))
+		update_local(version, repoDir)
+#		if check_version(repoDir):
+#	if check_version():
+#		if not args.justrun:
+#			update_local(version)
+#			sys.exit(0)
+	version.logger.info("Running AGOUTI with current version: %s" %(__version__))
 	args.func(args)
 
 if __name__ == "__main__":
-	main()
+	main(1)
