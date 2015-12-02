@@ -244,6 +244,7 @@ def main():
 	if check_version():
 		if not args.justrun:
 			update_local(version)
+			version.logger.info("Restarting main")
 			main()
 	args.func(args)
 
