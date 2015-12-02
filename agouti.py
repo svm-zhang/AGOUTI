@@ -225,7 +225,6 @@ def update_local():
 	print tags
 	latesTag = sorted(tags)[0]
 	print latesTag
-	sys.exit()
 	gitCmd = "git fetch --all && git checkout -q %s" %(latesTag)
 	p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, shell=True)
 	pout, perr = p.communicate()
