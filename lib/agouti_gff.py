@@ -78,15 +78,24 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 	nGene = 0
 	with open(gff, 'r') as fIN:
 		for line in fIN:
+			if line.startswith("##FASTA") or line.startswith("##Fasta"):
+					break
 			if not line.startswith('#'):
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					nGene += 1
+		if nGene == 0:
+			agGFFProgress.logger.error("Found zero genes")
+			agGFFProgress.logger.error("Please check your GFF file")
+			sys.exit(1)
 		lobj_GeneModels = [AGOUTI_GFF() for i in xrange(nGene)]
 		geneIndex = -1
+		stop = 0
 		fIN.seek(0)
 		for line in fIN:
+			# Stop before getting into FASTA zone
 			if line.startswith("##FASTA") or line.startswith("##Fasta"):
+					stop = 1
 					break
 			if not line.startswith('#'):
 				tmp_line = line.strip().split("\t")
@@ -120,7 +129,9 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 					lobj_GeneModels[geneIndex].setStartCodon()
 				elif tmp_line[2] == "CDS":
 					lobj_GeneModels[geneIndex].updateCDS(int(tmp_line[3]), int(tmp_line[4]))
-		dGFFs[lobj_GeneModels[geneIndex].ctgID].append(lobj_GeneModels[geneIndex])
+		if not stop and geneIndex >= 0:
+			dGFFs[lobj_GeneModels[geneIndex].ctgID].append(lobj_GeneModels[geneIndex])
+
 
 	if debug:
 		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.debug" %(prefix))
