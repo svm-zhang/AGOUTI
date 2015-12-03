@@ -86,6 +86,8 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 		geneIndex = -1
 		fIN.seek(0)
 		for line in fIN:
+			if line.startswith("##FASTA") or line.startswith("##Fasta"):
+					break
 			if not line.startswith('#'):
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
