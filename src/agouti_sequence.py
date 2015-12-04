@@ -99,10 +99,10 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 						breakDebug.debugger.debug("last short")
 						breakDebug.debugger.debug("gapIndices[i]: %s" %(str(gapIndices[i])))
 						breakDebug.debugger.debug("intervals: %s" %(intervals))
-						#if len(intervals) > 0:
-						intervals[-1] = (intervals[-1][0], gapIndices[len(gapIndices)-1][0])
-						#else:
-						#	intervals.append((start, gapIndices[len(gapIndices)-1][0]))
+						if len(intervals) > 0:
+							intervals[-1] = (intervals[-1][0], gapIndices[len(gapIndices)-1][0])
+						else:
+							intervals.append((start, gapIndices[len(gapIndices)-1][0]))
 						break
 					if stop-start+1 < minCtgLen:
 						breakDebug.debugger.debug("short")
