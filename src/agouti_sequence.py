@@ -58,9 +58,12 @@ def read_fasta(assemblyFile):
 def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 	breakerProgress = agLOG.PROGRESS_METER("SHREDDER")
 	breakerProgress.logger.info("[BEGIN] Shredding assembly")
+
 	outdir = os.path.dirname(os.path.realpath(prefix))
 	if not os.path.exists(outdir):
 		os.makedirs(outdir)
+	outDebugFile = prefix + ".shred.debug"
+	breakDebug = agLOG.DEBUG("SHREDDER", outDebugFile)
 	outFa = prefix + ".ctg.fasta"
 	outInfo = prefix +".shred.info.txt"
 	with open(outFa, 'w') as fOUTFA, open(outInfo, 'w') as fINFO:
@@ -69,11 +72,11 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 		numContigs = 0
 		contigLens = []
 		for header, seq in read_fasta(assemblyFile):
-#			print header
+			breakDebug.debugger.debug(">%s" %(header))
 			genomeSize += len(seq)
 			gapIndices = [(m.start(), m.end()) for m in re.finditer("[N|n]{%d,}" %(minGaps), seq)]
 			gapIndices.append((len(seq), -1))
-#			print gapIndices
+			breakDebug.debugger.debug("gapIndices: %s" %(str(gapIndices)))
 			gapLens = []
 			intervals = []
 			if len(gapIndices) == 1:
@@ -83,25 +86,25 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 				i = 0
 				for i in range(len(gapIndices)):
 					stop = gapIndices[i][0]
+					breakDebug.debugger.debug("start %d stop %d" %(start, stop))
 					if gapIndices[len(gapIndices)-1][0]-start < minCtgLen and \
 					   len(gapIndices) > 1:
-#						print gapIndices[i][1]
-#						print intervals
-#						print "last short"
+						breakDebug.debugger.debug("last short")
+						breakDebug.debugger.debug("gapIndices[i]: %s" %(str(gapIndices[i])))
+						breakDebug.debugger.debug("intervals: %s" %(intervals))
 						intervals[-1] = (intervals[-1][0], gapIndices[len(gapIndices)-1][0])
 						break
-#					print start, stop
 					if stop-start+1 < minCtgLen:
-#						print "short"
-#						print gapIndices[i-1], gapIndices[i]
-#						print stop-start+1
+						breakDebug.debugger.debug("short")
+						breakDebug.debugger.debug("previous %s next %s" %(str(gapIndices[i-1]), str(gapIndices[i])))
+						breakDebug.debugger.debug("length: %d" %(stop-start+1))
 						continue
 					if i < len(gapIndices)-1:
 						gapLens.append(gapIndices[i][1]-gapIndices[i][0]+1)
 					intervals.append((start, stop))
 					start = gapIndices[i][1]+1
-			#print "intervals", intervals
-			#print "gaps", gapLens
+			breakDebug.debugger.debug("intervals: %s" %(intervals))
+			breakDebug.debugger.debug("gapLen: %s" %(str(gapLens)))
 			contigs = []
 			for i in range(len(intervals)):
 				start = intervals[i][0]
