@@ -2,6 +2,7 @@ import os
 import sys
 import itertools
 import re
+import time
 
 from lib import agouti_log as agLOG
 
@@ -71,7 +72,11 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 		splitSize = 0
 		numContigs = 0
 		contigLens = []
+		nSeqs = 0
+		startTime = time.time()
+		breakerProgress.logger.info("# processed\t| Current sequence ID\t| Elapsed Time")
 		for header, seq in read_fasta(assemblyFile):
+			nSeqs += 1
 			breakDebug.debugger.debug(">%s" %(header))
 			genomeSize += len(seq)
 			gapIndices = [(m.start(), m.end()) for m in re.finditer("[N|n]{%d,}" %(minGaps), seq)]
@@ -81,6 +86,8 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 			intervals = []
 			if len(gapIndices) == 1:
 				intervals.append((0, gapIndices[0][0]))
+			elif gapIndices[-1][0] < minCtgLen:
+				intervals.append((0, gapIndices[-1][0]))
 			else:
 				start = 0
 				i = 0
@@ -92,7 +99,10 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 						breakDebug.debugger.debug("last short")
 						breakDebug.debugger.debug("gapIndices[i]: %s" %(str(gapIndices[i])))
 						breakDebug.debugger.debug("intervals: %s" %(intervals))
+						#if len(intervals) > 0:
 						intervals[-1] = (intervals[-1][0], gapIndices[len(gapIndices)-1][0])
+						#else:
+						#	intervals.append((start, gapIndices[len(gapIndices)-1][0]))
 						break
 					if stop-start+1 < minCtgLen:
 						breakDebug.debugger.debug("short")
@@ -115,12 +125,18 @@ def assembly_breaker(assemblyFile, prefix, minGaps, minCtgLen):
 				contigLens.append(stop-start)
 				fOUTFA.write(">%s\n%s\n" %(contigID, seq[start:stop]))
 			numContigs += len(contigs)
+			if nSeqs % 10000 == 0:
+				elapsedTime = float((time.time() - startTime)/60)
+				breakerProgress.logger.info("%d processed\t| %s\t | %.2f m" %(nSeqs, header, elapsedTime))
 			fINFO.write(">%s\n" %(header))
 			if len(contigs) == 1:
 				fINFO.write("%s\tNA\tNA\n" %(contigs[0]))
 				continue
 			for i in range(1, len(contigs)):
 				fINFO.write("%s\t%s\t%d\n" %(contigs[i-1], contigs[i], gapLens[i-1]))
+		if nSeqs < 10000:
+			elapsedTime = float((time.time() - startTime)/60)
+			breakerProgress.logger.info("%d processed\t| %s\t | %.2f m" %(nSeqs, header, elapsedTime))
 		n50 = get_assembly_NXX(contigLens)
 		breakerProgress.logger.info("Total length of the given assembly: %d"
 									%(genomeSize))
