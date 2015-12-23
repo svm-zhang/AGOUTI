@@ -212,10 +212,14 @@ def agouti_sam_main(bamFile, outDir, prefix,
 				readsID = pairA[0]
 				contigA = pairA[2]
 				contigB = pairB[2]
+				mateCtgB = pairA[6]
+				mateCtgA = pairB[6]
 				nReadsPairs += 1
 				# the first contidition makes sure
 				# single end BAM are gonna have zero
 				# joining-pairs extracted
+				if contigA == "*" or contigB == "*":
+					continue
 				if pairA[0] == pairB[0] and contigA != contigB:
 					alnLenA = getCIGAR(pairA[5])
 					alnLenB = getCIGAR(pairB[5])
@@ -236,8 +240,12 @@ def agouti_sam_main(bamFile, outDir, prefix,
 												  contigA+":"+str(leftMostPosA), contigB+":"+str(leftMostPosB),
 												  mapQA, mapQB, senseA, senseB, readLenA, readLenB))
 
-					if (min(alnLenA/readLenA, alnLenB/readLenB) >= minFracOvl and				# minimum fraction of overlaps
-						max(nMismatchesA/alnLenA, nMismatchesB/alnLenB) <= maxFracMismatch and	# maximum fraction of mismatches
+					fracOvlA = alnLenA/readLenA
+					fracOvlB = alnLenB/readLenB
+					fracMismatchA = nMismatchesA/alnLenA
+					fracMismatchB = nMismatchesB/alnLenB
+					if (min(fracOvlA, fracOvlB) >= minFracOvl and				# minimum fraction of overlaps
+						max(fracMismatchA, fracMismatchB) <= maxFracMismatch and	# maximum fraction of mismatches
 						min(mapQA, mapQB) >= minMapQ):				# minimum mapping quality
 						startA = leftMostPosA + 1
 						stopA = startA + 1 + int(alnLenA)
@@ -267,6 +275,7 @@ def agouti_sam_main(bamFile, outDir, prefix,
 		agBAMProgress.logger.info("Extract Joining-pairs INTERRUPTED by Keyboard")
 		sys.exit(1)
 
+	agBAMProgress.logger.info("%d reads pairs in the give BAM" %(nReadsPairs))
 	agBAMProgress.logger.info("%d joining pairs parsed" %(nJoinPairs))
 	agBAMProgress.logger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
 	if nJoinPairs == 0:
