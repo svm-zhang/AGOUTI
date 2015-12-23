@@ -94,13 +94,17 @@ def parse_args():
 							dest="minFracOvl",
 							type=float,
 							default=0.0,
-							help="minimum percentage of alignment length: alnLen/readLen [0.0]")
+							help=("minimum ratio of alignment length to the read length. "
+								  "Specify 0.0 to turn off. [0.0]"
+								 ))
 	scafParser.add_argument("-maxFracMM",
 							metavar="FLOAT",
 							dest="maxFracMM",
 							type=float,
 							default=1.0,
-							help="maximum fraction of mismatch of a give alignment [1.0]")
+							help=("maximum fraction of mismatches per alignment allowed. "
+								  "Specify 1.0 to turn off. [1.0]"
+								 ))
 	scafParser.add_argument("-debug",
 							action="store_true",
 							help="specify to have info for debugging")
