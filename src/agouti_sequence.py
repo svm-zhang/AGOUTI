@@ -152,7 +152,7 @@ def rc_seq(seq):
 		return the reverse and complementary of
 		the give sequence
 	"""
-	alphabetsInString = "ACGTNRMKWYSBDHVTGCANRMKWYSBDHVacgtnrmkwysbdhvtgcanrmkwysbdhv"
+	alphabetsInString = "ACGTNRMKWYSBDHVTGCANYKMWRSVHDBacgtnrmkwysbdhvtgcanykmwrsvhdb"
 	alphabets = { alphabetsInString[i]:alphabetsInString[i+15] for i
 				  in range(60)
 				  if i<15 or 30<=i<=44 }
