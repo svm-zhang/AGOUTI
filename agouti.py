@@ -18,6 +18,7 @@ from src import agouti_denoise as agDENOISE
 from lib import agouti_gff as agGFF
 from src import agouti_update as agUPDATE
 from src import agouti_scaffolding as agSCAFF
+from src import agouti_shred as agSHRED
 
 def parse_args():
 	use_message = '''
@@ -121,6 +122,10 @@ def parse_args():
 							 dest="assemblyFile",
 							 required=True,
 							 help="specify the assembly in FASTA format. REQUIRED")
+	shredParser.add_argument("-gff",
+							 metavar="FILE",
+							 dest="gffFile",
+							 help="specify the annotation to shred")
 	shredParser.add_argument("-p",
 							 metavar="STR",
 							 dest="prefix",
@@ -155,12 +160,14 @@ def parse_args():
 
 def run_shredder(args):
 	assemblyFile = args.assemblyFile
+	gffFile = args.gffFile
 	prefix = args.prefix
 	minGap = args.minGap
 	minCtgLen = args.minCtgLen
 
-	agSeq.assembly_breaker(assemblyFile, prefix,
-						   minGap, minCtgLen)
+
+	agSHRED.agouti_shred_main(assemblyFile, gffFile, prefix,
+							  minGap, minCtgLen)
 
 def run_scaffolder(args):
 	bamFile = args.bamFile
