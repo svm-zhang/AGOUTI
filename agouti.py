@@ -165,7 +165,6 @@ def run_shredder(args):
 	minGap = args.minGap
 	minCtgLen = args.minCtgLen
 
-
 	agSHRED.agouti_shred_main(assemblyFile, gffFile, prefix,
 							  minGap, minCtgLen)
 
