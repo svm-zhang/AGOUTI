@@ -23,7 +23,9 @@ def get_attributes(attribute):
 
 def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 	breakerProgress.logger.info("[BEGIN] Shredding annotation")
-	outGFF = prefix + ".shred.gff"
+	outDebugFile = prefix + ".shred_annotation.debug"
+	shredAnnDebug = agLOG.DEBUG("SHREDDER", outDebugFile)
+	outGFF = prefix + ".ctg.gff"
 	fOUT = open(outGFF, 'w')
 	annotationType = ["gene", "exon", "CDS", "five_prime_UTR", "three_prime_UTR"]
 	n = 1
@@ -37,6 +39,7 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 	features = []
 	dFeatures = collections.defaultdict(list)
 	nGenes = 0
+	nShredGenes = 0
 	with open(gffFile, 'r') as fGFF:
 		for line in fGFF:
 			if line.startswith("##FASTA"):
@@ -52,6 +55,7 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 							fOUT.write(line)
 							if tmp_line[2] == "gene":
 								nGenes += 1
+								nShredGenes += 1
 					# get cut
 					else:
 						start = int(tmp_line[3])
@@ -62,8 +66,9 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 							if "ID" in dAttributes:
 								gene = dAttributes["ID"]
 							else:
-								print "warning no gene ID extracted from attribute"
 								gene = "agouti_shred_gene_%d" %(n)
+								shredAnnDebug.debugger.debug(("Warning: no gene ID extracted from attribute. "
+															  "Name given: %s" %(gene)))
 								n += 1
 							strand = tmp_line[6]
 							source = tmp_line[1]
@@ -76,18 +81,23 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 								preHeader = header
 							else:
 								if preGene != gene:
-									print "preGene", preGene, "gene", gene
+									shredAnnDebug.debugger.debug("####%s [BEGIN]" %(preGene))
+									shredAnnDebug.debugger.debug("====geneStart=%d geneStop=%d"
+																 %(preStart, preStop))
+									# here to get how many intervals a gene spans
 									shreds = []
 									for i in range(len(intervals)):
 										interval = intervals[i]
 										overlap = agDenoise.find_overlap(interval, (preStart, preStop))
 										if overlap == 0:
-											print "start", preStart, "stop", preStop, "interval", interval, "index", i
 											shreds += [(i, interval[0]+1, interval[1]+1)]
-									print "shreds", shreds
+									shredAnnDebug.debugger.debug("====shreds=%s" %(str(shreds)))
+									nShredGenes += len(shreds)
 									shred_gene(shreds, preGene, preStart, preStop,
 											   preStrand, preSource, preHeader,
-											   features, dFeatures, dAttributes, fOUT)
+											   features, dFeatures, dAttributes,
+											   shredAnnDebug, fOUT)
+									shredAnnDebug.debugger.debug("####%s [END]" %(preGene))
 									preGene = gene
 									preStart = start
 									preStop = stop
@@ -125,39 +135,46 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 					fOUT.write(line)
 				elif not line.startswith("##"):
 					fOUT.write(line)
-		print "last", "preGene", preGene
+		# dealing with the last gene
+		shredAnnDebug.debugger.debug("####%s [BEGIN]" %(preGene))
+		shredAnnDebug.debugger.debug("====geneStart=%d geneStop=%d"
+									 %(preStart, preStop))
 		shreds = []
 		for i in range(len(intervals)):
 			interval = intervals[i]
 			overlap = agDenoise.find_overlap(interval, (preStart, preStop))
 			if overlap == 0:
-				print "start", preStart, "stop", preStop, "interval", interval, "index", i
 				shreds += [(i, interval[0]+1, interval[1]+1)]
-		print "shreds", shreds
+		nShredGenes += len(shreds)
+		shredAnnDebug.debugger.debug("####%s [END]" %(preGene))
 		shred_gene(shreds, preGene, preStart, preStop,
 				   preStrand, preSource, preHeader,
-				   features, dFeatures,
-				   dAttributes, fOUT)
+				   features, dFeatures, dAttributes,
+				   shredAnnDebug, fOUT)
 
-	print nGenes
+	breakerProgress.logger.info("Number of genes in the give GFF: %d"
+								 %(nGenes))
+	breakerProgress.logger.info("Number of genes in the shred GFF: %d"
+								 %(nShredGenes))
 	fOUT.close()
 
 def shred_gene(shreds, preGene, preStart, preStop,
 			   preStrand, preSource, preHeader,
-			   features, dFeatures,
-			   dAttributes, fOUT):
+			   features, dFeatures, dAttributes,
+			   shredAnnDebug, fOUT):
 	shredGeneStart = 0
 	shredGeneStop = 0
 	shredExonStart = 0
 	shredExonStop = 0
 	shredCodStart = 0
 	shredCodStop = 0
-	offset1 = 0
-	offset2 = 0
 	dOffsets = {f:0 for f in features}
 	for i in range(len(shreds)):
 		index, shredStart, shredStop = shreds[i]
-		print index, shredStart, shredStop
+		shredAnnDebug.debugger.debug("========shred=%d shredStart=%d shredStop=%d"
+									 %(index, shredStart, shredStop))
+		# update gene coords relative to
+		# the current interval/shred
 		if preStart > shredStart:
 			shredGeneStart = preStart - shredStart + 1
 			if preStop > shredStop:
@@ -170,43 +187,56 @@ def shred_gene(shreds, preGene, preStart, preStop,
 				shredGeneStop = shredStop-shredStart+1
 			else:
 				shredGeneStop = preStop - shredStart + 1
+		shredAnnDebug.debugger.debug(("========gene=%s shredGeneStart=%d "
+									  "shredGeneStop=%d"
+									  %(preGene, shredGeneStart, shredGeneStop)))
 		fOUT.write("%s_%d\t%s\tgene\t%d\t%d\t.\t%s\t.\t%s;%s\n"
 				   %(preHeader, index, preSource, shredGeneStart,
 				   shredGeneStop, preStrand, "ID=%s_%d" %(preGene, i),
 				   ";".join(["%s=%s" %(k, v) for k,v in dAttributes.iteritems() if k != "ID"])))
-		print features
+		# update coords for each feature
+		# relative to the current interval
 		for f in features:
 			offset = dOffsets[f]
-			print "handle feature", f, "offset", offset
 			featCoords = sorted(dFeatures[f])
-			print "dFeatures", featCoords
+			shredAnnDebug.debugger.debug("========feature=%s nIntervals=%d offset=%d"
+										 %(f, len(featCoords), offset))
 			for j in range(offset, len(featCoords)):
 				featStart = featCoords[j][0]
 				featStop = featCoords[j][1]
+				shredAnnDebug.debugger.debug(("============featStart=%d featStop=%d "
+											  "shredStart=%d shredStop=%d"
+											  %(featStart, featStop, shredStart, shredStop)))
 				shredInfo = shred_features(shredStart, shredStop,
-										   featStart, featStop)
+										   featStart, featStop, shredAnnDebug)
 				if shredInfo == 2:
 					dOffsets[f] = j
-					print "move to next", "offset", dOffsets[f], "feature", f
+					shredAnnDebug.debugger.debug("============move=1 offset=%d"
+												 %(dOffsets[f]))
 					break
 				elif shredInfo == 3:
+					shredAnnDebug.debugger.debug("============outside=1, skip=1")
 					continue
 				else:
-					shredExonStart = shredInfo[1]
-					shredExonStop = shredInfo[2]
+					shredFeatStart = shredInfo[1]
+					shredFeatStop = shredInfo[2]
+					shredAnnDebug.debugger.debug(("============shred=1, shredFeatStart=%d "
+											"shredFeatStop=%d" %(shredFeatStart, shredFeatStop)))
 					fOUT.write("%s_%d\t%s\t%s\t%d\t%d\t.\t%s\t.\t%s\n"
-							   %(preHeader, index, f, preSource, shredExonStart,
-							   shredExonStop, preStrand,
+							   %(preHeader, index, f, preSource, shredFeatStart,
+							   shredFeatStop, preStrand,
 							   "Parent=%s_%d" %(preGene, i)))
 
 def shred_features(shredStart, shredStop,
-				   featStart, featStop):
-	print featStart, featStop, shredStart, shredStop
+				   featStart, featStop, shredAnnDebug):
+#	print featStart, featStop, shredStart, shredStop
 	shredFeatStart = 0
 	shredFeatStop = 0
 	if featStart > shredStop:
+		# move to next shred
 		return 2
 	if featStop < shredStart:
+		# outside, skip this feature
 		return 3
 	if featStart > shredStart:
 		shredFeatStart = featStart - shredStart + 1
@@ -215,7 +245,7 @@ def shred_features(shredStart, shredStop,
 		else:
 			shredFeatStop = shredStop - shredStart + 1
 	elif featStart < shredStart:
-		print "feature interrupted, possible frame change"
+#		print "feature interrupted, possible frame change"
 		shredFeatStart = 1
 		if featStop <= shredStop:
 			shredFeatStop = featStop - shredStart + 1
@@ -238,7 +268,7 @@ def shred_assembly(assemblyFile, breakerProgress, prefix, minGaps, minCtgLen):
 	'''
 		shred assembly at gaps of a minimum length
 	'''
-	outDebugFile = prefix + ".shred.debug"
+	outDebugFile = prefix + ".shred_assembly.debug"
 	breakDebug = agLOG.DEBUG("SHREDDER", outDebugFile)
 	outFa = prefix + ".ctg.fasta"
 	outInfo = prefix +".shred.info.txt"
@@ -255,11 +285,8 @@ def shred_assembly(assemblyFile, breakerProgress, prefix, minGaps, minCtgLen):
 			nSeqs += 1
 			breakDebug.debugger.debug(">%s" %(header))
 			genomeSize += len(seq)
+			# m.start() and m.end() zero-based
 			gapIndices = [(m.start(), m.end()-1) for m in re.finditer("[N|n]{%d,}" %(minGaps), seq)]
-#			print gapIndices
-#			print seq[gapIndices[0][0]:gapIndices[0][1]]
-#			print seq[gapIndices[0][0]-5:gapIndices[0][0]]
-#			sys.exit()
 			gapIndices.append((len(seq), -1))
 			breakDebug.debugger.debug("gapIndices: %s" %(str(gapIndices)))
 			gapLens = []
