@@ -61,6 +61,9 @@ def parse_args():
 							dest="oriScafPath",
 							help=("specify the original scaffolding path "
 								  "obtained from genome shredding"))
+	scafParser.add_argument("-no_update_gff",
+							action="store_true",
+							help="specify whether to update gff. EXPERIMENTAL")
 	scafParser.add_argument("-outdir",
 							metavar="DIR",
 							dest="outDir",
@@ -211,7 +214,7 @@ def run_scaffolder(args):
 						   edgeSenseDict, dGFFs,
 						   dCtgPair2GenePair, outDir, prefix,
 						   args.oriScafPath,
-						   args.nFills, args.debug)
+						   args.nFills, args.debug, args.no_update_gff)
 
 def update_local(args):
 	'''
