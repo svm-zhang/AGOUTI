@@ -175,7 +175,7 @@ def shred_gene(shreds, preGene, preStart, preStop,
 									 %(index, shredStart, shredStop))
 		# update gene coords relative to
 		# the current interval/shred
-		if preStart > shredStart:
+		if preStart >= shredStart:
 			shredGeneStart = preStart - shredStart + 1
 			if preStop > shredStop:
 				shredGeneStop = shredStop - shredStart + 1
@@ -223,7 +223,7 @@ def shred_gene(shreds, preGene, preStart, preStop,
 					shredAnnDebug.debugger.debug(("============shred=1, shredFeatStart=%d "
 											"shredFeatStop=%d" %(shredFeatStart, shredFeatStop)))
 					fOUT.write("%s_%d\t%s\t%s\t%d\t%d\t.\t%s\t.\t%s\n"
-							   %(preHeader, index, f, preSource, shredFeatStart,
+							   %(preHeader, index, preSource, f, shredFeatStart,
 							   shredFeatStop, preStrand,
 							   "Parent=%s_%d" %(preGene, i)))
 
@@ -238,7 +238,7 @@ def shred_features(shredStart, shredStop,
 	if featStop < shredStart:
 		# outside, skip this feature
 		return 3
-	if featStart > shredStart:
+	if featStart >= shredStart:
 		shredFeatStart = featStart - shredStart + 1
 		if featStop <= shredStop:
 			shredFeatStop = featStop - shredStart + 1
