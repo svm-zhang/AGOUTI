@@ -5,7 +5,6 @@ import collections
 from lib import agouti_log as agLOG
 from lib import agouti_gff as agGFF
 from src import agouti_sequence as agSeq
-from src import agouti_summarize as agSUM
 
 def agouti_update(agoutiPaths, dSeqs, seqNames,
 				  dSenses, dGFFs,
