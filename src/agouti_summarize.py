@@ -37,8 +37,8 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 	#print sum([len(geneModels) for k, geneModels in dGFFs.iteritems()])
 	#print len([geneModel for k, geneModels in dGFFs.iteritems() for geneModel in geneModels if geneModel.fake == 0])
 	#print len([geneModel for k, geneModels in dGFFs.iteritems() for geneModel in geneModels if geneModel.fake == 1])
-	n = 0
-	m = 0
+	n = 0	# number of canonical joining gene models
+	m = 0	# number of fakeO gene model created
 	tmpPaths = []
 	for k, path in dOriPaths.iteritems():
 		pathLefts = [ctg for ctg in path if ctg not in scaffoldedCtgs]
@@ -56,6 +56,7 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 			if math.fabs(curCtgIndex-preCtgIndex) == 1:
 				tmpPath.append(curCtg)
 			else:
+				# add path with at least two contigs
 				if len(tmpPath) <= 1:
 					tmpPath = [curCtg]
 				else:
@@ -63,6 +64,7 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 					tmpPath = [curCtg]
 			preCtg = curCtg
 			preCtgIndex = int(preCtg.split('_')[1])
+		# add path with at least two contigs
 		if len(tmpPath) > 1:
 			recovPath.append(tmpPath)
 		for path in recovPath:
@@ -72,11 +74,12 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 				print "preCtg", preCtg, "curCtg", curCtg
 				preVertex = vertex2Name.index(preCtg)
 				curVertex = vertex2Name.index(curCtg)
-				
 				preIndex = -1
 				curIndex = -1
 				preCtgGeneModel3 = None
 				curCtgGeneModel5 = None
+				# check if pre and cur contigs
+				# have gene models on them
 				if preCtg in dGFFs:
 					preCtgGeneModel3 = dGFFs[preCtg][-1]
 					if not preCtgGeneModel3.fake:
@@ -89,10 +92,14 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 						curIndex = int(curGeneID.split('_')[1])
 
 				print "preIndex", preIndex, "curIndex", curIndex
+				# both index should not be -1 if they are the
+				# joining gene model between the two contigs
 				if preIndex != -1 and curIndex != -1:
+					# and they have to be consecutive
 					if math.fabs(curIndex - preIndex) == 1:
 						n += 1
 						print preGeneID, curGeneID
+					# create fakeO genes as joining gene models
 					else:
 						preCtgGeneModel3 = agGFF.AGOUTI_GFF()
 						preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
@@ -104,6 +111,7 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 												 0, 0, 1)
 						dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 						m += 1
+				# create fakeO gnes as joining gene models
 				else:
 					preCtgGeneModel3 = agGFF.AGOUTI_GFF()
 					preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
@@ -117,11 +125,13 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 					dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 					m += 1
 					print [k.geneID for k in dGFFs[curCtg]]
+				# record joining gene models for the two contigs
 				dCtgPair2GenePair[preVertex, curVertex] = [preCtgGeneModel3, curCtgGeneModel5]
 				print "preID", preCtgGeneModel3.geneID, preCtgGeneModel3.lcds
 				print "curID", curCtgGeneModel5.geneID, curCtgGeneModel5.lcds
 				dSenses[preVertex, curVertex] = [('+', '-')]
 		for path in recovPath:
+			# convert from name to vertex
 			agoutiPaths.append([vertex2Name.index(k) for k in path])
 	#print sum([len(path) for path in tmpPaths])
 	#print len(tmpPaths)
