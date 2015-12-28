@@ -3,6 +3,7 @@ import os
 import math
 
 from lib import agouti_gff as agGFF
+from lib import agouti_log as agLOG
 
 def report_scaffold_path(paths, vertex2Name, outDir, prefix):
 	'''
@@ -18,33 +19,56 @@ def report_scaffold_path(paths, vertex2Name, outDir, prefix):
 def agouti_path_main(agoutiPaths, dSenses, vertex2Name,
 					 dGFFs, dCtgPair2GenePair,
 					 oriScafPathFile, outDir, prefix):
-	print "Analyzing scaffolding paths"
-	dOriPaths, dOriGaps = read_original_path(oriScafPathFile)
+	moduleName = os.path.basename(__file__).split('.')[0].upper()
+	moduleOutDir = os.path.join(outDir, "agouti_path")
+	if not os.path.exists(moduleOutDir):
+		os.makedirs(moduleOutDir)
+	agPathProgress = agLOG.PROGRESS_METER(moduleName)
+	agPathProgress.logger.info("Analyzing scaffolding paths")
+	outDebugFile = os.path.join(moduleOutDir, prefix) + ".agouti_path.debug"
+	agPathDebug = agLOG.DEBUG("SHREDDER", outDebugFile)
+	agPathProgress.logger.info("[BEGIN] Reading file with shred info")
+	dOriPaths, dOriGaps = read_original_path(oriScafPathFile, agPathProgress)
+	agPathProgress.logger.info("[DONE]")
+	agPathProgress.logger.info("[BEGIN] Recovring original scaffolding")
 	agoutiPaths, dCtgPair2GenePair, dSenses = recover_untouched_sequences(dOriPaths, agoutiPaths,
 																 vertex2Name, dGFFs,
 																 dCtgPair2GenePair,
-																 dSenses)
+																 dSenses, agPathProgress,
+																 agPathDebug)
+	agPathProgress.logger.info("[DONE]")
 
 	return agoutiPaths, dCtgPair2GenePair, dSenses
 
 def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
-								dGFFs, dCtgPair2GenePair, dSenses):
+								dGFFs, dCtgPair2GenePair, dSenses,
+								agPathProgress, agPathDebug):
+	'''
+		Recover scaffolds from contigs untouched by AGOUTI
+	'''
+
+	agPathDebug.debugger.debug("[RECOVER]\t####")
+	agPathDebug.debugger.debug("[RECOVER]\tNumber of paths AGOUTI scaffolded: %d"
+							   %(sum([len(path) for path in agoutiPaths])))
+	agPathDebug.debugger.debug("[RECOVER]\tNumber of gene models in dGFFs: %d"
+							   %(sum([len(geneModels) for geneModels in dGFFs.itervalues()])))
+	agPathDebug.debugger.debug("[RECOVER]\tNumber of fake gene models in dGFFs: %d"
+							   %(len([geneModel
+									  for geneModels in dGFFs.itervalues()
+									  for geneModel in geneModels
+									  if  geneModel.fake == 1])))
+	agPathDebug.debugger.debug("[RECOVER]\t####")
 	# get a dictionary of contigs being scaffolded
 	scaffoldedCtgs = {vertex2Name[k]:0 for path in agoutiPaths for k in path}
-
-	#print len(agoutiPaths)
-	#print sum([len(path) for path in agoutiPaths])
-	#print sum([len(geneModels) for k, geneModels in dGFFs.iteritems()])
-	#print len([geneModel for k, geneModels in dGFFs.iteritems() for geneModel in geneModels if geneModel.fake == 0])
-	#print len([geneModel for k, geneModels in dGFFs.iteritems() for geneModel in geneModels if geneModel.fake == 1])
-	n = 0	# number of canonical joining gene models
-	m = 0	# number of fakeO gene model created
+	n = 0				# number of canonical joining gene models
+	m = 0				# number of fakeO gene model created
 	tmpPaths = []
 	for k, path in dOriPaths.iteritems():
 		pathLefts = [ctg for ctg in path if ctg not in scaffoldedCtgs]
 		if not pathLefts:
 			continue
-		#print "pathLefts", pathLefts
+		agPathDebug.debugger.debug("[RECOVER]\tpathLefts=%s" %(str(pathLefts)))
+		agPathDebug.debugger.debug("[RECOVER]\tGetting consective path from pathLefts")
 		recovPath = []
 		preCtg = pathLefts[0]
 		preCtgIndex = int(preCtg.split('_')[1])
@@ -52,7 +76,8 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 		for i in range(1, len(pathLefts)):
 			curCtg = pathLefts[i]
 			curCtgIndex = int(curCtg.split('_')[1])
-			#print preCtg, preCtgIndex, curCtg, curCtgIndex
+			agPathDebug.debugger.debug("[RECOVER]\tpreCtg=%s - preIndex=%d - curCtg=%s - curIndex=%d"
+									   %(preCtg, preCtgIndex, curCtg, curCtgIndex))
 			if math.fabs(curCtgIndex-preCtgIndex) == 1:
 				tmpPath.append(curCtg)
 			else:
@@ -67,11 +92,13 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 		# add path with at least two contigs
 		if len(tmpPath) > 1:
 			recovPath.append(tmpPath)
+		agPathDebug.debugger.debug("[RECOVER]\tGetting gene pair for each contig pair")
 		for path in recovPath:
 			for i in range(1, len(path)):
 				preCtg = path[i-1]
 				curCtg = path[i]
-				print "preCtg", preCtg, "curCtg", curCtg
+				agPathDebug.debugger.debug("[RECOVER]\tpreCtg=%s - curCtg=%s"
+										   %(preCtg, curCtg))
 				preVertex = vertex2Name.index(preCtg)
 				curVertex = vertex2Name.index(curCtg)
 				preIndex = -1
@@ -91,14 +118,16 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 						curGeneID = curCtgGeneModel5.geneID
 						curIndex = int(curGeneID.split('_')[1])
 
-				print "preIndex", preIndex, "curIndex", curIndex
+				agPathDebug.debugger.debug("[RECOVER]\t====preGeneIndex=%d - curGeneIndex=%d"
+										   %(preIndex, curIndex))
 				# both index should not be -1 if they are the
 				# joining gene model between the two contigs
 				if preIndex != -1 and curIndex != -1:
 					# and they have to be consecutive
 					if math.fabs(curIndex - preIndex) == 1:
 						n += 1
-						print preGeneID, curGeneID
+						agPathDebug.debugger.debug("[RECOVER]\t====preGeneID=%s - curGeneID=%s"
+												   %(preGeneID, curGeneID))
 					# create fakeO genes as joining gene models
 					else:
 						preCtgGeneModel3 = agGFF.AGOUTI_GFF()
@@ -106,11 +135,15 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 												 0, 0, 1)
 						dGFFs[preCtg].append(preCtgGeneModel3)
 						m += 1
+						agPathDebug.debugger.debug("[RECOVER\t====preCtgGeneModels=%s"
+												   %(str([k.geneID for k in dGFFs[preCtg]])))
 						curCtgGeneModel5 = agGFF.AGOUTI_GFF()
 						curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
 												 0, 0, 1)
 						dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 						m += 1
+						agPathDebug.debugger.debug("[RECOVER\t====curCtgGeneModels=%s"
+												   %(str([k.geneID for k in dGFFs[curCtg]])))
 				# create fakeO gnes as joining gene models
 				else:
 					preCtgGeneModel3 = agGFF.AGOUTI_GFF()
@@ -118,36 +151,58 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 											 0, 0, 1)
 					dGFFs[preCtg].append(preCtgGeneModel3)
 					m += 1
-					print [k.geneID for k in dGFFs[preCtg]]
+					agPathDebug.debugger.debug("[RECOVER\t====preCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[preCtg]])))
 					curCtgGeneModel5 = agGFF.AGOUTI_GFF()
 					curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
 											 0, 0, 1)
 					dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 					m += 1
-					print [k.geneID for k in dGFFs[curCtg]]
+					agPathDebug.debugger.debug("[RECOVER\t====curCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[curCtg]])))
 				# record joining gene models for the two contigs
 				dCtgPair2GenePair[preVertex, curVertex] = [preCtgGeneModel3, curCtgGeneModel5]
-				print "preID", preCtgGeneModel3.geneID, preCtgGeneModel3.lcds
-				print "curID", curCtgGeneModel5.geneID, curCtgGeneModel5.lcds
+				agPathDebug.debugger.debug("[RECOVER]\t====preID=%s preCDS=%s"
+										   %(preCtgGeneModel3.geneID, str(preCtgGeneModel3.lcds)))
+				agPathDebug.debugger.debug("[RECOVER]\t====curID=%s curCDS=%s"
+										   %(curCtgGeneModel5.geneID, str(curCtgGeneModel5.lcds)))
 				dSenses[preVertex, curVertex] = [('+', '-')]
 		for path in recovPath:
 			# convert from name to vertex
 			agoutiPaths.append([vertex2Name.index(k) for k in path])
-	#print sum([len(path) for path in tmpPaths])
-	#print len(tmpPaths)
-	#print sum([len(geneModels) for k, geneModels in dGFFs.iteritems()])
-	#print len([geneModel for k, geneModels in dGFFs.iteritems() for geneModel in geneModels if geneModel.fake == 0])
-	#print len([geneModel for k, geneModels in dGFFs.iteritems() for geneModel in geneModels if geneModel.fake == 1])
-	print "Number of pairs of shredded contigs having joining gene models: %d" %(n)
+	agPathDebug.debugger.debug("[RECOVER]\t####")
+	agPathDebug.debugger.debug("[RECOVER]\tNumber of paths to update: %d"
+							   %(sum([len(path) for path in agoutiPaths])))
+	agPathDebug.debugger.debug("[RECOVER]\tNumber of gene models in dGFFs: %d"
+							   %(sum([len(geneModels) for geneModels in dGFFs.itervalues()])))
+	agPathDebug.debugger.debug("[RECOVER]\tNumber of fake gene models in dGFFs: %d"
+							   %(len([geneModel
+									  for geneModels in dGFFs.itervalues()
+									  for geneModel in geneModels
+									  if  geneModel.fake == 1])))
+	agPathDebug.debugger.debug("[RECOVER]\tNumber of fakeO gene models in dGFFs: %d"
+							   %(len([geneModel
+									  for geneModels in dGFFs.itervalues()
+									  for geneModel in geneModels
+									  if  geneModel.fake == 1
+										  and geneModel.geneStop == 0])))
+	agPathDebug.debugger.debug("[RECOVER]\t####")
+	agPathProgress.logger.info(("Number of pairs of shredded contigs "
+								"having joining gene models: %d" %(n)))
 	return agoutiPaths, dCtgPair2GenePair, dSenses
 
-def read_original_path(oriScafPathFile):
+def read_original_path(oriScafPathFile, agPathProgress):
+	'''
+		Read original scaffolding path
+	'''
 	dOriPaths = {}
 	dOriGaps = {}
 	oriScafID = ""
 	with open(oriScafPathFile, 'r') as fIN:
 		oriPath = []
+		nLines = 0
 		for line in fIN:
+			nLines += 1
 			if line.startswith('>'):
 				if len(oriPath) > 0:
 					dOriPaths[oriScafID] = oriPath
@@ -162,8 +217,12 @@ def read_original_path(oriScafPathFile):
 					if (curCtg, nexCtg) not in dOriGaps:
 						dOriGaps[curCtg, nexCtg] = gapLen
 					else:
-						print "Error: %s %s occurred already"
-						print "Check the give shred info file"
+						agPathProgress.logger.error("Error: ctg1=%s ctg2=%s occurred twice")
+						agPathProgress.logger.error("Please check file: %s at line %d"
+													%(oriScafPathFile, nLines))
+						agPathProgress.logger.error(("The error probably comes from incorrect"
+													 "recording shred info"))
+						agPathProgress.logger.error("Please report this bug")
 						sys.exit(1)
 					if len(oriPath) == 0:
 						oriPath += [curCtg, nexCtg]
@@ -173,6 +232,8 @@ def read_original_path(oriScafPathFile):
 					oriPath.append(curCtg)
 		if oriPath:
 			dOriPaths[oriScafID] = oriPath
+	agPathProgress.logger.error("Number of shredded contigs parsed: %d"
+								%(sum([len(v) for v in dOriPaths.itervalues()])))
 
 	return dOriPaths, dOriGaps
 
