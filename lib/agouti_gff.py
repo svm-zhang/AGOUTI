@@ -25,10 +25,6 @@ class AGOUTI_GFF(object):
 		self.geneStop = stop
 		self.fake = fake
 
-	def printGene(self):
-		print self.geneID, self.ctgID, self.geneStart, self.geneStop
-		print self.lcds
-
 	def setProgram(self, program):
 		self.program = program
 
@@ -52,9 +48,8 @@ class AGOUTI_GFF(object):
 		self.lcds += [cds_start, cds_stop]
 
 	def debug(self):
-		print self.geneID, self.geneStart, self.geneStop
-		print self.ctgID
-		print self.strand
+		print("geneID=%s - start=%d - stop=%d - strand=%s - contig=%s"
+			  %(self.geneID, self.geneStart, self.geneStop, self.strand, self.ctgID))
 
 	def getNumExons(self):
 		return len(self.lcds)/2
@@ -131,7 +126,6 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 					lobj_GeneModels[geneIndex].updateCDS(int(tmp_line[3]), int(tmp_line[4]))
 		if not stop and geneIndex >= 0:
 			dGFFs[lobj_GeneModels[geneIndex].ctgID].append(lobj_GeneModels[geneIndex])
-
 
 	if debug:
 		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.debug" %(prefix))
