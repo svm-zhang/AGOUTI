@@ -5,7 +5,7 @@ import itertools
 import operator
 
 from lib import agouti_log as agLOG
-from src import agouti_summarize as agPATH
+from src import agouti_path as agPATH
 
 class Graph(object):
 	def __init__(self, graph={}):
