@@ -19,7 +19,7 @@ from src import agouti_denoise as agDENOISE
 from src import agouti_update as agUPDATE
 from src import agouti_scaffolding as agSCAFF
 from src import agouti_shred as agSHRED
-from src import agouti_summarize as agPATH
+from src import agouti_path as agPATH
 
 def parse_args():
 	use_message = '''
