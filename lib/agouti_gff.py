@@ -135,6 +135,7 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 	nGeneModels = 0
 	for k, v in sorted(dGFFs.items()):
 		genes = [(gene.geneStart, gene.geneStop) for gene in v]
+		# make sure gene model are in ascending order
 		soGenes = sorted(xrange(len(genes)), key=lambda k:genes[k])
 		tmpV = []
 		for i in xrange(len(soGenes)):
