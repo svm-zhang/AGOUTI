@@ -207,12 +207,12 @@ def run_scaffolder(args):
 																	  prefix, args.minSupport,
 																	  args.debug)
 
-	scafPaths, dSenses = agSCAFF.run_scaffolding(vertex2Name, joinPairsFile,
+	agoutiPaths, dSenses = agSCAFF.run_scaffolding(vertex2Name, joinPairsFile,
 													   dCtgPair2GenePair, outDir, prefix,
 													   args.minSupport, args.debug)
 
 	if args.oriScafPath:
-		agoutiPaths, dCtgPair2GenePair, dSenses = agPATH.agouti_path_main(scafPaths, dSenses,
+		agoutiPaths, dCtgPair2GenePair, dSenses = agPATH.agouti_path_main(agoutiPaths, dSenses,
 																		  vertex2Name, dGFFs,
 																		  dCtgPair2GenePair,
 																		  args.oriScafPath, outDir,
