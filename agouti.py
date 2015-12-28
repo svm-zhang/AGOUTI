@@ -12,13 +12,14 @@ __version__ = sp.check_output(shlex.split("git -C %s describe --tag --always --d
 										  %(os.path.dirname(os.path.realpath(__file__)))))
 
 from lib import agouti_log as agLOG
-from src import agouti_sequence as agSeq
 from lib import agouti_sam as agBAM
-from src import agouti_denoise as agDENOISE
 from lib import agouti_gff as agGFF
+from src import agouti_sequence as agSeq
+from src import agouti_denoise as agDENOISE
 from src import agouti_update as agUPDATE
 from src import agouti_scaffolding as agSCAFF
 from src import agouti_shred as agSHRED
+from src import agouti_summarize as agPATH
 
 def parse_args():
 	use_message = '''
@@ -206,14 +207,20 @@ def run_scaffolder(args):
 																	  prefix, args.minSupport,
 																	  args.debug)
 
-	scafPaths, edgeSenseDict = agSCAFF.run_scaffolding(vertex2Name, joinPairsFile,
+	scafPaths, dSenses = agSCAFF.run_scaffolding(vertex2Name, joinPairsFile,
 													   dCtgPair2GenePair, outDir, prefix,
 													   args.minSupport, args.debug)
 
-	agUPDATE.agouti_update(scafPaths, dSeqs, vertex2Name,
-						   edgeSenseDict, dGFFs,
-						   dCtgPair2GenePair, outDir, prefix,
-						   args.oriScafPath,
+	if args.oriScafPath:
+		agoutiPaths, dCtgPair2GenePair, dSenses = agPATH.agouti_path_main(scafPaths, dSenses,
+																		  vertex2Name, dGFFs,
+																		  dCtgPair2GenePair,
+																		  args.oriScafPath, outDir,
+																		  prefix)
+
+	agUPDATE.agouti_update(agoutiPaths, dSeqs, vertex2Name,
+						   dSenses, dGFFs, dCtgPair2GenePair,
+						   outDir, prefix,
 						   args.nFills, args.debug, args.no_update_gff)
 
 def update_local(args):
