@@ -1,16 +1,14 @@
 import os
 import sys
-import math
 import collections
 import itertools
 import operator
 
 from lib import agouti_log as agLOG
-from lib import agouti_gff as agGFF
+from src import agouti_summarize as agPATH
 
 class Graph(object):
-	def __init__(self, outGraphFile, graph={}):
-		self.outGraphFile = outGraphFile
+	def __init__(self, graph={}):
 		self.graph = graph
 		self.weights = {}
 		self.senses = {}
@@ -166,26 +164,14 @@ class Graph(object):
 		self.agSCAFProgress.logger.info("%d Edges removed due to insufficient supports"
 										%(nEdgeRemoved))
 
-	def dfs(self, vertex, vertex2Name, minSupport, seen=None, path=None):
-		"""
-			Depth-first traversal from a given node
-		"""
-		if seen is None: seen = [vertex]
-		if path is None: path = [vertex]
-
-		for vertexB in self.graph[vertex]:
-			weight = self.weights[vertex, vertexB]
-			if weight >= minSupport and vertexB not in seen:
-				seen.append(vertexB)
-				path.append(vertexB)
-				path = self.dfs(vertexB, vertex2Name, minSupport, seen, path)
-		return path
-
-	def graph2dot(self, scafPaths, vertex2Name, minSupport):
+	def graph2dot(self, scafPaths, vertex2Name, minSupport,
+				  outDir, prefix):
 		"""
 			output Graph in DOT format
 		"""
-		with open(self.outGraphFile, 'w') as fGRAPH:
+		self.agSCAFProgress.logger.info("Visualize graph in DOT")
+		outGraphFile = os.path.join(outDir, "%s.agouti_scaffolding.graph.dot" %(prefix))
+		with open(outGraphFile, 'w') as fGRAPH:
 			dPairs = {}
 			fGRAPH.write("graph {\n")
 			for path in scafPaths:
@@ -210,6 +196,10 @@ class Graph(object):
 						fGRAPH.write("\t%s -- %s[label=\"%d\", weight=\"%d\", color=black, penwidth=2.0]\n"
 									 %(vertex2Name[vertexA], vertex2Name[vertexB], weight, weight))
 			fGRAPH.write("}")
+
+	def report_scaffold_path(self, scafPaths, vertex2Name, outDir, prefix):
+		self.agSCAFProgress.logger.info("Report scaffolding paths")
+		agPATH.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
 
 class RNAPATHSTAR_Graph(Graph):
 	def start(self, joinPairsFile, vertex2Name, dCtgPair2GenePair, minSupport):
@@ -606,17 +596,19 @@ def run_scaffolding(vertex2Name, joinPairsFile,
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
 
-	outGraphFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.graph.dot" %(prefix))
 #	if algorithm == "gene":
 #		graph = AGOUTI_Graph(outGraphFile)
 #		graph.start_logger(moduleName, moduleOutDir, prefix, debug)
 #		scafPaths = graph.start(joinPairsFile, vertex2Name,
 #								dCtgPair2GenePair, algorithm,
 #								minSupport)
-	graph = RNAPATHSTAR_Graph(outGraphFile)
+	graph = RNAPATHSTAR_Graph()
 	graph.start_logger(moduleName, moduleOutDir, prefix, debug)
 	scafPaths = graph.start(joinPairsFile, vertex2Name,
 							dCtgPair2GenePair,
 							minSupport)
+	graph.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
+	graph.graph2dot(scafPaths, vertex2Name, minSupport,
+					outDir, prefix)
 
 	return scafPaths, graph.senses
