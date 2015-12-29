@@ -70,7 +70,7 @@ This will produce a scaffoled assembly in FASTA format, and a updated gene model
 
 ### Genome Assembly
 
-AGOUTI accepts assemblies as both contigs and scaffolds. In its scaffold form, AGOUTI breaks assemblies at gaps of a minimum lengths, essentially producing a shredded/split assembly. AGOUTI scaffolds on the split assembly, and report any inconsistencies between the RNA-based scaffolding and the original scaffolding.
+AGOUTI accepts assemblies as both contigs and scaffolds. In its scaffold form, AGOUTI breaks assemblies at gaps of a minimum lengths, essentially producing a shredded/split assembly (see **Shred Assembly**). AGOUTI scaffolds on the split assembly, and report any inconsistencies between the RNA-based scaffolding and the original scaffolding.
 
 To shred a given assembly at gaps of at least 25 bp:
 
@@ -157,9 +157,11 @@ Shredding an assembly and annotation simultaneously (v0.3.0 or above):
 
 Here gives one [example data](http://www.indiana.edu/~hahnlab/software.html) set that we used in our paper.
 
-## Details of using AGOUTI on pre-existing scaffolds
+## Shred Assembly
 
-More details coming soon
+Given an assembly in its scaffold form, AGOUTI can shred scaffolds into contigs at gaps of a minimum length (5 by default, user-tunable). The following figure gives an example of how it works. Let's say a scaffold called `scaffold 1` in the assembly. This scaffold consists of three stretches of gaps of various lengths, 5, 3, and 9, respectively. By default, AGOUTI shreds it into three contigs, `Scaffold_1_0`, `Scaffold_1_1`, and `Scaffold_1_2`. AGOUTI does not cut at the second gap because it has a length of 3. Notably, AGOUTI uses `SEQID_INDEX` to tell the order of contigs in the given original scaffold. For scaffolds without gaps, AGOUTI does not split them.)
+
+![Alt text](/image/shred_assembly.png?raw=true "example output directory")
 
 ## Break-and-Continue
 
