@@ -208,19 +208,19 @@ The `agouti.main.log` is prefixed with the string specified by `-p`, so do all t
 ## Example
 Scaffoldding using joining-pairs with a minimum mapping quality of 20, a maximum of 5% mismtaches:
 
-`python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -minMQ 20 -minFracMM 0.05`
+    python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -minMQ 20 -minFracMM 0.05
 
 Scaffolding without updating gene model (v0.3.0 or above):
 
-`python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -no_update_gff`
+    python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -no_update_gff
 
 Scaffolding a shredded assembly and report any inconsistencies between RNA-seq based scaffolding and orignial scaffolding:
 
-`python agouti.py scaffold -assembly example.shred.fasta -bam example.bam -gff example.gff -outdir ./example -shredpath example.shred.info.txt`
+    python agouti.py scaffold -assembly example.shred.fasta -bam example.bam -gff example.gff -outdir ./example -shredpath example.shred.info.txt
 
 Shredding an assembly and annotation simultaneously (v0.3.0 or above):
 
-`python agouti.py shred -assembly example.fasta -gff example.gff -p example\
+    python agouti.py shred -assembly example.fasta -gff example.gff -p example
 
 ## Example Data
 
