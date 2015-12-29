@@ -156,6 +156,7 @@ Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `exa
 This produces a mapping results in BAM format. AGOUTI uses this BAM file for scaffolding. More specifically, it reads the file and extracts joining-pairs. A joining-pair is defined as one with both ends mapped to different contigs. AGOUTI uses only uniquely mapped ones by checking mapping quality. Short-reads mappers such as BWA, Bowtie2 uses a non-zero mapping quality to define unique mapping. If the mapper you are using does not use quality to mark ambiguous mapping, then you must first process your SAM/BAM file before running AGOUTI.
 
 **Several more things worth of noting:**
+
 1. Please run samtools flagstat to get stats of the mapping, and looks particular for number of pairs mapped to different chromosomes. If none, then AGOUTI will not be able to do any scaffolding.
 2. Please make sure the BAM is sorted by reads name, not coordiantes.
 
@@ -206,15 +207,19 @@ The `agouti.main.log` is prefixed with the string specified by `-p`, so do all t
 
 ## Example
 Scaffoldding using joining-pairs with a minimum mapping quality of 20, a maximum of 5% mismtaches:
+
 `python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -minMQ 20 -minFracMM 0.05`
 
 Scaffolding without updating gene model (v0.3.0 or above):
+
 `python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -no_update_gff`
 
 Scaffolding a shredded assembly and report any inconsistencies between RNA-seq based scaffolding and orignial scaffolding:
+
 `python agouti.py scaffold -assembly example.shred.fasta -bam example.bam -gff example.gff -outdir ./example -shredpath example.shred.info.txt`
 
 Shredding an assembly and annotation simultaneously (v0.3.0 or above):
+
 `python agouti.py shred -assembly example.fasta -gff example.gff -p example\
 
 ## Example Data
