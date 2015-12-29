@@ -176,6 +176,7 @@ At the end of gene prediction, you will now have a set of gene models predicted 
     * start and stop positions
 
 **Several more things worth of noting:**
+
 1. If your GFF file has FASTA sequences at the end (e.g. generated from MAKER pipeline), please make sure to use verions v0.2.5 or above.
 2. It is also important to note that if there are no gene models found in your GFF, AGOUTI will issue an error and stop.
 
