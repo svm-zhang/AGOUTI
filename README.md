@@ -133,9 +133,7 @@ This will produce a scaffoled assembly in FASTA format, and a updated gene model
 
 ### Genome Assembly
 
-AGOUTI accepts assemblies as both contigs and scaffolds. Given contigs, please skip this step and go to the next two sections.
-
-If in scaffold form, AGOUTI breaks assemblies at gaps of certain lengths, essentially reducing it to contig form (a shredded/split assembly), and keeps records of their connections. AGOUTI scaffolds on split assemblies, and will report inconsistencies between the RNA-based scaffolding it conducts and the original scaffolding.
+AGOUTI accepts assemblies as both contigs and scaffolds. In its scaffold form, AGOUTI breaks assemblies at gaps of a minimum lengths, essentially producing a shredded/split assembly. AGOUTI scaffolds on the split assembly, and report any inconsistencies between the RNA-based scaffolding and the original scaffolding.
 
 To shred a given assembly at gaps of at least 25 bp:
 
@@ -144,20 +142,22 @@ To shred a given assembly at gaps of at least 25 bp:
     -p example \
     -mlg 25
 
-This will produce a shredded assembly, example.shred.ctg.fasta, and a info file about the shred, example.shred.info.txt.
+This produces a shredded assembly: `example.ctg.fasta`, and a file of a format similar to Fasta: `example.shred.info.txt`. Each header gives IDs of sequences in the original assembly. Under each header is a list of pairs of shredded contigs and the length of gaps between them. A sequence without any gaps will be by itself, and NA are used for such cases.
 
 **It is very important to use this split assembly in the following reads-mapping and gene prediction.**
 
 ### SAM/BAM File
 
-Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `example.2.fq`, and an initial assembly generated from an assembler of your favorite, `example.fasta`. You will first need to map the RNA-seq data against the assembly using a short-reads mapper, such as BWA. For example,
+Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `example.2.fq`, and an assembly generated from either an assembler of your favorite or shredded by AGOUTI, `example.fasta` or `example.ctg.fasta`. You will first need to map the RNA-seq data against the assembly using a short-reads mapper, such as Bowtie2 or BWA. For example,
 
     bwa index example.fasta
     bwa mem -M example.fasta example.1.fq example.2.fq | samtools view - > example.bam
 
-At the end of reads mapping, you will have the mapping results in BAM format. AGOUTI uses only uniquely mapped joining-pairs by checking mapping quality. For short-reads mappers such as BWA, Bowtie2, you can use mapping quality to tell unique or not, e.g. mapQ > 0. If the mapper you are using does not use quality to mark ambiguous mapping, then you can first process your SAM/BAM file and feed AGOUTI with the unique ones.
+This produces a mapping results in BAM format. AGOUTI uses this BAM file for scaffolding. More specifically, it reads the file and extracts joining-pairs. A joining-pair is defined as one with both ends mapped to different contigs. AGOUTI uses only uniquely mapped ones by checking mapping quality. Short-reads mappers such as BWA, Bowtie2 uses a non-zero mapping quality to define unique mapping. If the mapper you are using does not use quality to mark ambiguous mapping, then you must first process your SAM/BAM file before running AGOUTI.
 
-**Please make sure the SAM/BAM is sorted by reads name, not coordinates.**
+**Several more things worth of noting:**
+1. Please run samtools flagstat to get stats of the mapping, and looks particular for number of pairs mapped to different chromosomes. If none, then AGOUTI will not be able to do any scaffolding.
+2. Please make sure the BAM is sorted by reads name, not coordiantes.
 
 ### Gene Models
 
@@ -165,20 +165,19 @@ To run AGOUTI, you will also need a set of gene models predicted from the assemb
 
     augustus --AUGUSTUS_CONFIG_PATH=[path to augustus config file] -gff3=on --species=[your sepcies] example.fasta > example.gff
 
-At the end of gene prediction, you will now have a set of gene models predicted from the assembly. You can choose any * ab inito * gene predictor as long as it spits out the models in GFF3 format. Specifically, AGOUTI looks for the following information in a GFF3 file.
+At the end of gene prediction, you will now have a set of gene models predicted from the assembly. You can choose any * ab inito * gene predictor as long as it spits out the models in GFF format. More specifically, AGOUTI looks for the following information:
 
-* a line annotated as `gene`
+* lines annotated as `gene`
     * contig ID
-    * gene ID
+    * gene ID, e.g. `ID=gene1` from the attribute column (i.e. last column)
     * start and stop positions of the gene
     * strand
-* a line annotated as `CDS`
-    * start and stop positions of each coding frame
+* lines annotated as `CDS`
+    * start and stop positions
 
-AGOUTI will not issue any complaints if your gene prediction have these information.
-
-**If your GFF file has FASTA sequences at the end (e.g. generated from MAKER pipeline), please make sure to use verions v0.2.5 or above.**
-**It is also important to note that if there are no gene models found in your GFF, AGOUTI will issue an error and stop.**
+**Several more things worth of noting:**
+1. If your GFF file has FASTA sequences at the end (e.g. generated from MAKER pipeline), please make sure to use verions v0.2.5 or above.
+2. It is also important to note that if there are no gene models found in your GFF, AGOUTI will issue an error and stop.
 
 ## Understand Outputs
 
@@ -204,6 +203,19 @@ The `agouti.main.log` is prefixed with the string specified by `-p`, so do all t
 
 **The final assembly** and **the updated gene models** can be found under the base directory, `example`, along with plain text files of useful information, such as scaffolding paths, gene paths, differences between scaffolds generated by AGOUTI and original scaffolding.
 
+## Example
+Scaffoldding using joining-pairs with a minimum mapping quality of 20, a maximum of 5% mismtaches:
+`python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -minMQ 20 -minFracMM 0.05`
+
+Scaffolding without updating gene model (v0.3.0 or above):
+`python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -no_update_gff`
+
+Scaffolding a shredded assembly and report any inconsistencies between RNA-seq based scaffolding and orignial scaffolding:
+`python agouti.py scaffold -assembly example.shred.fasta -bam example.bam -gff example.gff -outdir ./example -shredpath example.shred.info.txt`
+
+Shredding an assembly and annotation simultaneously (v0.3.0 or above):
+`python agouti.py shred -assembly example.fasta -gff example.gff -p example\
+
 ## Example Data
 
 Here gives one [example data](http://www.indiana.edu/~hahnlab/software.html) set that we used in our paper.
@@ -214,7 +226,7 @@ More details coming soon
 
 ## Break-and-Continue
 
-AGOUTI is built with a couple of modules. The output of current module will be taken as the input as the next module. Given the same input, modules such as extracting joining-pairs from BAM file, spits out the same intermediate results. AGOUTI therefore tries to save some running time by skipping some steps if they were finished successfully from previous runs. To use this feature, simply run AGOUTI the second time with the same output prefix as the previous run. In some cases you want to have a fresh start, simply use `-overwrite` to overwrite all results generated previously, or gives a new prefix.
+AGOUTI is built with a couple of modules. The output of current module will be taken as the input as the next module. Given the same input, modules such as extracting joining-pairs from BAM file, spits out the same intermediate results. AGOUTI therefore tries to save some running time by skipping such steps if they were finished successfully from previous runs. To use this feature, simply run AGOUTI the second time with the same output directory and output prefix as the previous run. If you desire a fresh start, simply use `-overwrite` to overwrite all results generated previously, or gives a new prefix.
 
 ## Graph Visualization
 
