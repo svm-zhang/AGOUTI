@@ -122,7 +122,7 @@ At the end of gene prediction, you will now have a set of gene models predicted 
 
 AGOUTI outputs its results to a base directory specified by `-outdir`. Under the base director, there are several sub-folders created, each corresponding to a step built in AGOUTI. As of current version (v0.2), a run of AGOUTI using the command-line setting demonstrated in **Getting Started** will generated a structured output like the following:
 
-<div style="text-align:center"><img src ="/image/example_outdir.png" /></div>
+<img src ="/image/example_outdir.png" align="middle"/>
 
 ![Alt text](/image/example_outdir.png?raw=true "example output directory")
 
