@@ -1,6 +1,6 @@
 # **AGOUTI**: Annotated Genome Optimization Using Transcriptome Information
 
-Table of Contents
+##Table of Contents
 =================
 
   * [Overview](#overview)
