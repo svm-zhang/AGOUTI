@@ -167,8 +167,11 @@ Given an assembly in its scaffold form, AGOUTI can shred scaffolds into contigs 
 
 Since v0.3.0, AGOUTI is also able to shred gene annotation matching the give assembly. It compares start and end positions of features with coordinates of cut sites, and updates annotation accordingly. There are five types of features AGOUTI cares: gene, exon, CDS, firve_prime_UTR, three_prime_UTR. The following figure gives an example of how it works. Let's use the same scaffold (i.e. `Scaffold_1`) shredded in the picture above. Assume that there is a gene span across the second cut site, and it consists of three exons (green box). AGOUTI splits the assembly such that one gene becomes two (boxes in different colors) sitting on two different contigs. AGOUTI assigns them with different ID, in a similar fashion as names of shredded contigs, `GENEID_INDEX`. This naming tells 1) whether two shredded genes belong to a single one; and 2) the order.
 
-
 ![Alt text](/image/shred_annotation_1.png?raw=true "example output directory")
+
+## Scaffoldding on Shredded Assembly
+
+More details coming soon
 
 ## Break-and-Continue
 
