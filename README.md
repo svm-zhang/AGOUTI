@@ -12,9 +12,11 @@ AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gen
 
 1. Scaffold hundreds to thousands of contigs, yielding more contiguous assemblies;
 2. Reduce the number of gene models and update them simultaneously;
-3. Record any inconsistencies with the original (input) scaffolding results;
-4. Support break-and-continue feature such that some time-consuming steps can be skipped if the previous run is successful;
-5. Output graph in dot format for visualization
+3. Shred genome assembly and corresponding annotation simultaneously;
+4. Record any inconsistencies with the original (input) scaffolding results;
+5. Recover original scaffolds from contigs not scaffolded by AGOUTI;
+6. Support break-and-continue feature such that some time-consuming steps can be skipped if the previous run is successful;
+7. Output graph in dot format for visualization
 
 ## Obtain AGOUTI
 
