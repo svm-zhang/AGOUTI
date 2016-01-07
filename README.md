@@ -161,7 +161,7 @@ The `agouti.main.log` is prefixed with the string specified by `-p`, so do all t
 ## Example
 Scaffoldding using joining-pairs with a minimum mapping quality of 20, a maximum of 5% mismtaches:
 
-    python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -minMQ 20 -minFracMM 0.05
+    python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -minMQ 20 -maxFracMM 0.05
 
 Scaffolding without updating gene model (v0.3.0 or above):
 
