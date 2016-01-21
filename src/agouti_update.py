@@ -138,7 +138,8 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 				curSense = "+"
 			elif orientation == "FF":
 				if not no_update_gff:
-					nextGene = reverse_gene_model(nextGene, len(dSeqs[nextVertex]), debug)
+					#nextGene = reverse_gene_model(nextGene, len(dSeqs[nextVertex]), debug)
+					dGFFs[nextCtg] = reverse_gene_models(dGFFs[nextCtg], len(dSeqs[nextVertex]), debug)
 					if curGeneID !=  preGeneID:
 						numMergedGene += 1
 						mergedGene = merge_gene_model(curGene, nextGene, scafName,
@@ -190,9 +191,10 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 				curSense = "+"
 			elif orientation == "RF":
 				if not no_update_gff:
+					dGFFs[nextCtg] = reverse_gene_models(dGFFs[nextCtg], len(dSeqs[nextVertex]), debug)
 					if curGene.geneID != preGeneID:
 						dGFFs[curCtg] = reverse_gene_models(dGFFs[curCtg], len(dSeqs[curVertex]), debug)
-						nextGene = reverse_gene_model(nextGene, len(dSeqs[nextVertex]), debug)
+						#nextGene = reverse_gene_model(nextGene, len(dSeqs[nextVertex]), debug)
 						numMergedGene += 1
 						mergedGene = merge_gene_model(curGene, nextGene, scafName,
 													  numMergedGene, offset, gapStop,
@@ -248,7 +250,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 																	  dUpdateGFFs[scafName],
 																	  scafName, offset,
 																	  excludeGeneIDs, debug)
-		fFASTA.write(">%s|%dbp|%s\n%s\n"
+		fFASTA.write(">%s |%dbp |%s\n%s\n"
 						%(scafName, len(sequence), ",".join(scafPath), sequence))
 		seqLens.append(len(sequence))
 		#agPaths.append(scafPath)
@@ -360,10 +362,11 @@ def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
 	numGenes = 0
 	with open(outGFF, 'w') as fOUTGFF:
 		fOUTGFF.write("##gff-version3\n")
-		fOUTGFF.write("# This output was generated with AGOUTI (version 0.1)\n")
+		fOUTGFF.write("# This output was generated with AGOUTI (version 0.3.1)\n")
 		for k, v in dGeneModels.iteritems():
-			for i in range(len(v)):
-				geneModel = v[i]
+			tmpV = sorted([(i.geneStart, i.geneStop, i) for i in v])
+			for i in range(len(tmpV)):
+				geneModel = tmpV[i][2]
 				# no output of fake gene created
 				if geneModel.fake == 1:
 					continue
@@ -377,21 +380,29 @@ def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
 					fOUTGFF.write("# start gene %s\n" %(geneModel.geneID))
 					if geneModel.geneID.startswith("AGOUTI_Merged"):
 						fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s;MERGE_FROM_GENES=%s;MERGE_FROM_CONTIGS=%s\n"
-									  %(k, geneModel.program, geneModel.geneStart, geneModel.geneStop,
-									  geneModel.strand, geneModel.geneID,
-									  ",".join(dMergedGene2Genes[geneModel.geneID]),
-									  ",".join(dMergedGene2Ctgs[geneModel.geneID])))
+									  %(k, geneModel.program, geneModel.geneStart,
+										geneModel.geneStop,
+										geneModel.strand, geneModel.geneID,
+										",".join(dMergedGene2Genes[geneModel.geneID]),
+										",".join(dMergedGene2Ctgs[geneModel.geneID])))
 					else:
 						fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s\n"
 									  %(k, geneModel.program, geneModel.geneStart,
 										geneModel.geneStop, geneModel.strand,
 										geneModel.geneID))
+					mrnaStart = min(geneModel.lcds[0], geneModel.lcds[-1])
+					mrnaStop = max(geneModel.lcds[0], geneModel.lcds[-1])
+					mrnaID = geneModel.geneID+".mRNA"
+					fOUTGFF.write("%s\t%s\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n"
+								  %(k, geneModel.program, mrnaStart,
+									mrnaStop, geneModel.strand,
+									mrnaID, geneModel.geneID))
 					for j in range(0, len(geneModel.lcds), 2):
 						cdsStart = geneModel.lcds[j]
 						cdsStop = geneModel.lcds[j+1]
-						fOUTGFF.write("%s\t%s\texon\t%d\t%d\t.\t%s\t.\tID=%s.exon\n"
+						fOUTGFF.write("%s\t%s\texon\t%d\t%d\t.\t%s\t.\tID=%s.exon.%d;Parent=%s\n"
 									  %(k, geneModel.program, cdsStart, cdsStop,
-									  geneModel.strand, geneModel.geneID))
+									  geneModel.strand, geneModel.geneID, (j/2)+1, mrnaID))
 					fOUTGFF.write("# end gene %s\n" %(geneModel.geneID))
 					fOUTGFF.write("###\n")
 	return numGenes
@@ -424,7 +435,7 @@ def merge_gene_model(curGene, nextGene, scafName,
 		merge two gene models
 	'''
 	mergedGene = agGFF.AGOUTI_GFF()
-	mergedGene.geneID = "AGOUTI_Merged_gene_%d" %(numMergedGene)
+	mergedGene.geneID = "agMerge_%d" %(numMergedGene)
 	if curGene.geneStop == 0 and nextGene.geneStop == 0:
 		mergedGene.geneStart = 0
 		mergedGene.geneStop = 0
@@ -465,12 +476,14 @@ def merge_gene_model(curGene, nextGene, scafName,
 	mergedGene.lcds = curGene.lcds + nextGene.lcds
 	mergedGene.merge = 1
 	if debug:
+		agUPDATEDebug.debugger.debug("MERGE_GENE_MODEL\t\tcuroffset=%d - nextoffset=%d"
+									 %(currentOffset, nextOffset))
 		agUPDATEDebug.debugger.debug("MERGE_GENE_MODEL\t\tcur GeneID - %s - %d - %d - %s"
-									 %(curGene.geneID, curGene.geneStart,
-									 curGene.geneStop, str(curGene.lcds)))
+									 %(curGene.geneID, curGene.geneStart+currentOffset,
+									 curGene.geneStop+currentOffset, str(curGene.lcds)))
 		agUPDATEDebug.debugger.debug("MERGE_GENE_MODEL\t\tnext GeneID - %s - %d - %d - %s"
-									 %(nextGene.geneID, nextGene.geneStart,
-									 nextGene.geneStop, str(nextGene.lcds)))
+									 %(nextGene.geneID, nextGene.geneStart+nextOffset,
+									 nextGene.geneStop+nextOffset, str(nextGene.lcds)))
 		agUPDATEDebug.debugger.debug("MERGE_GENE_MODEL\t\tmerged GeneID - %s - %d - %d - %s"
 									 %(mergedGene.geneID, mergedGene.geneStart,
 									 mergedGene.geneStop, str(mergedGene.lcds)))
@@ -529,20 +542,22 @@ def reverse_gene_model(geneModel, lenCtg, debug=0):
 	'''
 		reverse each gene, all CDS within the gene
 	'''
+	if debug:
+		agUPDATEDebug.debugger.debug("REV_GENE_MODEL\t\tbefore reverse - %s - %d - %d - %s"
+										%(geneModel.geneID, geneModel.geneStart,
+										  geneModel.geneStop, str(geneModel.lcds)))
 	tmpGeneStop =  lenCtg-geneModel.geneStart+1
 	tmpGeneStart = lenCtg-geneModel.geneStop+1
 	geneModel.geneStart = tmpGeneStart
 	geneModel.geneStop = tmpGeneStop
 	lcds = geneModel.lcds
 	reverseLCDs = []
-	if debug:
-		agUPDATEDebug.debugger.debug("REV_GENE_MODEL\t\tbefore reverse - %s - %s"
-										%(geneModel.geneID, str(lcds)))
 	for j in range(len(lcds)-1, -1, -2):
 		reverseLCDs += [lenCtg-lcds[j]+1, lenCtg-lcds[j-1]+1]
 	if debug:
-		agUPDATEDebug.debugger.debug("REV_GENE_MODEL\t\tafter reverse - %s - %s"
-										%(geneModel.geneID, str(reverseLCDs)))
+		agUPDATEDebug.debugger.debug("REV_GENE_MODEL\t\tafter reverse - %s - %d - %d - %s"
+										%(geneModel.geneID, geneModel.geneStart,
+										  geneModel.geneStop, str(reverseLCDs)))
 	geneModel.lcds = reverseLCDs
 	if geneModel.strand == '+':
 		geneModel.strand = '-'
