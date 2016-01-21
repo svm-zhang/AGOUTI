@@ -223,7 +223,7 @@ def agouti_sam_main(bamFile, outDir, prefix,
 				if pairA[0] == pairB[0] and contigA != contigB:
 					alnLenA = getCIGAR(pairA[5])
 					alnLenB = getCIGAR(pairB[5])
-					leftMostPosA = int(pairA[3])
+					leftMostPosA = int(pairA[3])		# 1-based in SAM
 					leftMostPosB = int(pairB[3])
 					readLenA = len(pairA[9])
 					readLenB = len(pairB[9])
@@ -236,8 +236,11 @@ def agouti_sam_main(bamFile, outDir, prefix,
 					senseA = flagsA[4]
 					senseB = flagsB[4]
 					if debug:
-						agBAMDebug.debugger.debug("%s\t%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d" %(readsID,
-												  contigA+":"+str(leftMostPosA), contigB+":"+str(leftMostPosB),
+						agBAMDebug.debugger.debug("%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\t%s\t%d\t%d"
+												  %(readsID,
+												  contigA+":"+str(leftMostPosA),
+												  contigB+":"+str(leftMostPosB),
+												  int(alnLenA), int(alnLenB),
 												  mapQA, mapQB, senseA, senseB, readLenA, readLenB))
 
 					fracOvlA = alnLenA/readLenA
@@ -247,10 +250,10 @@ def agouti_sam_main(bamFile, outDir, prefix,
 					if (min(fracOvlA, fracOvlB) >= minFracOvl and				# minimum fraction of overlaps
 						max(fracMismatchA, fracMismatchB) <= maxFracMismatch and	# maximum fraction of mismatches
 						min(mapQA, mapQB) >= minMapQ):				# minimum mapping quality
-						startA = leftMostPosA + 1
-						stopA = startA + 1 + int(alnLenA)
-						startB = leftMostPosB + 1
-						stopB = startB + 1 + int(alnLenB)
+						startA = leftMostPosA
+						stopA = startA + int(alnLenA) - 1
+						startB = leftMostPosB
+						stopB = startB + int(alnLenB) - 1
 						nJoinPairs += 1
 						if contigA <= contigB:
 							if (contigA, contigB) not in dContigPairs:
