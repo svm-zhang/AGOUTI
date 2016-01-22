@@ -103,8 +103,8 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 			gapStop = gapStart + nFills - 1
 			if debug:
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurSense=%s" %(curSense))
-				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tFF=%d - RR=%d - RF=%d - FR=%d"
-											 %(FF, RR, RF, FR))
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tFR=%d - FF=%d - RF=%d - RR=%d"
+											 %(FR, FF, RF, RR))
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\toffset - %d - curCtgLen - %d"
 											 %(offset, len(dSeqs[curVertex])))
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tgapstart - %d - gapstop - %d"
@@ -390,13 +390,14 @@ def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
 									  %(k, geneModel.program, geneModel.geneStart,
 										geneModel.geneStop, geneModel.strand,
 										geneModel.geneID))
-					mrnaStart = min(geneModel.lcds[0], geneModel.lcds[-1])
-					mrnaStop = max(geneModel.lcds[0], geneModel.lcds[-1])
-					mrnaID = geneModel.geneID+".mRNA"
-					fOUTGFF.write("%s\t%s\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n"
-								  %(k, geneModel.program, mrnaStart,
-									mrnaStop, geneModel.strand,
-									mrnaID, geneModel.geneID))
+					if len(geneModel.lcds) >= 2:
+						mrnaStart = min(geneModel.lcds[0], geneModel.lcds[-1])
+						mrnaStop = max(geneModel.lcds[0], geneModel.lcds[-1])
+						mrnaID = geneModel.geneID+".mRNA"
+						fOUTGFF.write("%s\t%s\tmRNA\t%d\t%d\t.\t%s\t.\tID=%s;Parent=%s\n"
+									  %(k, geneModel.program, mrnaStart,
+										mrnaStop, geneModel.strand,
+										mrnaID, geneModel.geneID))
 					for j in range(0, len(geneModel.lcds), 2):
 						cdsStart = geneModel.lcds[j]
 						cdsStop = geneModel.lcds[j+1]
