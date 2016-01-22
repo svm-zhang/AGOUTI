@@ -396,7 +396,6 @@ class RNAPATHSTAR_Graph(Graph):
 				if self.debug:
 					scaffoldingDebug.debugger.debug("\t\tgene pair: %s %s" %(genePair[0].geneID, genePair[1].geneID))
 				if preSensePair == "":
-					preSensePair = curSensePair
 					if self.debug:
 						scaffoldingDebug.debugger.debug("\t\tprevious sense pair: %s" %(str(preSensePair)))
 						scaffoldingDebug.debugger.debug("\t\tcurrent sense pair: %s" %(str(curSensePair)))
@@ -413,9 +412,12 @@ class RNAPATHSTAR_Graph(Graph):
 					elif preSensePair == "-+" and (curSensePair == "-+" or curSensePair == "--"):
 						pass
 					else:
+						if self.debug:
+							scaffoldingDebug.debugger.debug("\t\tExtension terminated")
 						break
 				totalWeight += weight
 				possiblePath.append(curVertex)
+				preSensePair = curSensePair
 				curVertex = nextVertex
 				curCtg = vertex2Name[curVertex]
 			possiblePath.append(curVertex)
