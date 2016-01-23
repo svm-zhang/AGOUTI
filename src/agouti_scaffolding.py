@@ -405,7 +405,7 @@ class RNAPATHSTAR_Graph(Graph):
 						scaffoldingDebug.debugger.debug("\t\tcurrent sense pair: %s" %(str(curSensePair)))
 					if preSensePair == "+-" and (curSensePair == "+-" or curSensePair == "++"):
 						pass
-					elif preSensePair == "++" and curSensePair == "--" or curSensePair == "-+"):
+					elif preSensePair == "++" and (curSensePair == "--" or curSensePair == "-+"):
 						pass
 					elif preSensePair == "--" and (curSensePair == "+-" or curSensePair == "++"):
 						pass
