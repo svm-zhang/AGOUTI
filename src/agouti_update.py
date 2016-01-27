@@ -37,13 +37,16 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 	nCtgScaffolded = 0
 	scaffoldedCtgs = {}
 	seqLens = []
-	#agPaths = []
+	dScafGaps = {}
+	dScafStats = {}
 	scafID = 0
 	mergedGenes = []
 	for i in range(len(agoutiPaths)):
 		path = agoutiPaths[i]
 		scafID += 1
 		scafName = prefix + "_scaf_%d" %(scafID)
+		dScafStats[scafName] = 0
+		dScafGaps[scafName] = []
 
 		curVertex = path[0]
 		sequence = dSeqs[curVertex]
@@ -99,8 +102,9 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 				RF = temp2
 			orientation = decide_orientation(FR, FF, RR, RF)
 
-			gapStart = gapStop + 1 + len(dSeqs[curVertex])
+			gapStart = gapStop + len(dSeqs[curVertex])
 			gapStop = gapStart + nFills - 1
+			dScafGaps[scafName].append((gapStart+1, gapStop+1))
 			if debug:
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurSense=%s" %(curSense))
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tFR=%d - FF=%d - RF=%d - RR=%d"
@@ -252,6 +256,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 																	  excludeGeneIDs, debug)
 		fFASTA.write(">%s |%dbp |%s\n%s\n"
 						%(scafName, len(sequence), ",".join(scafPath), sequence))
+		dScafStats[scafName] = len(sequence)
 		seqLens.append(len(sequence))
 		#agPaths.append(scafPath)
 		nCtgScaffolded += len(scafPath)
@@ -269,6 +274,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 			continue
 		numLeft += 1
 		fFASTA.write(">%s\n%s\n" % (seqNames[vertex], dSeqs[vertex]))
+		dScafStats[seqNames[vertex]] = len(dSeqs[vertex])
 		seqLens.append(len(dSeqs[vertex]))
 	fFASTA.close()
 	n50 = agSeq.get_assembly_NXX(seqLens)
@@ -281,7 +287,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 	if not no_update_gff:
 		dFinalGFFs = dict(dGFFs, **dUpdateGFFs)
 		numGenes = output_gff(dFinalGFFs, dMergedGene2Ctgs, dMergedGene2Genes,
-							  outDir, prefix)
+							  dScafStats, dScafGaps, outDir, prefix)
 		agUPDATEProgress.logger.info("Summarizing AGOUTI gene paths")
 		summarize_gene_path(dMergedGene2Genes, dMergedGene2Ctgs,
 							outDir, prefix)
@@ -354,16 +360,25 @@ def summarize_gene_path(dMergedGene2Genes, dMergedGene2Ctgs,
 							%(k, ','.join(v), ','.join(dMergedGene2Genes[k])))
 
 def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
-			   outDir, prefix):
+			   dScafStats, dScafGaps, outDir, prefix):
 	'''
 		output all gene models as GFF
 	'''
 	outGFF = os.path.join(outDir, "%s.agouti.gff" %(prefix))
 	numGenes = 0
+	dSeen = {}
 	with open(outGFF, 'w') as fOUTGFF:
 		fOUTGFF.write("##gff-version3\n")
 		fOUTGFF.write("# This output was generated with AGOUTI (version 0.3.1)\n")
 		for k, v in dGeneModels.iteritems():
+			if k not in dSeen:
+				fOUTGFF.write("%s\tAGOUTI\tscaffold\t1\t%d\t.\t.\t.\tID=%s\n"
+							  %(k, dScafStats[k], k))
+				if k in dScafGaps:
+					gaps = dScafGaps[k]
+					for i in range(len(gaps)):
+						fOUTGFF.write("%s\tAGOUTI\tgap\t%d\t%d\t.\t.\t.\tParent=%s\n"
+									  %(k, gaps[i][0], gaps[i][1], k))
 			tmpV = sorted([(i.geneStart, i.geneStop, i) for i in v])
 			for i in range(len(tmpV)):
 				geneModel = tmpV[i][2]
@@ -378,7 +393,7 @@ def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
 				else:
 					numGenes += 1
 					fOUTGFF.write("# start gene %s\n" %(geneModel.geneID))
-					if geneModel.geneID.startswith("AGOUTI_Merged"):
+					if geneModel.geneID.startswith("agMerge"):
 						fOUTGFF.write("%s\t%s\tgene\t%d\t%d\t.\t%s\t.\tID=%s;MERGE_FROM_GENES=%s;MERGE_FROM_CONTIGS=%s\n"
 									  %(k, geneModel.program, geneModel.geneStart,
 										geneModel.geneStop,
