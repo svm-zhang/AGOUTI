@@ -201,7 +201,7 @@ class Graph(object):
 		self.agSCAFProgress.logger.info("Report scaffolding paths")
 		agPATH.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
 
-class RNAPATHSTAR_Graph(Graph):
+class AGOUTI_GRAPH_Graph(Graph):
 	def start(self, joinPairsFile, vertex2Name, dCtgPair2GenePair, minSupport):
 		self.build_graph(joinPairsFile, vertex2Name)
 		vertices = self.get_vertices()
@@ -445,150 +445,6 @@ class RNAPATHSTAR_Graph(Graph):
 			scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
 		return bestPath
 
-class AGOUTI_Graph(Graph):
-	def start(self, joinPairsFile, vertex2Name, dCtgPair2GenePair, algorithm, minSupport):
-		self.agSCAFProgress.logger.info("[BEGIN] Scaffolding - Algorithm - %s priority" %(algorithm))
-		self.build_graph(joinPairsFile, vertex2Name)
-		vertices = self.get_vertices()
-		self.agSCAFProgress.logger.info("%d vertices in the graph" %(len(vertices)))
-
-		self.simplify(vertex2Name, minSupport)
-		startVertices = self.get_start_vertices()
-		self.agSCAFProgress.logger.info("%d vertices to start" %(len(self.get_start_vertices())))
-
-		self.agSCAFProgress.logger.info("Start traversing the GRAPH")
-		scafPaths = self.scaffolding(vertex2Name, dCtgPair2GenePair, minSupport)
-
-		self.agSCAFProgress.logger.info("Generating graph in DOT format")
-		if self.outGraphFile != "" and self.outGraphFile is not None:
-			self.graph2dot(scafPaths, vertex2Name, minSupport)
-		self.agSCAFProgress.logger.info("Succeeded")
-		return scafPaths
-
-	def get_start_vertices(self):
-		self.startVertices = [k for k in self.leaves] + \
-							 [k for k in self.nonLeaves if k not in self.leaves]
-		return self.startVertices
-
-	def scaffolding(self, vertex2Name, dCtgPair2GenePair, minSupport):
-		if self.debug:
-			scaffoldingDebug = agLOG.DEBUG("SCAFFOLDING", self.debugLogFile, 'a')
-
-		scafPaths = []
-		dVisited = {}
-
-		dSense = {}
-		for (vertexA, vertexB), senses in self.senses.iteritems():
-			counter = collections.Counter(senses)
-			sense = sorted(counter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
-#			scaffoldingDebug.debugger.debug("vertexA %s | vertexB %s | %s" %(vertex2Name[vertexA], vertex2Name[vertexB], sense))
-			dSense[vertexA, vertexB] = sense
-
-		dBestPaths = {}
-		for vertex in self.startVertices:
-			if vertex not in dVisited:
-				if self.debug:
-					scaffoldingDebug.debugger.debug(">%d-%s" %(vertex, vertex2Name[vertex]))
-				path = self.dfs(vertex, vertex2Name, minSupport)
-				if self.debug:
-					scaffoldingDebug.debugger.debug("\t%s" %(",".join([vertex2Name[k] for k in path])))
-				vertices = ""
-				if len(path) == 1:
-					dVisited[vertex] = ""
-					if self.debug:
-						scaffoldingDebug.debugger.debug("\tpush to as VISITED")
-				elif len(path) > 1:
-					if self.debug:
-						scaffoldingDebug.debugger.debug("\tpush to as VISITED")
-					for k in path:
-						dVisited[k] = ""
-					maxPathLen = 0
-					bestPath = []
-					for i in range(len(path)):
-						if i > 0:
-							tmpPath = self.dfs(path[i], vertex2Name, minSupport)
-						else:
-							tmpPath = path
-						scaffoldingDebug.debugger.debug("\ttraverse path from %s: %s"
-															 %(vertex2Name[path[i]],
-															   ",".join([vertex2Name[k] for k in tmpPath])))
-
-						curVertex = tmpPath[0]
-						curCtg = vertex2Name[curVertex]
-						curSensePair = ""
-						possiblePath = []
-						preSensePair = ""
-						for i in range(1, len(tmpPath)):
-							nextVertex = tmpPath[i]
-							nextCtg = vertex2Name[nextVertex]
-							if self.debug:
-								scaffoldingDebug.debugger.debug("\tcur contig %s | next contig %s"
-																%(curCtg, nextCtg))
-							if (curVertex, nextVertex) in dSense:
-								ctgPair = (curVertex, nextVertex)
-								genePair = dCtgPair2GenePair[ctgPair]
-								curSensePair = "".join(dSense[ctgPair])
-							elif (nextVertex, curVertex) in dSense:
-								ctgPair = (nextVertex, curVertex)
-								genePair = dCtgPair2GenePair[ctgPair][::-1]
-								curSensePair = "".join(dSense[ctgPair][::-1])
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\treverse contig pair")
-							else:
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\tno connection between this contig pair, stop extension")
-								break
-#							scaffoldingDebug.debugger.debug("\tgene pair: %s %s"
-#															%(genePair[0].geneID, genePair[1].geneID))
-							if preSensePair == "":
-								preSensePair = curSensePair
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
-									scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
-							else:
-								if self.debug:
-									scaffoldingDebug.debugger.debug("\tprevious sense pair: %s" %(str(preSensePair)))
-									scaffoldingDebug.debugger.debug("\tcurrent sense pair: %s" %(str(curSensePair)))
-								if preSensePair == "+-" and (curSensePair == "+-" or curSensePair == "++"):
-									pass
-								elif preSensePair == "++" and curSensePair == "--":
-									pass
-								elif preSensePair == "--" and curSensePair == "+-":
-									pass
-								elif preSensePair == "-+" and (curSensePair == "-+" or curSensePair == "--"):
-									pass
-								else:
-									break
-							possiblePath.append(curVertex)
-							curVertex = nextVertex
-							curCtg = vertex2Name[curVertex]
-						possiblePath.append(curVertex)
-						if self.debug:
-							scaffoldingDebug.debugger.debug("\tpossiblePath: %s" %(",".join([vertex2Name[k] for k in possiblePath])))
-
-						if len(possiblePath) == len(path):
-							bestPath = possiblePath
-							break
-						else:
-							if maxPathLen == 0:
-								maxPathLen = len(possiblePath)
-								bestPath = possiblePath
-							else:
-								if maxPathLen < len(possiblePath):
-									maxPathLen = len(possiblePath)
-									bestPath = possiblePath
-						if self.debug:
-							scaffoldingDebug.debugger.debug("\ttmp bestPath: %s"
-															%(",".join([vertex2Name[k] for k in bestPath])))
-					if self.debug:
-						scaffoldingDebug.debugger.debug("\tBest path: %s"
-														%(",".join([vertex2Name[k] for k in bestPath])))
-					scafPaths.append(bestPath)
-
-		self.agSCAFProgress.logger.info("Number of vertices traversed: %d" %(len(dVisited)))
-		self.agSCAFProgress.logger.info("%d paths scaffolded" %(len(scafPaths)))
-		return scafPaths
-
 def run_scaffolding(vertex2Name, joinPairsFile,
 				    dCtgPair2GenePair, outDir, prefix,
 					minSupport, debug=0):
@@ -604,7 +460,7 @@ def run_scaffolding(vertex2Name, joinPairsFile,
 #		scafPaths = graph.start(joinPairsFile, vertex2Name,
 #								dCtgPair2GenePair, algorithm,
 #								minSupport)
-	graph = RNAPATHSTAR_Graph()
+	graph = AGOUTI_GRAPH_Graph()
 	graph.start_logger(moduleName, moduleOutDir, prefix, debug)
 	scafPaths = graph.start(joinPairsFile, vertex2Name,
 							dCtgPair2GenePair,
