@@ -11,7 +11,7 @@ class Graph(object):
 	def __init__(self, graph={}):
 		self.graph = graph
 		self.weights = {}
-		self.senses = {}
+		self.senses = collections.defaultdict(list)
 
 	def start_logger(self, moduleName, moduleOutDir, prefix, debug=0):
 		"""
@@ -26,32 +26,49 @@ class Graph(object):
 		if self.debug:
 			self.debugLogFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.debug" %(prefix))
 
-	def build_graph(self, joinPairsFile, vertex2Name):
+	def build_graph(self, dCtgPairDenoise, joinPairsFile, vertex2Name):
 		"""
 			build graph from given joining-pairs
 		"""
 		self.agSCAFProgress.logger.info("Building graph from joining reads pairs")
 		if self.debug:
 			buildDebug = agLOG.DEBUG("BUILD", self.debugLogFile)
-		with open(joinPairsFile, 'r') as fJOINPAIRS:
-			for line in fJOINPAIRS:
-				if not line.startswith('#'):
-					tmp_line = line.strip().split()
+		for vertexPair, info in dCtgPairDenoise.iteritems():
+			vertexA, vertexB = vertexPair
+			weight, sense = info
+			self.add_vertices(vertexA, vertexB)
+			self.add_edge(vertexA, vertexB, weight, sense)
+		#ctgPairs = collections.defaultdict(list)
+		#with open(joinPairsFile, 'r') as fJOINPAIRS:
+		#	n = 1
+		#	for line in fJOINPAIRS:
+		#		if not line.startswith('#'):
+		#			tmp_line = line.strip().split()
 
-					contigA = tmp_line[1]
-					vertexA = vertex2Name.index(contigA)
-					senseA = tmp_line[3]
-					contigB = tmp_line[4]
-					vertexB = vertex2Name.index(contigB)
-					senseB = tmp_line[6]
+		#			contigA = tmp_line[1]
+		#			vertexA = vertex2Name.index(contigA)
+		#			senseA = tmp_line[3]
+		#			contigB = tmp_line[4]
+		#			vertexB = vertex2Name.index(contigB)
+		#			senseB = tmp_line[6]
 
-					if (vertexA, vertexB) not in self.weights:
-						if self.debug:
-							buildDebug.debugger.debug("Building vertexA %s | vertexB %s" %(contigA, contigB))
-					self.add_vertices(vertexA, vertexB)
-					self.add_edge(vertexA, vertexB)
-					self.update_weight(vertexA, vertexB)
-					self.add_sense(vertexA, senseA, vertexB, senseB)
+		#			if (vertexA, vertexB) not in ctgPairs:
+		#				ctgPairs[vertexA, vertexB] = [1, (senseA, senseB)]
+		#			else:
+		#				ctgPairs[vertexA, vertexB].append((senseA, senseB))
+		#				ctgPairs[vertexA, vertexB][0] += 1
+
+
+					#if (vertexA, vertexB) not in self.weights:
+					#	if self.debug:
+					#		buildDebug.debugger.debug("Building vertexA %s | vertexB %s" %(contigA, contigB))
+					#self.add_vertices(vertexA, vertexB)
+					#self.add_edge(vertexA, vertexB, senseA, senseB)
+					#if n%1000 == 0:
+					#	print "%d lines processed" %(n)
+					#n += 1
+					#self.update_weight(vertexA, vertexB)
+					#self.add_sense(vertexA, senseA, vertexB, senseB)
 					#agSCAFDebug.debugger.debug("EdgeA %s" %(",".join([vertex2Name[k] for k in self.graph[vertexA]])))
 					#agSCAFDebug.debugger.debug("EdgeB %s" %(",".join([vertex2Name[k] for k in self.graph[vertexB]])))
 					#agSCAFDebug.debugger.debug("Weight %d" %(self.weights[vertexA, vertexB]))
@@ -66,16 +83,39 @@ class Graph(object):
 			if vertex not in self.graph:
 				self.graph[vertex] = []
 
-	def add_edge(self, vertexA, vertexB):
+	def add_edge(self, vertexA, vertexB, weight, sense):
 		"""
 			add an edge between the give pair of contig
 		"""
-		if (vertexA, vertexB) not in self.weights:
-			self.graph[vertexA].append(vertexB)
-			self.weights[vertexA, vertexB] = 0
-		if (vertexB, vertexA) not in self.weights:
-			self.graph[vertexB].append(vertexA)
-			self.weights[vertexB, vertexA] = 0
+		self.graph[vertexA].append(vertexB)
+		self.graph[vertexB].append(vertexA)
+		self.weights[vertexA, vertexB] = weight
+		self.weights[vertexB, vertexA] = weight
+		self.senses[vertexA, vertexB] = [sense]*weight
+
+	#def add_edge(self, vertexA, vertexB, senseA, senseB):
+	#	"""
+	#		add an edge between the give pair of contig
+	#	"""
+	#	if (vertexA, vertexB) not in self.weights:
+	#		self.graph[vertexA].append(vertexB)
+	#		#self.weights[vertexA, vertexB] = 0
+	#		self.weights[vertexA, vertexB] = 1
+	#		#self.senses[vertexA, vertexB].append((senseA, senseB))
+	#	else:
+	#		self.weights[vertexA, vertexB] += 1
+	#	if (vertexB, vertexA) not in self.weights:
+	#		self.graph[vertexB].append(vertexA)
+	#		#self.weights[vertexB, vertexA] = 0
+	#		self.weights[vertexB, vertexA] = 1
+	#	else:
+	#		self.weights[vertexB, vertexA] += 1
+	#	if (vertexA, vertexB) in self.senses:
+	#		self.senses[vertexA, vertexB].append((senseA, senseB))
+	#	elif (vertexB, vertexA) in self.senses:
+	#		self.senses[vertexB, vertexA].append((senseB, senseA))
+	#	else:
+	#		self.senses[vertexA, vertexB] = [(senseA, senseB)]
 
 	def update_weight(self, vertexA, vertexB):
 		"""
@@ -202,8 +242,8 @@ class Graph(object):
 		agPATH.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
 
 class AGOUTI_GRAPH_Graph(Graph):
-	def start(self, joinPairsFile, vertex2Name, dCtgPair2GenePair, minSupport):
-		self.build_graph(joinPairsFile, vertex2Name)
+	def start(self, dCtgPairDenoise, joinPairsFile, vertex2Name, dCtgPair2GenePair, minSupport):
+		self.build_graph(dCtgPairDenoise, joinPairsFile, vertex2Name)
 		vertices = self.get_vertices()
 		self.agSCAFProgress.logger.info("%d vertices in the graph" %(len(vertices)))
 
@@ -445,7 +485,7 @@ class AGOUTI_GRAPH_Graph(Graph):
 			scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
 		return bestPath
 
-def run_scaffolding(vertex2Name, joinPairsFile,
+def run_scaffolding(vertex2Name, dCtgPairDenoise, joinPairsFile,
 				    dCtgPair2GenePair, outDir, prefix,
 					minSupport, debug=0):
 
@@ -462,7 +502,7 @@ def run_scaffolding(vertex2Name, joinPairsFile,
 #								minSupport)
 	graph = AGOUTI_GRAPH_Graph()
 	graph.start_logger(moduleName, moduleOutDir, prefix, debug)
-	scafPaths = graph.start(joinPairsFile, vertex2Name,
+	scafPaths = graph.start(dCtgPairDenoise, joinPairsFile, vertex2Name,
 							dCtgPair2GenePair,
 							minSupport)
 	graph.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
