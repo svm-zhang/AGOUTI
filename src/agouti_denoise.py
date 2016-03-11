@@ -238,6 +238,7 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 
 	agDENOISEProgress.logger.info("[BEGIN] Filtering joining pairs")
 	dCtgPair2GenePair = collections.defaultdict()
+	dCtgPairDenoise = collections.defaultdict()
 	dMappedPos = collections.defaultdict()
 	daddedModels = collections.defaultdict(list)
 	nFail4Combination = 0
@@ -357,6 +358,7 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 					agDENOISEDebug.debugger.debug("DENOISE_MAIN\t----------------------------------")
 				senseA = sense[0]
 				senseB = sense[1]
+				weight = 0
 				for i in xrange(len(pairInfo)):
 					startA, startB, stopA, stopB, _, _, readID = pairInfo[i]
 					intervalA = (startA, stopA)
@@ -366,23 +368,28 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 						if len(intervalsB) == 0:
 							#print "use all"
 							fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+							weight += 1
 						else:
 							#print "use all A, not all B"
 							overlap = find_overlap(intervalB, (geneB.geneStart, geneB.geneStop))
 							if overlap == 0:
 								fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+								weight += 1
 					else:
 						if len(intervalsB) == 0:
 							#print "use all B, not all A"
 							overlap = find_overlap(intervalA, (geneA.geneStart, geneA.geneStop))
 							if overlap == 0:
 								fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+								weight += 1
 						else:
 							#print "not all Both"
 							overlapA = find_overlap(intervalA, (geneA.geneStart, geneA.geneStop))
 							overlapB = find_overlap(intervalB, (geneB.geneStart, geneB.geneStop))
 							if overlapA == 0 and overlapB == 0:
 								fOUT.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %(readID, ctgA, startA, senseA, ctgB, startB, senseB))
+								weight += 1
+				dCtgPairDenoise[vertex2Name.index(ctgA), vertex2Name.index(ctgB)] = [weight, (senseA, senseB)]
 			else:
 				nFail4Combination += 1
 #			if len(sensesCounter) == 1:
@@ -399,4 +406,4 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 	agDENOISEProgress.logger.info("%d contig pairs filtered for not being one of the four combinations"
 								  %(nFail4Combination))
 	agDENOISEProgress.logger.info("Succeeded")
-	return dCtgPair2GenePair, outDenoiseJPFile
+	return dCtgPair2GenePair, dCtgPairDenoise, outDenoiseJPFile
