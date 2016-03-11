@@ -202,12 +202,12 @@ def run_scaffolder(args):
 										   args.minFracOvl, args.maxFracMM,
 										   args.debug)
 
-	dCtgPair2GenePair, joinPairsFile = agDENOISE.denoise_joining_pairs(dContigPairs, dGFFs,
+	dCtgPair2GenePair, dCtgPairDenoise, joinPairsFile = agDENOISE.denoise_joining_pairs(dContigPairs, dGFFs,
 																	  vertex2Name, outDir,
 																	  prefix, args.minSupport,
 																	  args.debug)
 
-	agoutiPaths, dSenses = agSCAFF.run_scaffolding(vertex2Name, joinPairsFile,
+	agoutiPaths, dSenses = agSCAFF.run_scaffolding(vertex2Name, dCtgPairDenoise, joinPairsFile,
 													   dCtgPair2GenePair, outDir, prefix,
 													   args.minSupport, args.debug)
 
