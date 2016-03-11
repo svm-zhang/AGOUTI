@@ -10,16 +10,16 @@ from src import agouti_sequence as agSeq
 from src import agouti_denoise as agDenoise
 
 def get_attributes(attribute):
-	dAttributes = {}
+	dAttrs = {}
 	tmp_attributes = attribute.split(';')
 	for i in range(len(tmp_attributes)):
 		tmp_attribute = tmp_attributes[i].split('=')
 		attributeName = tmp_attribute[0]
 		attributeValue = tmp_attribute[1]
-		if attributeName not in dAttributes:
-			dAttributes[attributeName] = attributeValue
+		if attributeName not in dAttrs:
+			dAttrs[attributeName] = attributeValue
 
-	return dAttributes
+	return dAttrs
 
 def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 	breakerProgress.logger.info("[BEGIN] Shredding annotation")
@@ -35,7 +35,8 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 	preHeader = ""
 	preStart = 0
 	preStop = 0
-	dAttributes = {}
+	dAttrs = {}
+	dAttrsPre = {}
 	features = []
 	dFeatures = collections.defaultdict(list)
 	nGenes = 0
@@ -48,9 +49,9 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 				tmp_line = line.strip().split("\t")
 				header = tmp_line[0]
 				if header in dHeader2Intervals:
-					intervals = dHeader2Intervals[header]
+					#intervals = dHeader2Intervals[header]
 					# no cut
-					if len(intervals) == 1:
+					if len(dHeader2Intervals[header]) == 1:
 						if tmp_line[2] in annotationType:
 							fOUT.write(line)
 							if tmp_line[2] == "gene":
@@ -62,9 +63,9 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 						stop = int(tmp_line[4])
 						if tmp_line[2] == "gene":
 							nGenes += 1
-							dAttributes = get_attributes(tmp_line[8])
-							if "ID" in dAttributes:
-								gene = dAttributes["ID"]
+							dAttrs = get_attributes(tmp_line[8])
+							if "ID" in dAttrs:
+								gene = dAttrs["ID"]
 							else:
 								gene = "agouti_shred_gene_%d" %(n)
 								shredAnnDebug.debugger.debug(("Warning: no gene ID extracted from attribute. "
@@ -79,6 +80,7 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 								preStrand = strand
 								preSource = source
 								preHeader = header
+								dAttrsPre = dAttrs
 							else:
 								if preGene != gene:
 									shredAnnDebug.debugger.debug("####%s [BEGIN]" %(preGene))
@@ -86,6 +88,7 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 																 %(preStart, preStop))
 									# here to get how many intervals a gene spans
 									shreds = []
+									intervals = dHeader2Intervals[preHeader]
 									for i in range(len(intervals)):
 										interval = intervals[i]
 										overlap = agDenoise.find_overlap(interval, (preStart, preStop))
@@ -95,7 +98,7 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 									nShredGenes += len(shreds)
 									shred_gene(shreds, preGene, preStart, preStop,
 											   preStrand, preSource, preHeader,
-											   features, dFeatures, dAttributes,
+											   features, dFeatures, dAttrsPre,
 											   shredAnnDebug, fOUT)
 									shredAnnDebug.debugger.debug("####%s [END]" %(preGene))
 									preGene = gene
@@ -105,6 +108,7 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 									preSource = source
 									preHeader = header
 									dFeatures = {k:[] for k in features}
+									dAttrsPre = dAttrs
 									features = []
 						elif tmp_line[2] == "exon":
 							if not "exon" in features:
@@ -140,17 +144,18 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 		shredAnnDebug.debugger.debug("====geneStart=%d geneStop=%d"
 									 %(preStart, preStop))
 		shreds = []
+		intervals = dHeader2Intervals[preHeader]
 		for i in range(len(intervals)):
 			interval = intervals[i]
 			overlap = agDenoise.find_overlap(interval, (preStart, preStop))
 			if overlap == 0:
 				shreds += [(i, interval[0]+1, interval[1]+1)]
 		nShredGenes += len(shreds)
-		shredAnnDebug.debugger.debug("####%s [END]" %(preGene))
 		shred_gene(shreds, preGene, preStart, preStop,
 				   preStrand, preSource, preHeader,
-				   features, dFeatures, dAttributes,
+				   features, dFeatures, dAttrsPre,
 				   shredAnnDebug, fOUT)
+		shredAnnDebug.debugger.debug("####%s [END]" %(preGene))
 
 	breakerProgress.logger.info("Number of genes in the give GFF: %d"
 								 %(nGenes))
@@ -160,7 +165,7 @@ def shred_annotation(dHeader2Intervals, gffFile, prefix, breakerProgress):
 
 def shred_gene(shreds, preGene, preStart, preStop,
 			   preStrand, preSource, preHeader,
-			   features, dFeatures, dAttributes,
+			   features, dFeatures, dAttrs,
 			   shredAnnDebug, fOUT):
 	shredGeneStart = 0
 	shredGeneStop = 0
@@ -193,7 +198,7 @@ def shred_gene(shreds, preGene, preStart, preStop,
 		fOUT.write("%s_%d\t%s\tgene\t%d\t%d\t.\t%s\t.\t%s;%s\n"
 				   %(preHeader, index, preSource, shredGeneStart,
 				   shredGeneStop, preStrand, "ID=%s_%d" %(preGene, i),
-				   ";".join(["%s=%s" %(k, v) for k,v in dAttributes.iteritems() if k != "ID"])))
+				   ";".join(["%s=%s" %(k, v) for k,v in dAttrs.iteritems() if k != "ID"])))
 		# update coords for each feature
 		# relative to the current interval
 		for f in features:
@@ -332,6 +337,9 @@ def shred_assembly(assemblyFile, breakerProgress, prefix, minGaps, minCtgLen):
 				contigs.append(contigID)
 				contigLens.append(stop-start)
 				fOUTFA.write(">%s\n%s\n" %(contigID, seq[start:stop]))
+			if header == "SL2.50ch06":
+				print len(intervals)
+				print len(dHeader2Intervals[header])
 			numContigs += len(contigs)
 			if nSeqs % 10000 == 0:
 				elapsedTime = float((time.time() - startTime)/60)
