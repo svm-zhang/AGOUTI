@@ -5,6 +5,7 @@
 
   * [Overview](#overview)
   * [Features](#features)
+  * [Cite AGOUTI](#cite-agouti)
   * [Obtain AGOUTI](#obtain-agouti)
   * [Get Started](#get-started)
   * [Prepare Inputs](#prepare-inputs)
@@ -40,6 +41,10 @@ AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gen
 5. Recover original scaffolds from contigs not scaffolded by AGOUTI;
 6. Support break-and-continue feature such that some time-consuming steps can be skipped if the previous run is successful;
 7. Output graph in dot format for visualization
+
+## Cite AGOUTI
+
+
 
 ## Obtain AGOUTI
 
