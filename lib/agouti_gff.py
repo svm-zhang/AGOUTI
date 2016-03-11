@@ -96,8 +96,15 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					geneIndex += 1
-					m = re.search(";ID=.+;|ID=.+;|ID=.+|;ID=.+", tmp_line[8])
-					geneID = m.group().strip(';').split('=')[1]
+					attrs = tmp_line[8].split(';')
+					for attr in attrs:
+						attrID, attrVal = attr.split('=')
+						if attrID == "ID":
+							geneID = attrVal
+							break
+					#m = re.search("(;ID=.+;|ID=.+;|ID=.+|;ID=.+)", tmp_line[8])
+					#print m.group()
+					#geneID = m.group().strip(';').split('=')[1]
 					if geneIndex == 0:
 						#lobj_GeneModels[geneIndex].setGene(tmp_line[8].split('=')[1],
 						#								   int(tmp_line[3]),
