@@ -232,7 +232,7 @@ def read_original_path(oriScafPathFile, agPathProgress):
 					oriPath.append(curCtg)
 		if oriPath:
 			dOriPaths[oriScafID] = oriPath
-	agPathProgress.logger.error("Number of shredded contigs parsed: %d"
+	agPathProgress.logger.info("Number of shredded contigs parsed: %d"
 								%(sum([len(v) for v in dOriPaths.itervalues()])))
 
 	return dOriPaths, dOriGaps
