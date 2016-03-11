@@ -27,8 +27,9 @@ AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gen
 
 1. Extracting uniquely mapped joining-read pairs
 2. Denoise the set of joining-pairs using gene models
-3. Traversing the graph built from the noise-free data to identify scaffolding paths
-4. Updating assembly and gene annotation given the scaffolds
+3. Traverse the graph built from the noise-free data to identify scaffolding paths
+4. Reconcile each scaffolding path by applying rules defined in denoise step
+5. Updating assembly and gene annotation given the scaffolds
 
 ## Features
 
