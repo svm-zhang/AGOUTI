@@ -45,7 +45,7 @@ AGOUTI uses paired-end RNA-seq reads to guide genome scaffolding and improve gen
 
 A preprint of our manuscript provides details of how AGOUTI works. For now please cite AGOUTI using the following format.
 
-Zhang, S. V, Zhuo, L., & Hahn, M. W. (2015). AGOUTI: improving genome assembly and annotation using transcriptome data. *bioRxiv. doi: http://dx.doi.org/10.1101/033019
+Zhang, S. V, Zhuo, L., & Hahn, M. W. (2015). AGOUTI: improving genome assembly and annotation using transcriptome data. *bioRxiv*. doi: http://dx.doi.org/10.1101/033019
 
 ## Obtain AGOUTI
 
