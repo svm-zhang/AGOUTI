@@ -26,7 +26,7 @@ class Graph(object):
 		if self.debug:
 			self.debugLogFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.debug" %(prefix))
 
-	def build_graph(self, dCtgPairDenoise, joinPairsFile, vertex2Name):
+	def build_graph(self, dCtgPairDenoise, vertex2Name):
 		"""
 			build graph from given joining-pairs
 		"""
@@ -242,8 +242,8 @@ class Graph(object):
 		agPATH.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
 
 class AGOUTI_GRAPH_Graph(Graph):
-	def start(self, dCtgPairDenoise, joinPairsFile, vertex2Name, dCtgPair2GenePair, minSupport):
-		self.build_graph(dCtgPairDenoise, joinPairsFile, vertex2Name)
+	def start(self, dCtgPairDenoise, vertex2Name, dCtgPair2GenePair, minSupport):
+		self.build_graph(dCtgPairDenoise, vertex2Name)
 		vertices = self.get_vertices()
 		self.agSCAFProgress.logger.info("%d vertices in the graph" %(len(vertices)))
 
@@ -485,7 +485,7 @@ class AGOUTI_GRAPH_Graph(Graph):
 			scaffoldingDebug.debugger.debug("\tBest path: %s" %(",".join([vertex2Name[k] for k in bestPath])))
 		return bestPath
 
-def run_scaffolding(vertex2Name, dCtgPairDenoise, joinPairsFile,
+def run_scaffolding(vertex2Name, dCtgPairDenoise,
 				    dCtgPair2GenePair, outDir, prefix,
 					minSupport, debug=0):
 
@@ -502,7 +502,7 @@ def run_scaffolding(vertex2Name, dCtgPairDenoise, joinPairsFile,
 #								minSupport)
 	graph = AGOUTI_GRAPH_Graph()
 	graph.start_logger(moduleName, moduleOutDir, prefix, debug)
-	scafPaths = graph.start(dCtgPairDenoise, joinPairsFile, vertex2Name,
+	scafPaths = graph.start(dCtgPairDenoise, vertex2Name,
 							dCtgPair2GenePair,
 							minSupport)
 	graph.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
