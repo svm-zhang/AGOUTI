@@ -406,4 +406,4 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 	agDENOISEProgress.logger.info("%d contig pairs filtered for not being one of the four combinations"
 								  %(nFail4Combination))
 	agDENOISEProgress.logger.info("Succeeded")
-	return dCtgPair2GenePair, dCtgPairDenoise, outDenoiseJPFile
+	return dCtgPair2GenePair, dCtgPairDenoise
