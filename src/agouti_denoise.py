@@ -243,10 +243,12 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 	daddedModels = collections.defaultdict(list)
 	nFail4Combination = 0
 	nFailGeneModel = 0
+	nFailK = 0
 	outDenoiseJPFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.noise_free.txt" %(prefix))
 	fOUT = open(outDenoiseJPFile, 'w')
 	for ctgPair, pairInfo in dContigPairs.items():
 		if len(pairInfo) < minSupport:
+			nFailK += 1
 			del dContigPairs[ctgPair]
 			continue
 		ctgA = ctgPair[0]
@@ -405,5 +407,9 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 								  %(nFailGeneModel))
 	agDENOISEProgress.logger.info("%d contig pairs filtered for not being one of the four combinations"
 								  %(nFail4Combination))
+	agDENOISEProgress.logger.info("%d contig pairs filtered for less support"
+								  %(nFailK))
+	agDENOISEProgress.logger.info("%d contig pairs for scaffolding"
+								  %(len(dCtgPairDenoise)))
 	agDENOISEProgress.logger.info("Succeeded")
 	return dCtgPair2GenePair, dCtgPairDenoise
