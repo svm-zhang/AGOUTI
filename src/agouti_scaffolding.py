@@ -38,41 +38,6 @@ class Graph(object):
 			weight, sense = info
 			self.add_vertices(vertexA, vertexB)
 			self.add_edge(vertexA, vertexB, weight, sense)
-		#ctgPairs = collections.defaultdict(list)
-		#with open(joinPairsFile, 'r') as fJOINPAIRS:
-		#	n = 1
-		#	for line in fJOINPAIRS:
-		#		if not line.startswith('#'):
-		#			tmp_line = line.strip().split()
-
-		#			contigA = tmp_line[1]
-		#			vertexA = vertex2Name.index(contigA)
-		#			senseA = tmp_line[3]
-		#			contigB = tmp_line[4]
-		#			vertexB = vertex2Name.index(contigB)
-		#			senseB = tmp_line[6]
-
-		#			if (vertexA, vertexB) not in ctgPairs:
-		#				ctgPairs[vertexA, vertexB] = [1, (senseA, senseB)]
-		#			else:
-		#				ctgPairs[vertexA, vertexB].append((senseA, senseB))
-		#				ctgPairs[vertexA, vertexB][0] += 1
-
-
-					#if (vertexA, vertexB) not in self.weights:
-					#	if self.debug:
-					#		buildDebug.debugger.debug("Building vertexA %s | vertexB %s" %(contigA, contigB))
-					#self.add_vertices(vertexA, vertexB)
-					#self.add_edge(vertexA, vertexB, senseA, senseB)
-					#if n%1000 == 0:
-					#	print "%d lines processed" %(n)
-					#n += 1
-					#self.update_weight(vertexA, vertexB)
-					#self.add_sense(vertexA, senseA, vertexB, senseB)
-					#agSCAFDebug.debugger.debug("EdgeA %s" %(",".join([vertex2Name[k] for k in self.graph[vertexA]])))
-					#agSCAFDebug.debugger.debug("EdgeB %s" %(",".join([vertex2Name[k] for k in self.graph[vertexB]])))
-					#agSCAFDebug.debugger.debug("Weight %d" %(self.weights[vertexA, vertexB]))
-					#agSCAFDebug.debugger.debug("sense %s" %(self.senses[vertexA, vertexB]))
 
 	def add_vertices(self, *vertices):
 		"""
