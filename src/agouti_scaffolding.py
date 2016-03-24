@@ -3,6 +3,7 @@ import sys
 import collections
 import itertools
 import operator
+import time
 
 from lib import agouti_log as agLOG
 from src import agouti_path as agPATH
@@ -208,7 +209,9 @@ class Graph(object):
 
 class AGOUTI_GRAPH_Graph(Graph):
 	def start(self, dCtgPairDenoise, vertex2Name, dCtgPair2GenePair, minSupport):
+		startTime = time.clock()
 		self.build_graph(dCtgPairDenoise, vertex2Name)
+		self.agSCAFProgress.logger.info("Build graph took %.4f min CPU time" %((time.clock()-startTime)/60))
 		vertices = self.get_vertices()
 		self.agSCAFProgress.logger.info("%d vertices in the graph" %(len(vertices)))
 
@@ -252,6 +255,7 @@ class AGOUTI_GRAPH_Graph(Graph):
 		return returnPath, visitedDict
 
 	def scaffolding_v2(self, vertex2Name, dCtgPair2GenePair, minSupport):
+		startTime = time.clock()
 		if self.debug:
 			scaffoldingDebug = agLOG.DEBUG("SCAFFOLDING", self.debugLogFile, 'a')
 
@@ -306,6 +310,7 @@ class AGOUTI_GRAPH_Graph(Graph):
 		if self.debug:
 			scaffoldingDebug.debugger.debug("number of visited nodes: %d" %(len(dVisited)))
 		self.agSCAFProgress.logger.info("number of visited nodes: %d" %(len(dVisited)))
+		self.agSCAFProgress.logger.info("Scaffolding took %.4f min CPU time" %((time.clock()-startTime)/60))
 
 		dSense = {}
 		for (fVertex, tVertex), senses in self.senses.iteritems():
@@ -313,6 +318,7 @@ class AGOUTI_GRAPH_Graph(Graph):
 			sense = sorted(counter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
 			dSense[fVertex, tVertex] = sense
 
+		startTime = time.clock()
 		if self.debug:
 			scaffoldingDebug.debugger.debug("Graph Reconciliation")
 		self.agSCAFProgress.logger.info("Graph Reconciliation")
@@ -328,6 +334,7 @@ class AGOUTI_GRAPH_Graph(Graph):
 										   dSense, vertex2Name, minSupport)
 			if len(bestOrder) > 1:
 				scafPaths.append(bestOrder)
+		self.agSCAFProgress.logger.info("Reconciliation took %.4f min CPU time" %((time.clock()-startTime)/60))
 
 		if self.debug:
 			scaffoldingDebug.debugger.debug("number of paths scaffolded: %d" %(len(scafPaths)))
