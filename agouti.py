@@ -4,6 +4,7 @@ import argparse
 import subprocess as sp
 import shlex
 import re
+import resource
 
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
@@ -222,6 +223,8 @@ def run_scaffolder(args):
 						   dSenses, dGFFs, dCtgPair2GenePair,
 						   outDir, prefix,
 						   args.nFills, args.debug, args.no_update_gff)
+
+	para.logger.info("Peak memory use: %.2f GB" %(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024*1024)))
 
 def update_local(args):
 	'''
