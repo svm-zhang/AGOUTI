@@ -2,6 +2,7 @@ import sys
 import os
 import collections
 import operator
+import time
 
 from lib import agouti_gff as agGFF
 from lib import agouti_log as agLOG
@@ -236,7 +237,8 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 		global agDENOISEDebug
 		agDENOISEDebug = agLOG.DEBUG(moduleName, debugLogFile)
 
-	agDENOISEProgress.logger.info("[BEGIN] Filtering joining pairs")
+	agDENOISEProgress.logger.info("[BEGIN] Denoising joining pairs")
+	startTime = time.clock()
 	dCtgPair2GenePair = collections.defaultdict()
 	dCtgPairDenoise = collections.defaultdict()
 	dMappedPos = collections.defaultdict()
@@ -403,6 +405,8 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 #				ratio = float(senses[0][1])/(senses[0][1]+senses[1][1])
 #				print "ratio", ratio
 	fOUT.close()
+	agDENOISEProgress.logger.info("Succeeded")
+	agDENOISEProgress.logger.info("Denoise took in %.2f min CPU time" %((time.clock()-startTime)/60))
 	agDENOISEProgress.logger.info("%d contig pairs filtered for spanning across >1 gene models"
 								  %(nFailGeneModel))
 	agDENOISEProgress.logger.info("%d contig pairs filtered for not being one of the four combinations"
@@ -411,5 +415,4 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 								  %(nFailK))
 	agDENOISEProgress.logger.info("%d contig pairs for scaffolding"
 								  %(len(dCtgPairDenoise)))
-	agDENOISEProgress.logger.info("Succeeded")
 	return dCtgPair2GenePair, dCtgPairDenoise
