@@ -277,7 +277,9 @@ def shred_assembly(assemblyFile, breakerProgress, prefix, minGaps, minCtgLen):
 	breakDebug = agLOG.DEBUG("SHREDDER", outDebugFile)
 	outFa = prefix + ".ctg.fasta"
 	outInfo = prefix +".shred.info.txt"
+	outAGP = prefix + ".agp"
 	dHeader2Intervals = collections.defaultdict(list)
+	fAGP = open(outAGP, 'w')
 	with open(outFa, 'w') as fOUTFA, open(outInfo, 'w') as fINFO:
 		genomeSize = 0
 		splitSize = 0
@@ -333,13 +335,22 @@ def shred_assembly(assemblyFile, breakerProgress, prefix, minGaps, minCtgLen):
 				start = intervals[i][0]
 				stop = intervals[i][1]
 				splitSize += (stop-start)
-				contigID = "%s_%d" %(header, i)
+				if len(intervals) == 1:
+					contigID = "%s" %(header)
+					fOUTFA.write(">%s\n%s\n" %(header, seq[start:stop]))
+				else:
+					contigID = "%s_%d" %(header, i)
+					fOUTFA.write(">%s\n%s\n" %(contigID, seq[start:stop]))
 				contigs.append(contigID)
 				contigLens.append(stop-start)
-				fOUTFA.write(">%s\n%s\n" %(contigID, seq[start:stop]))
-			if header == "SL2.50ch06":
-				print len(intervals)
-				print len(dHeader2Intervals[header])
+				if i > 0:
+					fAGP.write("%s\t%d\t%d\t%d\tN\t%d\tfragment\tyes\n"
+							   %(header, intervals[i-1][1]+2, start, i+1, start-intervals[i-1][1]-1))
+					fAGP.write("%s\t%d\t%d\t%d\tW\t%s\t%d\t%d\t+\n"
+							   %(header, start+1, stop+1, i+1, contigID, start+1, stop-start+1))
+				else:
+					fAGP.write("%s\t%d\t%d\t%d\tW\t%s\t%d\t%d\t+\n"
+							   %(header, start+1, stop+1, i+1, contigID, start+1, stop-start+1))
 			numContigs += len(contigs)
 			if nSeqs % 10000 == 0:
 				elapsedTime = float((time.time() - startTime)/60)
@@ -353,6 +364,7 @@ def shred_assembly(assemblyFile, breakerProgress, prefix, minGaps, minCtgLen):
 		if nSeqs < 10000:
 			elapsedTime = float((time.time() - startTime)/60)
 			breakerProgress.logger.info("%d processed\t| %s\t | %.2f m" %(nSeqs, header, elapsedTime))
+		fAGP.close()
 		n50 = agSeq.get_assembly_NXX(contigLens)
 		breakerProgress.logger.info("Total length of the given assembly: %d"
 									%(genomeSize))
