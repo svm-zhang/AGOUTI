@@ -30,6 +30,9 @@ def agouti_path_main(agoutiPaths, dSenses, vertex2Name,
 	agPathProgress.logger.info("[BEGIN] Reading file with shred info")
 	dOriPaths, dOriGaps = read_original_path(oriScafPathFile, agPathProgress)
 	agPathProgress.logger.info("[DONE]")
+	agPathProgress.logger.info("[BEGIN] Checking consistency")
+	compare(dOriPaths, agoutiPaths, vertex2Name, outDir, prefix)
+	agPathProgress.logger.info("[DONE]")
 	agPathProgress.logger.info("[BEGIN] Recovring original scaffolding")
 	agoutiPaths, dCtgPair2GenePair, dSenses = recover_untouched_sequences(dOriPaths, agoutiPaths,
 																 vertex2Name, dGFFs,
@@ -237,17 +240,19 @@ def read_original_path(oriScafPathFile, agPathProgress):
 
 	return dOriPaths, dOriGaps
 
-def compare():
-#	fCONFLICT = None
-#	if dOriPaths:
-#		outConflicts = os.path.join(outDir, "%s.agouti_vs_original.compare.txt" %(prefix))
-#		fCONFLICT = open(outConflicts, 'w')
-#			if dOriPaths:
-#				conflictType = agSUM.check_consistency(dOriPaths, path)
-#				if conflictType is not None:
-#					fCONFLICT.write("%s\t%s\t%s\n" %(scafName, conflictType,
-#													 ",".join(path)))
-	pass
+def compare(dOriPaths, agPaths, vertex2Name, outDir, prefix):
+	fCONFLICT = None
+	if dOriPaths:
+		outConflicts = os.path.join(outDir, "%s.agouti_vs_original.compare.txt" %(prefix))
+		fCONFLICT = open(outConflicts, 'w')
+		if dOriPaths:
+			for i, path in enumerate(agPaths):
+				path = [vertex2Name[k] for k in path]
+				conflictType = check_consistency(dOriPaths, path)
+				scafName = "%s_scaf_%d" %(prefix, i)
+				if conflictType is not None:
+					fCONFLICT.write("%s\t%s\t%s\n" %(scafName, conflictType,
+													 ",".join(path)))
 
 def check_consistency(dOriPaths, agPath):
 	for i in range(1, len(agPath)):
@@ -255,6 +260,9 @@ def check_consistency(dOriPaths, agPath):
 		curCtg = agPath[i]
 		preCtgScafID = preCtg.split('_')[0]
 		curCtgScafID = curCtg.split('_')[0]
+		# cases where no shred on the original scaffold
+		if preCtgScafID == preCtg or curCtgScafID == curCtg:
+			return "INTERSCAFFOLDING"
 		if preCtgScafID != curCtgScafID:
 			preCtgScafIndex = dOriPaths[preCtgScafID].index(preCtg)
 			curCtgScafIndex = dOriPaths[curCtgScafID].index(curCtg)
