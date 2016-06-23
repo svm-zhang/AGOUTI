@@ -9,8 +9,8 @@ import resource
 agoutiBase = os.path.dirname(os.path.realpath(sys.argv[0]))
 sys.path.insert(1, agoutiBase)
 
-__version__ = sp.check_output(shlex.split("git -C %s describe --tag --always --dirty"
-										  %(os.path.dirname(os.path.realpath(__file__)))))
+__version__ = sp.check_output(shlex.split("git describe --tag --always --dirty"),
+										  cwd=os.path.dirname(os.path.realpath(__file__)))
 
 from lib import agouti_log as agLOG
 from lib import agouti_sam as agBAM
@@ -242,11 +242,11 @@ def update_local(args):
 		sys.exit(1)
 	# Then compare local with remote
 	version.logger.info("Checking available updates of AGOUTI")
-	checkLocal = "git -C %s log -n 1 --pretty=\"%%H\"" %(repoDir)
-	localVersion = sp.check_output(shlex.split(checkLocal)).strip()
+	checkLocal = "git log -n 1 --pretty=\"%%H\""
+	localVersion = sp.check_output(shlex.split(checkLocal), cwd=repoDir).strip()
 #	if remoteVersion != localVersion:
-	gitCmd = "git -C %s ls-remote origin" %(repoDir)
-	heads = sp.check_output(shlex.split(gitCmd)).split("\n")
+	gitCmd = "git ls-remote origin"
+	heads = sp.check_output(shlex.split(gitCmd), cwd=repoDir).split("\n")
 	tags = []
 	dVersions = {}
 	for line in heads:
@@ -262,14 +262,14 @@ def update_local(args):
 	latesTag = sorted(tags)[-1]
 	latestHash = dVersions[latesTag]
 	if latestHash != localVersion:
-		gitCmd = "git -C %s fetch --all" %(repoDir)
-		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
+		gitCmd = "git fetch --all"
+		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, cwd=repoDir)
 		pout, perr = p.communicate()
 		if p.returncode:
 			version.logger.error("git fetch error: %s" %(perr))
 			sys.exit(1)
-		gitCmd = "git -C %s checkout -q %s -b %s" %(repoDir, latesTag, latesTag.split("/")[-1])
-		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE)
+		gitCmd = "git checkout -q %s -b %s" %(latesTag, latesTag.split("/")[-1])
+		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, cwd=repoDir)
 		pout, perr = p.communicate()
 		if p.returncode:
 			version.logger.error("git checkout error: %s" %(perr))
