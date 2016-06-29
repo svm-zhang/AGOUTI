@@ -74,11 +74,11 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 		agPathDebug.debugger.debug("[RECOVER]\tGetting consective path from pathLefts")
 		recovPath = []
 		preCtg = pathLefts[0]
-		preCtgIndex = int(preCtg.split('_')[1])
+		preCtgIndex = int(preCtg.split('_')[-1])
 		tmpPath = [preCtg]
 		for i in range(1, len(pathLefts)):
 			curCtg = pathLefts[i]
-			curCtgIndex = int(curCtg.split('_')[1])
+			curCtgIndex = int(curCtg.split('_')[-1])
 			agPathDebug.debugger.debug("[RECOVER]\tpreCtg=%s - preIndex=%d - curCtg=%s - curIndex=%d"
 									   %(preCtg, preCtgIndex, curCtg, curCtgIndex))
 			if math.fabs(curCtgIndex-preCtgIndex) == 1:
@@ -91,7 +91,7 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 					recovPath.append(tmpPath)
 					tmpPath = [curCtg]
 			preCtg = curCtg
-			preCtgIndex = int(preCtg.split('_')[1])
+			preCtgIndex = int(preCtg.split('_')[-1])
 		# add path with at least two contigs
 		if len(tmpPath) > 1:
 			recovPath.append(tmpPath)
@@ -114,12 +114,12 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 					preCtgGeneModel3 = dGFFs[preCtg][-1]
 					if not preCtgGeneModel3.fake:
 						preGeneID = preCtgGeneModel3.geneID
-						preIndex = int(preGeneID.split('_')[1])
+						preIndex = int(preGeneID.split('_')[-1])
 				if curCtg in dGFFs:
 					curCtgGeneModel5 = dGFFs[curCtg][0]
 					if not curCtgGeneModel5.fake:
 						curGeneID = curCtgGeneModel5.geneID
-						curIndex = int(curGeneID.split('_')[1])
+						curIndex = int(curGeneID.split('_')[-1])
 
 				agPathDebug.debugger.debug("[RECOVER]\t====preGeneIndex=%d - curGeneIndex=%d"
 										   %(preIndex, curIndex))
@@ -138,14 +138,14 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 												 0, 0, 1)
 						dGFFs[preCtg].append(preCtgGeneModel3)
 						m += 1
-						agPathDebug.debugger.debug("[RECOVER\t====preCtgGeneModels=%s"
+						agPathDebug.debugger.debug("[RECOVER]\t====preCtgGeneModels=%s"
 												   %(str([k.geneID for k in dGFFs[preCtg]])))
 						curCtgGeneModel5 = agGFF.AGOUTI_GFF()
 						curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
 												 0, 0, 1)
 						dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 						m += 1
-						agPathDebug.debugger.debug("[RECOVER\t====curCtgGeneModels=%s"
+						agPathDebug.debugger.debug("[RECOVER]\t====curCtgGeneModels=%s"
 												   %(str([k.geneID for k in dGFFs[curCtg]])))
 				# create fakeO gnes as joining gene models
 				else:
@@ -154,14 +154,14 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 											 0, 0, 1)
 					dGFFs[preCtg].append(preCtgGeneModel3)
 					m += 1
-					agPathDebug.debugger.debug("[RECOVER\t====preCtgGeneModels=%s"
+					agPathDebug.debugger.debug("[RECOVER]\t====preCtgGeneModels=%s"
 											   %(str([k.geneID for k in dGFFs[preCtg]])))
 					curCtgGeneModel5 = agGFF.AGOUTI_GFF()
 					curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
 											 0, 0, 1)
 					dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 					m += 1
-					agPathDebug.debugger.debug("[RECOVER\t====curCtgGeneModels=%s"
+					agPathDebug.debugger.debug("[RECOVER]\t====curCtgGeneModels=%s"
 											   %(str([k.geneID for k in dGFFs[curCtg]])))
 				# record joining gene models for the two contigs
 				dCtgPair2GenePair[preVertex, curVertex] = [preCtgGeneModel3, curCtgGeneModel5]
