@@ -30,9 +30,12 @@ def agouti_path_main(agoutiPaths, dSenses, vertex2Name,
 	agPathProgress.logger.info("[BEGIN] Reading file with shred info")
 	dOriPaths, dOriGaps = read_original_path(oriScafPathFile, agPathProgress)
 	agPathProgress.logger.info("[DONE]")
-	agPathProgress.logger.info("[BEGIN] Checking consistency")
-	compare(dOriPaths, agoutiPaths, vertex2Name, outDir, prefix)
-	agPathProgress.logger.info("[DONE]")
+
+	# shut it off for now; working to improve it
+	#agPathProgress.logger.info("[BEGIN] Checking consistency")
+	#compare(dOriPaths, agoutiPaths, vertex2Name, outDir, prefix)
+	#agPathProgress.logger.info("[DONE]")
+
 	agPathProgress.logger.info("[BEGIN] Recovring original scaffolding")
 	agoutiPaths, dCtgPair2GenePair, dSenses = recover_untouched_sequences(dOriPaths, agoutiPaths,
 																 vertex2Name, dGFFs,
@@ -68,7 +71,9 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 	tmpPaths = []
 	for k, path in dOriPaths.iteritems():
 		pathLefts = [ctg for ctg in path if ctg not in scaffoldedCtgs]
-		if not pathLefts:
+		# len(pathLefts) == 0 means all contigs being touched by AGOUTI
+		# len(pathLefts) == 1 means the contig is the original scaffold, no shred was done
+		if len(pathLefts) <= 1:
 			continue
 		agPathDebug.debugger.debug("[RECOVER]\tpathLefts=%s" %(str(pathLefts)))
 		agPathDebug.debugger.debug("[RECOVER]\tGetting consective path from pathLefts")
