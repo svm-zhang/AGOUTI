@@ -186,6 +186,8 @@ def run_scaffolder(args):
 	para.add_file_handler(paraLogFile)
 	para.logger.info("Assembly: %s" %(os.path.realpath(args.assemblyFile)))
 	para.logger.info("Gene Model: %s" %(gffFile))
+	if args.oriScafPath:
+		para.logger.info("Original scaffold path: %s" %(args.oriScafPath))
 	para.logger.info("Output directory: %s" %(outDir))
 	para.logger.info("Output prefix: %s" %(prefix))
 	para.logger.info("Minimum number of supports: %d"
@@ -224,7 +226,7 @@ def run_scaffolder(args):
 						   outDir, prefix,
 						   args.nFills, args.debug, args.no_update_gff)
 
-	para.logger.info("Peak memory use: %.2f GB" %(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024*1024)))
+	para.logger.info("Peak memory use: %.5f GB" %(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024*1024)))
 
 def update_local(args):
 	'''
