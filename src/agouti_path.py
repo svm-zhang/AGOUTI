@@ -87,6 +87,8 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 			curCtgIndex = int(curCtg.split('_')[-1])
 			agPathDebug.debugger.debug("[RECOVER]\tpreCtg=%s - preIndex=%d - curCtg=%s - curIndex=%d"
 									   %(preCtg, preCtgIndex, curCtg, curCtgIndex))
+			# this if/else makes sure only
+			# consecutive contigs will be recovered
 			if math.fabs(curCtgIndex-preCtgIndex) == 1:
 				tmpPath.append(curCtg)
 			else:
@@ -112,8 +114,6 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 				curVertex = vertex2Name.index(curCtg)
 				preGeneID = ""
 				curGeneID = ""
-				preIndex = -1		# gene index
-				curIndex = -1		# gene index
 				preCtgGeneModel3 = None
 				curCtgGeneModel5 = None
 				# check if pre and cur contigs
@@ -123,32 +123,22 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 					if not preCtgGeneModel3.fake:
 						tmpName = preCtgGeneModel3.geneID.split('_')
 						preGeneID = tmpName[:-1]
-						preIndex = int(tmpName[-1])
 				if curCtg in dGFFs:
 					curCtgGeneModel5 = dGFFs[curCtg][0]
 					if not curCtgGeneModel5.fake:
 						tmpName = curCtgGeneModel5.geneID.split('_')
 						curGeneID = tmpName[:-1]
-						curIndex = int(tmpName[-1])
 
 				# the two contigs have no gene models
 				# create fake0 genes and the merged gene won't be output
 				if preGeneID == "" and curGeneID == "":
 					# case 1
-					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====preCtgGeneModels=%s"
-											   %(str([k.geneID for k in dGFFs[preCtg]])))
-					preCtgGeneModel3 = agGFF.AGOUTI_GFF()
-					preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
-											 0, 0, 1)
+					preCtgGeneModel3 = create_fake0_gene(preCtg, m)
 					dGFFs[preCtg].append(preCtgGeneModel3)
 					m += 1
 					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====preCtgGeneModels=%s"
 											   %(str([k.geneID for k in dGFFs[preCtg]])))
-					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====curCtgGeneModels=%s"
-											   %(str([k.geneID for k in dGFFs[curCtg]])))
-					curCtgGeneModel5 = agGFF.AGOUTI_GFF()
-					curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
-											 0, 0, 1)
+					curCtgGeneModel5 = create_fake0_gene(curCtg, m)
 					dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 					m += 1
 					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====curCtgGeneModels=%s"
@@ -166,20 +156,12 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 				# create fake0 gene model and the merged gene won't be output
 				elif preGeneID != curGeneID:
 					# case 3
-					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====preCtgGeneModels=%s"
-											   %(str([k.geneID for k in dGFFs[preCtg]])))
-					preCtgGeneModel3 = agGFF.AGOUTI_GFF()
-					preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
-											 0, 0, 1)
+					preCtgGeneModel3 = create_fake0_gene(preCtg, m)
 					dGFFs[preCtg].append(preCtgGeneModel3)
-					m += 1
 					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====preCtgGeneModels=%s"
 											   %(str([k.geneID for k in dGFFs[preCtg]])))
-					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====curCtgGeneModels=%s"
-											   %(str([k.geneID for k in dGFFs[curCtg]])))
-					curCtgGeneModel5 = agGFF.AGOUTI_GFF()
-					curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
-											 0, 0, 1)
+					m += 1
+					curCtgGeneModel5 = create_fake0_gene(curCtg, m)
 					dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 					m += 1
 					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====curCtgGeneModels=%s"
@@ -215,6 +197,12 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 	agPathProgress.logger.info(("Number of pairs of shredded contigs "
 								"having joining gene models: %d" %(n)))
 	return agoutiPaths, dCtgPair2GenePair, dSenses
+
+def create_fake0_gene(ctg, m):
+	geneModel = agGFF.AGOUTI_GFF()
+	geneModel.setGene("%s_fakeO_%d" %(ctg, m),
+							 0, 0, 1)
+	return geneModel
 
 def read_original_path(oriScafPathFile, agPathProgress):
 	'''
