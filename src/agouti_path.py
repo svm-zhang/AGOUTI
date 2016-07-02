@@ -75,6 +75,7 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 		# len(pathLefts) == 1 means the contig is the original scaffold, no shred was done
 		if len(pathLefts) <= 1:
 			continue
+		agPathDebug.debugger.debug("[RECOVER]\n")
 		agPathDebug.debugger.debug("[RECOVER]\tpathLefts=%s" %(str(pathLefts)))
 		agPathDebug.debugger.debug("[RECOVER]\tGetting consective path from pathLefts")
 		recovPath = []
@@ -89,7 +90,6 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 			if math.fabs(curCtgIndex-preCtgIndex) == 1:
 				tmpPath.append(curCtg)
 			else:
-				# add path with at least two contigs
 				if len(tmpPath) <= 1:
 					tmpPath = [curCtg]
 				else:
@@ -102,6 +102,7 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 			recovPath.append(tmpPath)
 		agPathDebug.debugger.debug("[RECOVER]\tGetting gene pair for each contig pair")
 		for path in recovPath:
+			agPathDebug.debugger.debug("[RECOVER]\t%s" %(str(path)))
 			for i in range(1, len(path)):
 				preCtg = path[i-1]
 				curCtg = path[i]
@@ -109,8 +110,10 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 										   %(preCtg, curCtg))
 				preVertex = vertex2Name.index(preCtg)
 				curVertex = vertex2Name.index(curCtg)
-				preIndex = -1
-				curIndex = -1
+				preGeneID = ""
+				curGeneID = ""
+				preIndex = -1		# gene index
+				curIndex = -1		# gene index
 				preCtgGeneModel3 = None
 				curCtgGeneModel5 = None
 				# check if pre and cur contigs
@@ -118,56 +121,114 @@ def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 				if preCtg in dGFFs:
 					preCtgGeneModel3 = dGFFs[preCtg][-1]
 					if not preCtgGeneModel3.fake:
-						preGeneID = preCtgGeneModel3.geneID
-						preIndex = int(preGeneID.split('_')[-1])
+						tmpName = preCtgGeneModel3.geneID.split('_')
+						preGeneID = tmpName[:-1]
+						preIndex = int(tmpName[-1])
 				if curCtg in dGFFs:
 					curCtgGeneModel5 = dGFFs[curCtg][0]
 					if not curCtgGeneModel5.fake:
-						curGeneID = curCtgGeneModel5.geneID
-						curIndex = int(curGeneID.split('_')[-1])
+						tmpName = curCtgGeneModel5.geneID.split('_')
+						curGeneID = tmpName[:-1]
+						curIndex = int(tmpName[-1])
 
-				agPathDebug.debugger.debug("[RECOVER]\t====preGeneIndex=%d - curGeneIndex=%d"
-										   %(preIndex, curIndex))
-				# both index should not be -1 if they are the
-				# joining gene model between the two contigs
-				if preIndex != -1 and curIndex != -1:
-					# and they have to be consecutive
-					if math.fabs(curIndex - preIndex) == 1:
-						n += 1
-						agPathDebug.debugger.debug("[RECOVER]\t====preGeneID=%s - curGeneID=%s"
-												   %(preGeneID, curGeneID))
-					# create fakeO genes as joining gene models
-					else:
-						preCtgGeneModel3 = agGFF.AGOUTI_GFF()
-						preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
-												 0, 0, 1)
-						dGFFs[preCtg].append(preCtgGeneModel3)
-						m += 1
-						agPathDebug.debugger.debug("[RECOVER]\t====preCtgGeneModels=%s"
-												   %(str([k.geneID for k in dGFFs[preCtg]])))
-						curCtgGeneModel5 = agGFF.AGOUTI_GFF()
-						curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
-												 0, 0, 1)
-						dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
-						m += 1
-						agPathDebug.debugger.debug("[RECOVER]\t====curCtgGeneModels=%s"
-												   %(str([k.geneID for k in dGFFs[curCtg]])))
-				# create fakeO gnes as joining gene models
-				else:
+				#agPathDebug.debugger.debug("[RECOVER]\t====preGeneIndex=%d - curGeneIndex=%d"
+				#						   %(preIndex, curIndex))
+				# the two contigs have no gene models
+				# create fake0 genes and the merged gene won't be output
+				if preGeneID == "" and curGeneID == "":
+					# case 1
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====preCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[preCtg]])))
 					preCtgGeneModel3 = agGFF.AGOUTI_GFF()
 					preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
 											 0, 0, 1)
 					dGFFs[preCtg].append(preCtgGeneModel3)
 					m += 1
-					agPathDebug.debugger.debug("[RECOVER]\t====preCtgGeneModels=%s"
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====preCtgGeneModels=%s"
 											   %(str([k.geneID for k in dGFFs[preCtg]])))
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====curCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[curCtg]])))
 					curCtgGeneModel5 = agGFF.AGOUTI_GFF()
 					curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
 											 0, 0, 1)
 					dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
 					m += 1
-					agPathDebug.debugger.debug("[RECOVER]\t====curCtgGeneModels=%s"
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE1]\t====curCtgGeneModels=%s"
 											   %(str([k.geneID for k in dGFFs[curCtg]])))
+				# the two contigs have the same gene models
+				# go ahead merging them
+				# ignore if they are not consecutive
+				elif preGeneID == curGeneID:
+					# case 2
+					n += 1
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE2]\t====preGeneID=%s - curGeneID=%s"
+											   %(preGeneID, curGeneID))
+				# the two contigs have two different gene models
+				# The two genes cannot be merged
+				# create fake0 gene model and the merged gene won't be output
+				elif preGeneID != curGeneID:
+					# case 3
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====preCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[preCtg]])))
+					preCtgGeneModel3 = agGFF.AGOUTI_GFF()
+					preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
+											 0, 0, 1)
+					dGFFs[preCtg].append(preCtgGeneModel3)
+					m += 1
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====preCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[preCtg]])))
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====curCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[curCtg]])))
+					curCtgGeneModel5 = agGFF.AGOUTI_GFF()
+					curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
+											 0, 0, 1)
+					dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
+					m += 1
+					agPathDebug.debugger.debug("[RECOVER]\t[CASE3]\t====curCtgGeneModels=%s"
+											   %(str([k.geneID for k in dGFFs[curCtg]])))
+
+				# both index should not be -1 if they are the
+				# joining gene model between the two contigs
+				#if preIndex != -1 and curIndex != -1:
+				#	# and they have to be consecutive
+				#	agPathDebug.debugger.debug("[RECOVER]\t[CASE2]\t====preGeneID=%s - curGeneID=%s"
+				#							   %(preGeneID, curGeneID))
+				#	if math.fabs(curIndex - preIndex) == 1:
+				#		n += 1
+				#		agPathDebug.debugger.debug("[RECOVER]\t[CASE2.1]====preGeneID=%s - curGeneID=%s"
+				#								   %(preGeneID, curGeneID))
+				#	# create fakeO genes as joining gene models
+				#	else:
+				#		preCtgGeneModel3 = agGFF.AGOUTI_GFF()
+				#		preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
+				#								 0, 0, 1)
+				#		dGFFs[preCtg].append(preCtgGeneModel3)
+				#		m += 1
+				#		agPathDebug.debugger.debug("[RECOVER]\t====preCtgGeneModels=%s"
+				#								   %(str([k.geneID for k in dGFFs[preCtg]])))
+				#		curCtgGeneModel5 = agGFF.AGOUTI_GFF()
+				#		curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
+				#								 0, 0, 1)
+				#		dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
+				#		m += 1
+				#		agPathDebug.debugger.debug("[RECOVER]\t====curCtgGeneModels=%s"
+				#								   %(str([k.geneID for k in dGFFs[curCtg]])))
+				## create fakeO gnes as joining gene models
+				#else:
+				#	preCtgGeneModel3 = agGFF.AGOUTI_GFF()
+				#	preCtgGeneModel3.setGene("%s_fakeO_%d" %(preCtg, m),
+				#							 0, 0, 1)
+				#	dGFFs[preCtg].append(preCtgGeneModel3)
+				#	m += 1
+				#	agPathDebug.debugger.debug("[RECOVER]\t====preCtgGeneModels=%s"
+				#							   %(str([k.geneID for k in dGFFs[preCtg]])))
+				#	curCtgGeneModel5 = agGFF.AGOUTI_GFF()
+				#	curCtgGeneModel5.setGene("%s_fakeO_%d" %(curCtg, m),
+				#							 0, 0, 1)
+				#	dGFFs[curCtg] = [curCtgGeneModel5] + dGFFs[curCtg]
+				#	m += 1
+				#	agPathDebug.debugger.debug("[RECOVER]\t====curCtgGeneModels=%s"
+				#							   %(str([k.geneID for k in dGFFs[curCtg]])))
 				# record joining gene models for the two contigs
 				dCtgPair2GenePair[preVertex, curVertex] = [preCtgGeneModel3, curCtgGeneModel5]
 				agPathDebug.debugger.debug("[RECOVER]\t====preID=%s preCDS=%s"
