@@ -15,12 +15,12 @@
   * [Example](#example)
   * [Example Data](#example-data)
   * [Scaffoldding on Shredded Assembly](#scaffoldding-on-shredded-assembly)
-    * [Why shred original assemblies](#Why-shred-original-assemblies)
-    * [When to shred original assemblies](#Wheny-to-shred-original-assemblies)
+    * [Why shred original assemblies](#why-shred-original-assemblies)
+    * [When to shred original assemblies](#when-to-shred-original-assemblies)
     * [Shredding Practices](#shredding-practices)
     * [Shred Assembly](#shred-assembly)
     * [Shred Annotation](#shred-annotation)
-    * [Recover original paths](#Recover-original-paths)
+    * [Recovering Original Paths](#recovering-original-paths)
   * [Break-and-Continue](#break-and-continue)
   * [Graph Visualization](#graph-visualization)
   * [Contributors](#contributors)
@@ -199,7 +199,7 @@ There are two benefits you can get from shredding the original assembly (you can
 
 Second, scaffolding using RNA-seq reads can produce alternative paths that are based on evidences of gene models. Any inconsistencies with ones given by DNA-based scaffolding can provide useful information for further improving genome assembly.
 
-The downside of scaffolding this way is that sequences, especially those from regions of low gene density, lose their context with others. This makes all efforts of preparing mate-pair libraries, if any, futile. To avoid such loss, AGOUTI (**v.0.3.0 or above**) tries to recover the original connections between contigs as much as possible (see "Recover original paths" section below).
+The downside of scaffolding this way is that sequences, especially those from regions of low gene density, lose their context with others. This makes all efforts of doing DNA-based scaffolding, if any, become futile. To avoid such loss, AGOUTI (**v.0.3.0 or above**) tries to recover the original connections between contigs as much as possible (see **Recovering Original Paths** section below).
 
 ### When to shred original assemblies
 
