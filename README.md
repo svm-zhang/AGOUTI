@@ -142,10 +142,11 @@ At the end of gene prediction, you will now have a set of gene models predicted 
 * lines annotated as `CDS`
     * start and stop positions
 
-**Several more things worth of noting:**
+**Important Notes**
 
-1. If your GFF file has FASTA sequences at the end (e.g. generated from MAKER pipeline), please make sure to use verions v0.2.5 or above.
-2. It is also important to note that if there are no gene models found in your GFF, AGOUTI will issue an error and stop.
+1. AGOUTI is yet to support the GTF format. It will be in the near future. I will also try to provide a converter script from GTF to GFF.
+2. If your GFF file has FASTA sequences at the end (e.g. generated from MAKER pipeline), please make sure to use verions v0.2.5 or above.
+3. If AGOUTI fails to find any gene models, it will stop.
 
 ## Understand Outputs
 
@@ -170,7 +171,7 @@ Scaffoldding using joining-pairs with a minimum mapping quality of 20, a maximum
 
     python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -minMQ 20 -maxFracMM 0.05
 
-Scaffolding without updating gene model (v0.3.0 or above):
+Scaffolding without updating gene model (**v0.3.0 or above**):
 
     python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -no_update_gff
 
@@ -178,7 +179,7 @@ Scaffolding a shredded assembly and report any inconsistencies between RNA-seq b
 
     python agouti.py scaffold -assembly example.shred.fasta -bam example.bam -gff example.gff -outdir ./example -shredpath example.shred.info.txt
 
-Shredding an assembly and annotation simultaneously (v0.3.0 or above):
+Shredding an assembly and annotation simultaneously (**v0.3.0 or above**):
 
     python agouti.py shred -assembly example.fasta -gff example.gff -p example
 
@@ -186,21 +187,30 @@ Shredding an assembly and annotation simultaneously (v0.3.0 or above):
 
 Here gives one [example data](http://www.indiana.edu/~hahnlab/software.html) set that we used in our paper.
 
-## Shred Assembly
+## Scaffoldding on Shredded Assembly
+
+### Why shred original assemblies
+
+There are two benefits you can get from shredding the original assembly (you can optionally skip this entire section if your assembly is in the contig form, and no previous scaffolding is attempted). First, in the case of a gene spanning across a gap, the prediction tends to report two gene models, one for each side of the gap. This is because, to our knowledge, many programs cannot predict across gaps, especially those longer ones. Breaking at the gap and using RNA-seq data, AGOUTI therefore can correct for it by merging the two gene models, given there were connections between the two shredded contigs.
+
+Second, scaffolding using RNA-seq reads can produce alternative paths that are based on evidences of gene models. Any inconsistencies with ones given by DNA-based scaffolding can provide useful information for further improving genome assembly.
+
+The downside of scaffolding this way is that sequences, especially those from regions of low gene density, lose their context with others. This makes all efforts of preparing mate-pair libraries, if any, futile. To avoid such loss, AGOUTI (**v.0.3.0 or above**) tries to recover the original connections between contigs as much as possible (see "Recover original paths" section below).
+
+### When to shred original assemblies
+
+
+### Shred Assembly
 
 Given an assembly in its scaffold form, AGOUTI can shred scaffolds into contigs at gaps of a minimum length (5 by default, user-tunable). The following figure gives an example of how it works. Let's say a scaffold called `scaffold 1` in the assembly. This scaffold consists of three stretches of gaps of various lengths, 5, 3, and 9, respectively. By default, AGOUTI shreds it into three contigs, `Scaffold_1_0`, `Scaffold_1_1`, and `Scaffold_1_2`. AGOUTI does not cut at the second gap because it has a length of 3. Notably, AGOUTI uses `SEQID_INDEX` to tell the order of contigs in the given original scaffold. For scaffolds without gaps, AGOUTI does not split them.)
 
 ![Alt text](/image/shred_assembly.png?raw=true "example output directory")
 
-## Shred Annotation
+### Shred Annotation
 
 Since v0.3.0, AGOUTI is also able to shred gene annotation matching the give assembly. It compares start and end positions of features with coordinates of cut sites, and updates annotation accordingly. There are five types of features AGOUTI cares: gene, exon, CDS, firve_prime_UTR, three_prime_UTR. The following figure gives an example of how it works. Let's use the same scaffold (i.e. `Scaffold_1`) shredded in the picture above. Assume that there is a gene span across the second cut site, and it consists of three exons (green box). AGOUTI splits the assembly such that one gene becomes two (boxes in different colors) sitting on two different contigs. AGOUTI assigns them with different ID, in a similar fashion as names of shredded contigs, `GENEID_INDEX`. This naming tells 1) whether two shredded genes belong to a single one; and 2) the order.
 
 ![Alt text](/image/shred_annotation_1.png?raw=true "example output directory")
-
-## Scaffoldding on Shredded Assembly
-
-More details coming soon
 
 ## Break-and-Continue
 
