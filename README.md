@@ -17,6 +17,7 @@
   * [Scaffoldding on Shredded Assembly](#scaffoldding-on-shredded-assembly)
     * [Why shred original assemblies](#Why-shred-original-assemblies)
     * [When to shred original assemblies](#Wheny-to-shred-original-assemblies)
+    * [Shredding Practices](#shredding-practices)
     * [Shred Assembly](#shred-assembly)
     * [Shred Annotation](#shred-annotation)
     * [Recover original paths](#Recover-original-paths)
@@ -202,6 +203,31 @@ The downside of scaffolding this way is that sequences, especially those from re
 
 ### When to shred original assemblies
 
+It's always recommended that you run AGOUTI directly on your scaffolds, before trying to tear it up. AGOUTI will simply try to find additionally connections between scaffolds that were missed by original scaffolding programs. This should be the firs best practice to do, regardless of how many pieces your assembly is composed of.
+
+If you'd like to fix gene models flanking gaps and/or identify any inconsistencies from your original DNA-based scaffolding, shredding the assembly can be helpful. We are currently working on a new module that can correct for split gene models interrupted by gaps, without shredding the assembly. This way AGOUTI can preserve as much as possible the contiguity, and further improve genome annotation at the same time. This module will be available soon.
+
+### Shredding Practices
+
+1. If you shred the assembly and predict gene model on the shredded assembly using programs like AUGUSTUS, the following command line is suggested:
+
+    python agouti.py shred -assembly scaffold.fasta -p scaffold
+
+This will generate `scaffold.ctg.fasta`, `scaffold.shred.info.txt`, and two files for debugging purpose. You then run, for instance AUGUSTUS and BWA, on the shredded assembly to get `scaffold.ctg.gff` and scaffold.ctg.bam`, respectively. To scaffold, run
+
+    python agouti.py scaffold -assembly scaffold.ctg.fasta -bam scaffold.ctg.bam -gff scaffold.ctg.gff -outdir ./example -shredpath scaffold.shred.info.txt
+
+With the `scaffold.shred.info.txt', AGOUTI will try to recover the original scaffolding path. To disable this feature, you can simply not specify `-shredpath` option.
+
+2. Many people found laborious to repeat gene prediction on the shredded assembly, especially in cases the genome is huges. AGOUTI handle such cases by simultaneously shredding the annotation company the sequence. The only difference is to specify `-gff` option in the shred command line.
+
+    python agouti.py shred -assembly scaffold.fasta -gff scaffold.gff -p scaffold
+
+In addition to the files described above, this also generates `scaffold.shred.ctg.gff`. This gene annotation is then used for scaffolding.
+
+    python agouti.py scaffold -assembly scaffold.ctg.fasta -bam scaffold.ctg.bam -gff scaffold.shred.ctg.gff -outdir ./example -shredpath scaffold.shred.info.txt
+
+In this scenario, when AGOUTI tries to recover the original path, it will also connect the shredded gene models accordingly (see below).
 
 ### Shred Assembly
 
