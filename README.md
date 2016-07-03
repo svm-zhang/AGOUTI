@@ -212,6 +212,8 @@ Since v0.3.0, AGOUTI is also able to shred gene annotation matching the give ass
 
 ![Alt text](/image/shred_annotation_1.png?raw=true "example output directory")
 
+### Recover original paths
+
 ## Break-and-Continue
 
 AGOUTI is built with a couple of modules. The output of current module will be taken as the input as the next module. Given the same input, modules such as extracting joining-pairs from BAM file, spits out the same intermediate results. AGOUTI therefore tries to save some running time by skipping such steps if they were finished successfully from previous runs. To use this feature, simply run AGOUTI the second time with the same output directory and output prefix as the previous run. If you desire a fresh start, simply use `-overwrite` to overwrite all results generated previously, or gives a new prefix.
