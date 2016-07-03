@@ -209,7 +209,7 @@ If you'd like to fix gene models flanking gaps and/or identify any inconsistenci
 
 ### Shredding Practices
 
-**First** If you shred the assembly and predict gene model on the shredded assembly using programs like AUGUSTUS, the following command line is suggested:
+**First**: If you shred the assembly and predict gene model on the shredded assembly using programs like AUGUSTUS, the following command line is suggested:
 
     python agouti.py shred -assembly scaffold.fasta -p scaffold
 
@@ -219,7 +219,7 @@ This will generate `scaffold.ctg.fasta`, `scaffold.shred.info.txt`, and two file
 
 With the `scaffold.shred.info.txt', AGOUTI will try to recover the original scaffolding path. To disable this feature, you can simply not specify `-shredpath` option.
 
-**Second** Many people found laborious to repeat gene prediction on the shredded assembly, especially in cases the genome is huges. AGOUTI handle such cases by simultaneously shredding the annotation company the sequence. The only difference is to specify `-gff` option in the shred command line.
+**Second**: Many people found laborious to repeat gene prediction on the shredded assembly, especially in cases the genome is huges. AGOUTI handle such cases by simultaneously shredding the annotation company the sequence. The only difference is to specify `-gff` option in the shred command line.
 
     python agouti.py shred -assembly scaffold.fasta -gff scaffold.gff -p scaffold
 
