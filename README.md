@@ -217,7 +217,7 @@ This will generate `scaffold.ctg.fasta`, `scaffold.shred.info.txt`, and two file
 
     python agouti.py scaffold -assembly scaffold.ctg.fasta -bam scaffold.ctg.bam -gff scaffold.ctg.gff -outdir ./example -shredpath scaffold.shred.info.txt
 
-With the `scaffold.shred.info.txt', AGOUTI will try to recover the original scaffolding path. To disable this feature, you can simply not specify `-shredpath` option.
+With the `scaffold.shred.info.txt`, AGOUTI will try to recover the original scaffolding path. To disable this feature, you can simply not specify `-shredpath` option.
 
 **Second:** Many people found laborious to repeat gene prediction on the shredded assembly, especially in cases the genome is huges. AGOUTI handle such cases by simultaneously shredding the annotation company the sequence. The only difference is to specify `-gff` option in the shred command line.
 
