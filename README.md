@@ -241,7 +241,7 @@ Since v0.3.0, AGOUTI is also able to shred gene annotation matching the give ass
 
 ![Alt text](/image/shred_annotation_1.png?raw=true "example output directory")
 
-### Recover original paths
+### Recovering Original Paths
 
 [updating in 48 hours]
 
