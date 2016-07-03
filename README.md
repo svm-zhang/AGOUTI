@@ -243,7 +243,7 @@ Since v0.3.0, AGOUTI is also able to shred gene annotation matching the give ass
 
 ### Recovering Original Paths
 
-[updating in 48 hours]
+updating in 48 hours
 
 ## Break-and-Continue
 
