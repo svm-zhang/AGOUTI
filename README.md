@@ -183,15 +183,26 @@ Scaffoldding using joining-pairs with a minimum mapping quality of 20, a maximum
 
 Scaffolding without updating gene model (**v0.3.0 or above**):
 
-    python agouti.py scaffold -assembly example.fasta -bam example.bam -gff example.gff -outdir ./example -no_update_gff
+    python agouti.py scaffold \
+    -assembly example.fasta \
+    -bam example.bam \
+    -gff example.gff \
+    -outdir ./example -no_update_gff
 
 Scaffolding a shredded assembly and report any inconsistencies between RNA-seq based scaffolding and orignial scaffolding:
 
-    python agouti.py scaffold -assembly example.shred.fasta -bam example.bam -gff example.gff -outdir ./example -shredpath example.shred.info.txt
+    python agouti.py scaffold \
+    -assembly example.shred.fasta \
+    -bam example.bam \
+    -gff example.gff \
+    -outdir ./example \
+    -shredpath example.shred.info.txt
 
 Shredding an assembly and annotation simultaneously (**v0.3.0 or above**):
 
     python agouti.py shred -assembly example.fasta -gff example.gff -p example
+
+This will generate `example.shred.info.txt` and `example.shred.ctg.gff`
 
 ## Example Data
 
@@ -221,7 +232,12 @@ If you'd like to fix gene models flanking gaps and/or identify any inconsistenci
 
 This will generate `scaffold.ctg.fasta`, `scaffold.shred.info.txt`, and two files for debugging purpose. You then run, for instance AUGUSTUS and BWA, on the shredded assembly to get `scaffold.ctg.gff` and scaffold.ctg.bam`, respectively. To scaffold, run
 
-    python agouti.py scaffold -assembly scaffold.ctg.fasta -bam scaffold.ctg.bam -gff scaffold.ctg.gff -outdir ./example -shredpath scaffold.shred.info.txt
+    python agouti.py scaffold \
+    -assembly scaffold.ctg.fasta \
+    -bam scaffold.ctg.bam \
+    -gff scaffold.ctg.gff \
+    -outdir ./example \
+    -shredpath scaffold.shred.info.txt
 
 With the `scaffold.shred.info.txt`, AGOUTI will try to recover the original scaffolding path. To disable this feature, you can simply not specify `-shredpath` option.
 
@@ -231,7 +247,12 @@ With the `scaffold.shred.info.txt`, AGOUTI will try to recover the original scaf
 
 In addition to the files described above, this also generates `scaffold.shred.ctg.gff`. This gene annotation is then used for scaffolding.
 
-    python agouti.py scaffold -assembly scaffold.ctg.fasta -bam scaffold.ctg.bam -gff scaffold.shred.ctg.gff -outdir ./example -shredpath scaffold.shred.info.txt
+    python agouti.py scaffold \
+    -assembly scaffold.ctg.fasta \
+    -bam scaffold.ctg.bam \
+    -gff scaffold.shred.ctg.gff \
+    -outdir ./example \
+    -shredpath scaffold.shred.info.txt
 
 In this scenario, when AGOUTI tries to recover the original path, it will also connect the shredded gene models accordingly (see below).
 
