@@ -15,12 +15,13 @@
   * [Example](#example)
   * [Example Data](#example-data)
   * [Scaffoldding on Shredded Assembly](#scaffoldding-on-shredded-assembly)
-    * [Why shred original assemblies](#why-shred-original-assemblies)
-    * [When to shred original assemblies](#when-to-shred-original-assemblies)
+    * [Why shredding original assemblies](#why-shredding-original-assemblies)
+    * [When shredding original assemblies](#when-shredding-original-assemblies)
     * [Shredding Practices](#shredding-practices)
     * [Shred Assembly](#shred-assembly)
     * [Shred Annotation](#shred-annotation)
-    * [Recovering Original Paths](#recovering-original-paths)
+    * [Recover Original Paths](#recover-original-paths)
+    * [Report Inconsistencies](#report-inconsistencies)
   * [Break-and-Continue](#break-and-continue)
   * [Graph Visualization](#graph-visualization)
   * [Contributors](#contributors)
@@ -193,7 +194,7 @@ Here gives one [example data](http://www.indiana.edu/~hahnlab/software.html) set
 
 ## Scaffoldding on Shredded Assembly
 
-### Why shred original assemblies
+### Why shredding original assemblies
 
 There are two benefits you can get from shredding the original assembly (you can optionally skip this entire section if your assembly is in the contig form, and no previous scaffolding is attempted). First, in the case of a gene spanning across a gap, the prediction tends to report two gene models, one for each side of the gap. This is because, to our knowledge, many programs cannot predict across gaps, especially those longer ones. Breaking at the gap and using RNA-seq data, AGOUTI therefore can correct for it by merging the two gene models, given there were connections between the two shredded contigs.
 
@@ -201,7 +202,7 @@ Second, scaffolding using RNA-seq reads can produce alternative paths that are b
 
 The downside of scaffolding this way is that sequences, especially those from regions of low gene density, lose their context with others. This makes all efforts of doing DNA-based scaffolding, if any, become futile. To avoid such loss, AGOUTI (**v.0.3.0 or above**) tries to recover the original connections between contigs as much as possible (see **Recovering Original Paths** section below).
 
-### When to shred original assemblies
+### When shredding original assemblies
 
 It's always recommended that you run AGOUTI directly on your scaffolds, before trying to tear it up. AGOUTI will simply try to find additionally connections between scaffolds that were missed by original scaffolding programs. This should be the firs best practice to do, regardless of how many pieces your assembly is composed of.
 
@@ -241,9 +242,13 @@ Since v0.3.0, AGOUTI is also able to shred gene annotation matching the give ass
 
 ![Alt text](/image/shred_annotation_1.png?raw=true "example output directory")
 
-### Recovering Original Paths
+### Recover Original Paths
 
-updating in 48 hours
+AGOUTI will try to recover original connections for shredded contigs to preserve contiguity as much as possible. To do so, contigs that are not scaffolded by AGOUTI are first identified. For a pair of such contigs, AGOUTI then re-connects them as long as they are next to each other in the original scaffolding path. Consider an example in which a scaffold is shredded into 5 contigs: A, B, C, D, and E, and AGOUTI is able to scaffold C and D. This leaves A, B and E untouched. Given our rules, AGOUTI will re-connect A and B without appending E to B, because B and E are not consecutive in the original path. If annotation is shredded at the same time with the assembly, AGOUTI will also merge them during the process.
+
+### Report Inconsistencies
+
+AGOUTI can provide alternative scaffolding paths. Any inconsistencies with the original path can be useful information to further improve genome assembly. As of summer in 2016, this function is temporarily closed for upgrades. We are working generate informative reports that can be easily visualized. More information will be available in the near future.
 
 ## Break-and-Continue
 
