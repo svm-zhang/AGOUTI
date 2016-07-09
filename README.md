@@ -274,7 +274,11 @@ AGOUTI will try to recover original connections for shredded contigs to preserve
 
 ### Report Inconsistencies
 
-AGOUTI can provide alternative scaffolding paths. Any inconsistencies with the original path can be useful information to further improve genome assembly. As of summer in 2016, this function is temporarily closed for upgrades. We are working generate informative reports that can be easily visualized. More information will be available in the near future.
+Any inconsistencies with the original path can provide useful information to further improve genome assembly. AGOUTI provides alternative scaffolding paths in the form of network, named `[prefix].consistency.nw`. This network consists of 4 columns, `from`, `interaction`, `to`, and `type`. `from` and `to` are source and target nodes/contig. If two contigs connected from the same original scaffold, a type of `agouti_same` will be assigned; `agouti_diff` given otherwise. In the former case if the two contigs are not consecutive, AGOUTI reports all the `skipped` ones in between. In the latter scenario on the other hand, AGOUTI additionally gives immediate neighbors around each of the two contigs according to original paths. In the network file, these connections are typed `original`.
+
+Consider an example illustrated in the figure below. AGOUTI connects three pairs of shredded contigs. For contig `scaf669029_3` and `scaf669029_7`, they come from the same original scaffold (blue solid line), which can be tell by the string before the underscore. Because they are not consecutive (index 3 and 7), `scaf669029_4`, `scaf669029_5`, and `scaf669029_6` are reported to tell the contigs being skipped (pink dotted line).
+
+In the same example, AGOUTI also connects two contigs from different original scaffolds (red zigzag line), `scaf669029_3` and `scaf668522_35`. AGOUTI additionally reports immediate neighbors of each of the two contigs (connected by green arrowed line). Both contigs come from the ends of their corresponding original scaffolds, and a path between the two can suggest a connection between the same two original scaffolds. Connections between two contigs from the middle of their original scaffolds, on the other hand, flag inconsistencies, e.g. `scaf668522_30` and `scaf669547_5`.
 
 ![Alt text](/image/consistency.example.png?raw=true "example output directory")
 
