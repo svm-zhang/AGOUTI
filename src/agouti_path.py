@@ -36,15 +36,124 @@ def agouti_path_main(agoutiPaths, dSenses, vertex2Name,
 	#compare(dOriPaths, agoutiPaths, vertex2Name, outDir, prefix)
 	#agPathProgress.logger.info("[DONE]")
 
+	report_consistency(agoutiPaths, dOriPaths, vertex2Name, outDir, prefix)
+
 	agPathProgress.logger.info("[BEGIN] Recovring original scaffolding")
 	agoutiPaths, dCtgPair2GenePair, dSenses = recover_untouched_sequences(dOriPaths, agoutiPaths,
-																 vertex2Name, dGFFs,
-																 dCtgPair2GenePair,
-																 dSenses, agPathProgress,
-																 agPathDebug)
+																		  vertex2Name, dGFFs,
+																		  dCtgPair2GenePair,
+																		  dSenses, agPathProgress,
+																		  agPathDebug)
 	agPathProgress.logger.info("[DONE]")
 
 	return agoutiPaths, dCtgPair2GenePair, dSenses
+
+def report_consistency(agoutiPaths, dOriPaths, vertex2Name, outDir, prefix, context=1):
+	outConsist = os.path.join(outDir, "%s.consistency.nw" %(prefix))
+	fOUT = open(outConsist, 'w')
+	fOUT.write("source\tinteraction\ttarget\ttype\n")
+	dPair = {}
+	for agPath in agoutiPaths:
+		agPath = [vertex2Name[k] for k in agPath]
+		#print ">", agPath
+		preCtg = agPath[0]
+		for i in range(1, len(agPath)):
+			curCtg = agPath[i]
+
+			if len(preCtg.split('_')) == 1:
+				preOrigScaf = preCtg
+			else:
+				preIndex = preCtg.split('_')[-1]
+				preOrigScaf = preCtg.rstrip(preIndex).rstrip("_")
+			if len(curCtg.split('_')) == 1:
+				curOrigScaf = curCtg
+			else:
+				curIndex = curCtg.split('_')[-1]
+				curOrigScaf = curCtg.rstrip(curIndex).rstrip("_")
+			#print preCtg, preOrigScaf
+			#print curCtg, curOrigScaf
+			curIndex = int(curIndex)
+			preIndex = int(preIndex)
+			if preOrigScaf == curOrigScaf:
+				if math.fabs(curIndex-preIndex) == 1:
+					# consistent consecutive
+					if (preCtg, curCtg) not in dPair and (curCtg, preCtg) not in dPair:
+						fOUT.write("%s\t%s\t%s\tagouti_same\n"
+								   %(preCtg, preOrigScaf, curCtg))
+						dPair[preCtg, curCtg] = 1
+						dPair[curCtg, preCtg] = 1
+					#print "consistent consecutive"
+				else:
+					# consistent non-conseutive
+					if (preCtg, curCtg) not in dPair and (curCtg, preCtg) not in dPair:
+						fOUT.write("%s\t%s\t%s\tagouti_same\n"
+								   %(preCtg, preOrigScaf, curCtg))
+						dPair[preCtg, curCtg] = 1
+						dPair[curCtg, preCtg] = 1
+					tmpPreCtg = preCtg
+					for j in range(preIndex+1, curIndex+1):
+						tmpCurCtg = preOrigScaf + "_%d" %(j)
+						if (tmpPreCtg, tmpCurCtg) not in dPair and \
+						   (tmpCurCtg, tmpPreCtg) not in dPair:
+							fOUT.write("%s\t%s\t%s\tskipped\n"
+									   %(tmpPreCtg, preOrigScaf, tmpCurCtg))
+							dPair[tmpPreCtg, tmpCurCtg] = 1
+							dPair[tmpCurCtg, tmpPreCtg] = 1
+						tmpPreCtg = tmpCurCtg
+					#print "consistent non-consecutive"
+			else:
+				# inconsistent
+				if (preCtg, curCtg) not in dPair and (curCtg, preCtg) not in dPair:
+					fOUT.write("%s\t%s\t%s\tagouti_diff\n"
+							   %(preCtg, preOrigScaf, curCtg))
+					dPair[preCtg, curCtg] = 1
+					dPair[curCtg, preCtg] = 1
+				#print "inconsistent"
+				start = preIndex-context
+				stop = preIndex+context+1
+				if start < 0:
+					start = 0
+				if stop > len(dOriPaths[preOrigScaf]):
+					stop = len(dOriPaths[preOrigScaf])
+				tmpPreCtg = preOrigScaf + "_%d" %(start)
+				for j in range(start+1, stop):
+					tmpCurCtg = preOrigScaf + "_%d" %(j)
+					if (tmpPreCtg, tmpCurCtg) not in dPair and \
+					   (tmpCurCtg, tmpPreCtg) not in dPair:
+						fOUT.write("%s\t%s\t%s\toriginal\n"
+								   %(tmpPreCtg, preOrigScaf, tmpCurCtg))
+						dPair[tmpPreCtg, tmpCurCtg] = 1
+						dPair[tmpCurCtg, tmpPreCtg] = 1
+					tmpPreCtg = tmpCurCtg
+				start = curIndex-context
+				stop = curIndex+context+1
+				if start < 0:
+					start = 0
+				if stop > len(dOriPaths[curOrigScaf]):
+					stop = len(dOriPaths[curOrigScaf])
+				tmpPreCtg = curOrigScaf + "_%d" %(start)
+				for j in range(start+1, stop):
+					tmpCurCtg = curOrigScaf + "_%d" %(j)
+					if (tmpPreCtg, tmpCurCtg) not in dPair and \
+					   (tmpCurCtg, tmpPreCtg) not in dPair:
+						fOUT.write("%s\t%s\t%s\toriginal\n"
+								   %(tmpPreCtg, curOrigScaf, tmpCurCtg))
+						dPair[tmpPreCtg, tmpCurCtg] = 1
+						dPair[tmpCurCtg, tmpPreCtg] = 1
+					tmpPreCtg = tmpCurCtg
+			preCtg = curCtg
+	fOUT.close()
+	#outAttr = os.path.join(outDir, "%s.consistency.attr" %(prefix))
+	#fATTR = open(outAttr, 'w')
+	#fATTR.write("node\ttype\n")
+	#agNodes = {k:1 for path in agoutiPaths for k in path}
+	#oriNodes = {v:1 for oriPath in dOriPaths.itervalues() for v in oriPath}
+	#for oriNode in oriNodes.iterkeys():
+	#	if oriNode not in agNodes:
+	#		fATTR.write("%s\toriginal\n" %(oriNode))
+	#	else:
+	#		fATTR.write("%s\tagouti\n" %(oriNode))
+	#fATTR.close()
 
 def recover_untouched_sequences(dOriPaths, agoutiPaths, vertex2Name,
 								dGFFs, dCtgPair2GenePair, dSenses,
