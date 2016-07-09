@@ -280,6 +280,8 @@ Consider an example illustrated in the figure below. AGOUTI connects three pairs
 
 In the same example, AGOUTI also connects two contigs from different original scaffolds (red zigzag line), `scaf669029_3` and `scaf668522_35`. AGOUTI additionally reports immediate neighbors of each of the two contigs (connected by green arrowed line). Both contigs come from the ends of their corresponding original scaffolds, and a path between the two can suggest a connection between the same two original scaffolds. Connections between two contigs from the middle of their original scaffolds, on the other hand, flag inconsistencies, e.g. `scaf668522_30` and `scaf669547_5`.
 
+The network file is Cytoscape-ready, and we also provide a style file `consistency.xml` under the `cytoscape` folder. The example demonstrated here is only a tiny part of the network. You can get the full network by simply load the `example.consistency.nw` file into Cytoscape.
+
 ![Alt text](/image/consistency.example.png?raw=true "example output directory")
 
 ## Break-and-Continue
