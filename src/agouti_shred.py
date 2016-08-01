@@ -13,11 +13,12 @@ def get_attributes(attribute):
 	dAttrs = {}
 	tmp_attributes = attribute.split(';')
 	for i in range(len(tmp_attributes)):
-		tmp_attribute = tmp_attributes[i].split('=')
-		attributeName = tmp_attribute[0]
-		attributeValue = tmp_attribute[1]
-		if attributeName not in dAttrs:
-			dAttrs[attributeName] = attributeValue
+		if tmp_attributes[i]:
+			tmp_attribute = tmp_attributes[i].split('=')
+			attributeName = tmp_attribute[0]
+			attributeValue = tmp_attribute[1]
+			if attributeName not in dAttrs:
+				dAttrs[attributeName] = attributeValue
 
 	return dAttrs
 
