@@ -122,10 +122,12 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 													  numMergedGene, offset, gapStop,
 													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
-						if curGene.geneStop != 0:
-							dMergedGene2Genes[mergedGene.geneID] += [curGeneID]
-						elif nextGene.geneStop != 0:
-							dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
+						#if curGene.geneStop != 0:
+						#	dMergedGene2Genes[mergedGene.geneID] += [curGeneID]
+						#if nextGene.geneStop != 0:
+						#	dMergedGene2Genes[mergedGene.geneID] += [nextGene.geneID]
+						if mergedGene.geneStop != 0:
+							dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
 																				  scafName, offset, excludeGeneIDs,
 																				  debug, mergedGene)
@@ -150,7 +152,8 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 													  numMergedGene, offset, gapStop,
 													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
-						dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
+						if mergedGene.geneStop != 0:
+							dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
 																				  scafName, offset, excludeGeneIDs,
 																				  debug, mergedGene)
@@ -173,7 +176,8 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 													  numMergedGene, offset, gapStop,
 													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
-						dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
+						if mergedGene.geneStop != 0:
+							dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
 																				  scafName, offset, excludeGeneIDs,
 																				  debug, mergedGene)
@@ -204,7 +208,8 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 													  numMergedGene, offset, gapStop,
 													  debug)
 						dMergedGene2Ctgs[mergedGene.geneID] += [curCtg, nextCtg]
-						dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
+						if mergedGene.geneStop != 0:
+							dMergedGene2Genes[mergedGene.geneID] += [curGeneID, nextGene.geneID]
 						dUpdateGFFs[scafName], updatedGeneIDs = update_gene_model(dGFFs[curCtg], dUpdateGFFs[scafName],
 																				  scafName, offset, excludeGeneIDs,
 																				  debug, mergedGene)
@@ -356,8 +361,10 @@ def summarize_gene_path(dMergedGene2Genes, dMergedGene2Ctgs,
 	outGenePath = os.path.join(outDir, "%s.agouti.gene_path.txt" %(prefix))
 	with open(outGenePath, 'w') as fGENEPATH:
 		for k, v in sorted(dMergedGene2Ctgs.iteritems()):
-			fGENEPATH.write(">%s\nCONTIGPATH\t%s\nGENEPATH\t%s\n"
-							%(k, ','.join(v), ','.join(dMergedGene2Genes[k])))
+			# only actually merged gene output
+			if dMergedGene2Genes[k]:
+				fGENEPATH.write(">%s\nCONTIGPATH\t%s\nGENEPATH\t%s\n"
+								%(k, ','.join(v), ','.join(dMergedGene2Genes[k])))
 
 def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
 			   dScafStats, dScafGaps, outDir, prefix):
