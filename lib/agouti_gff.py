@@ -75,7 +75,8 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 		for line in fIN:
 			if line.startswith("##FASTA") or line.startswith("##Fasta"):
 					break
-			if not line.startswith('#'):
+			# skip empty lines and lines starting with '#'
+			if not line.startswith('#') and len(line.strip()) > 0:
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					nGene += 1
@@ -92,7 +93,8 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 			if line.startswith("##FASTA") or line.startswith("##Fasta"):
 					stop = 1
 					break
-			if not line.startswith('#'):
+			# skip empty lines and lines starting with '#'
+			if not line.startswith('#') and len(line.strip()) > 0:
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					geneIndex += 1
