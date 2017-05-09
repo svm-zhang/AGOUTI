@@ -50,8 +50,9 @@ def parse_args():
 	scafParser.add_argument("-bam",
 							metavar="FILE",
 							dest="bamFile",
-							default="-",
+							#default="-",
 							required=True,
+							nargs="+",
 							help="specify the RNA-seq mapping results in BAM format")
 	scafParser.add_argument("-gff",
 							metavar="FILE",
