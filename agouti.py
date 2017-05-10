@@ -112,6 +112,12 @@ def parse_args():
 							help=("maximum fraction of mismatches per alignment allowed. "
 								  "Specify 1.0 to turn off. [1.0]"
 								 ))
+	scafParser.add_argument("-t",
+							metavar="INT",
+							dest="nproc",
+							type=int,
+							default=1,
+							help="specify number of CPUs [1]")
 	scafParser.add_argument("-debug",
 							action="store_true",
 							help="specify to have info for debugging")
@@ -204,7 +210,7 @@ def run_scaffolder(args):
 	dContigPairs = agBAM.agouti_sam_main(bamFile, outDir, prefix,
 										   args.overwrite, args.minMQ,
 										   args.minFracOvl, args.maxFracMM,
-										   args.debug)
+										   args.nproc, args.debug)
 
 	dCtgPair2GenePair, dCtgPairDenoise = agDENOISE.denoise_joining_pairs(dContigPairs, dGFFs,
 																	  vertex2Name, outDir,
