@@ -7,6 +7,8 @@ class PROGRESS_METER(object):
 		self.logger = logging.getLogger(loggerName.upper()+" PROGRESS")
 		self.logger.setLevel(logLevel)
 		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+
+	def add_console_handler(self):
 		consoleHandler = logging.StreamHandler()
 		consoleHandler.setLevel(logLevel)
 		consoleHandler.setFormatter(formatter)
