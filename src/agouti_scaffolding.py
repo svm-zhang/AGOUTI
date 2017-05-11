@@ -21,6 +21,7 @@ class Graph(object):
 		self.debug = debug
 		progressLogFile = os.path.join(moduleOutDir, "%s.agouti_scaffolding.progressMeter" %(prefix))
 		self.agSCAFProgress = agLOG.PROGRESS_METER(moduleName)
+		self.agSCAFProgress.add_console_handler()
 		self.agSCAFProgress.add_file_handler(progressLogFile)
 
 		self.debugLogFile = None
