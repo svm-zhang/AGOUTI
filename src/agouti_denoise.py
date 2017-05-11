@@ -229,6 +229,7 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 
 	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_denoise.progressMeter" %(prefix))
 	agDENOISEProgress = agLOG.PROGRESS_METER(moduleName)
+	agDENOISEProgress.add_console_handler()
 	agDENOISEProgress.add_file_handler(progressLogFile)
 
 	debugLogFile = ""
