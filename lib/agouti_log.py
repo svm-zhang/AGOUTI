@@ -2,15 +2,15 @@ import logging
 
 class PROGRESS_METER(object):
 	def __init__(self, loggerName):
-		logLevel = logging.INFO
+		self.logLevel = logging.INFO
 		self.logFile = None
 		self.logger = logging.getLogger(loggerName.upper()+" PROGRESS")
-		self.logger.setLevel(logLevel)
-		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
+		self.logger.setLevel(self.logLevel)
 
 	def add_console_handler(self):
 		consoleHandler = logging.StreamHandler()
-		consoleHandler.setLevel(logLevel)
+		consoleHandler.setLevel(self.logLevel)
+		formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
 		consoleHandler.setFormatter(formatter)
 		self.logger.addHandler(consoleHandler)
 
