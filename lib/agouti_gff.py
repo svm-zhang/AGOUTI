@@ -67,6 +67,7 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 		os.makedirs(moduleOutDir)
 	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_gff.progressMeter" %(prefix))
 	agGFFProgress = agLOG.PROGRESS_METER(moduleName)
+	agGFFProgress.add_console_handler()
 	agGFFProgress.add_file_handler(progressLogFile)
 	agGFFProgress.logger.info("[BEGIN] Getting gene models")
 	dGFFs = collections.defaultdict(list)
