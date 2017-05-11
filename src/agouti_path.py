@@ -24,6 +24,7 @@ def agouti_path_main(agoutiPaths, dSenses, vertex2Name,
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
 	agPathProgress = agLOG.PROGRESS_METER(moduleName)
+	agPathProgress.add_console_handler()
 	agPathProgress.logger.info("Analyzing scaffolding paths")
 	outDebugFile = os.path.join(moduleOutDir, prefix) + ".agouti_path.debug"
 	agPathDebug = agLOG.DEBUG("SHREDDER", outDebugFile)
