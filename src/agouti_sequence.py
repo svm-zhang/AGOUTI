@@ -13,6 +13,7 @@ def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 		os.makedirs(moduleOutDir)
 	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_seq.progressMeter" %(prefix))
 	agSeqProgress = agLOG.PROGRESS_METER(moduleName)
+	agSeqProgress.add_console_handler()
 	agSeqProgress.add_file_handler(progressLogFile)
 	#contigs, dSeqs = get_contigs(assemblyFile, agSeqProgress)
 	agSeqProgress.logger.info("[BEGIN] Reading the initial assembly")
