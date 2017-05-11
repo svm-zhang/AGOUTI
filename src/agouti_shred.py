@@ -262,6 +262,7 @@ def shred_features(shredStart, shredStop,
 def agouti_shred_main(assemblyFile, gffFile, prefix,
 					  minGaps, minCtgLen):
 	breakerProgress = agLOG.PROGRESS_METER("SHREDDER")
+	breakerProgress.add_console_handler()
 	breakerProgress.logger.info("[BEGIN] Shredding assembly")
 	outdir = os.path.dirname(os.path.realpath(prefix))
 	if not os.path.exists(outdir):
