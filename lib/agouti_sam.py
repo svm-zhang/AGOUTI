@@ -171,56 +171,47 @@ def run_samtools(bamFile, agBAMProgress):
 
 def worker(job):
 	bamFile, config = job
-	print bamFile, config, mp.current_process().name
 	moduleName, moduleOutDir, prefix, overwrite, minMapQ, minFracOvl, maxFracMismatch, debug = config
 	agBAMOutbase = os.path.basename(bamFile).strip(".bam")
 	agBAMOutJoinPairs_file = os.path.join(moduleOutDir, agBAMOutbase+".jp")
-	print agBAMOutJoinPairs_file
 
 	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_jp.progressMeter" %(agBAMOutbase))
-	agBAMProgress = agLOG.PROGRESS_METER(moduleName)
-	#agBAMProgress.add_file_handler(progressLogFile)
+	agBAMWorkerProgress = agLOG.PROGRESS_METER(moduleName+"_worker")
 	agBAMDone = os.path.join(moduleOutDir, "{}.done".format(agBAMOutbase))
-	#if not os.path.exists(agBAMDone):
-	#	agBAMProgress.add_file_handler(progressLogFile)
-	#	agBAMProgress.logger.info("[BEGIN] Identifying joining pairs")
-	#else:
 	if os.path.exists(agBAMDone):
 		if not overwrite:
-			agBAMProgress.add_file_handler(progressLogFile, 'a')
-			agBAMProgress.logger.info("")
-			agBAMProgress.logger.info("---------------------------------")
-			agBAMProgress.logger.info("Found joining-pairs from previous run")
-			agBAMProgress.logger.info("Reading joining-pairs from {}".format(agBAMOutJoinPairs_file))
-			dContigPairs, nJoinPairs = retrieve_joininng_pairs(agBAMProgress, agBAMOutJoinPairs_file)
+			agBAMWorkerProgress.add_file_handler(progressLogFile, 'a')
+			agBAMWorkerProgress.logger.info("")
+			agBAMWorkerProgress.logger.info("---------------------------------")
+			agBAMWorkerProgress.logger.info("Found joining-pairs from previous run")
+			agBAMWorkerProgress.logger.info("Reading joining-pairs from {}".format(agBAMOutJoinPairs_file))
+			dContigPairs, nJoinPairs = retrieve_joininng_pairs(agBAMWorkerProgress, agBAMOutJoinPairs_file)
 			if dContigPairs is not None:
 				return (dContigPairs, nJoinPairs, bamFile)
 			else:
-				agBAMProgress.logger.info("Fail to pick up results from the previous run")
-				agBAMProgress.logger.info("Re-processing the BAM file")
+				agBAMWorkerProgress.logger.info("Fail to pick up results from the previous run")
+				agBAMWorkerProgress.logger.info("Re-processing the BAM file")
 		else:
-			agBAMProgress.add_file_handler(progressLogFile)
-			agBAMProgress.logger.info("Found joining-pairs from previous run")
-			agBAMProgress.logger.info("Overwritting")
-			agBAMProgress.logger.info("[BEGIN] Identifying joining pairs")
+			agBAMWorkerProgress.add_file_handler(progressLogFile)
+			agBAMWorkerProgress.logger.info("Found joining-pairs from previous run")
+			agBAMWorkerProgress.logger.info("Overwritting")
+			#agBAMWorkerProgress.logger.info("[BEGIN] Identifying joining pairs")
 
 	agBAMDebug = None
 	if debug:
 		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_jp.debug" %(agBAMOutbase))
 		agBAMDebug = agLOG.DEBUG(moduleName, debugLogFile)
-		print debugLogFile
-	print progressLogFile
 
 	try:
 		with open(agBAMOutJoinPairs_file, 'w') as fOUT:
-			agBAMProgress.logger.info("# processed\t| Current Reads ID\t| Elapsed Time")
+			agBAMWorkerProgress.logger.info("# processed\t| Current Reads ID\t| Elapsed Time")
 			if debug:
 				agBAMDebug.debugger.debug("Reads_ID\tLocationA\tLocationB\tmapQA\tmapQB\tsenseA\tsenseB\treadLenA\treadLenB")
 			startTime = time.time()
 			dContigPairs = collections.defaultdict(list)
 			nJoinPairs = 0
 			nReadsPairs = 0
-			#for record in run_samtools(bamFile, agBAMProgress):
+			#for record in run_samtools(bamFile, agBAMWorkerProgress):
 			for record in run_samtools(bamFile, None):
 				tmpRecord = record.split("\n")
 				pairA = tmpRecord[0].split("\t")
@@ -289,15 +280,15 @@ def worker(job):
 																		startA, stopA, senseA))
 				if nReadsPairs % 5000000 == 0:
 					elapsedTime = float((time.time() - startTime)/60)
-					agBAMProgress.logger.info("%d parsed\t| %s\t| %.2f m" %(nReadsPairs, readsID, elapsedTime))
+					agBAMWorkerProgress.logger.info("%d parsed\t| %s\t| %.2f m" %(nReadsPairs, readsID, elapsedTime))
 		with open(agBAMDone, 'w') as fDONE:
 			fDONE.write("{}.bam done".format(agBAMOutbase))
 	except KeyboardInterrupt:
-		agBAMProgress.logger.info("Extract Joining-pairs INTERRUPTED by Keyboard")
+		agBAMWorkerProgress.logger.info("Extract Joining-pairs INTERRUPTED by Keyboard")
 		sys.exit(1)
-	agBAMProgress.logger.info("{} reads pairs in {}".format(nReadsPairs, bamFile))
-	agBAMProgress.logger.info("{} joining pairs parsed".format(nJoinPairs))
-	agBAMProgress.logger.info("{} contig pairs given by these joining pairs".format(len(dContigPairs)))
+	agBAMWorkerProgress.logger.info("{} reads pairs in {}".format(nReadsPairs, bamFile))
+	agBAMWorkerProgress.logger.info("{} joining pairs parsed".format(nJoinPairs))
+	agBAMWorkerProgress.logger.info("{} contig pairs given by these joining pairs".format(len(dContigPairs)))
 	return (dContigPairs, nJoinPairs, bamFile)
 
 def agouti_sam_main(bamFile, outDir, prefix,
@@ -308,160 +299,39 @@ def agouti_sam_main(bamFile, outDir, prefix,
 	if not os.path.exists(moduleOutDir):
 		os.makedirs(moduleOutDir)
 
+	moduleProgress = agLOG.PROGRESS_METER(moduleName)
+	moduleProgress.add_console_handler()
+	moduleProgress.logger.info("[BEGIN] Identifying joining pairs")
 	# 1. set up job and result queue
 	config = moduleName, moduleOutDir, prefix, overwrite, minMapQ, minFracOvl, maxFracMismatch, debug
-	print config
 	jobs = []
-	print bamFile
 	for bam in bamFile:
 		jobs.append( (bam, config) )
 
-	def Start():
-		print>>sys.stderr, 'Started a worker in %d from parent %d' %(os.getpid(), os.getppid())
+	moduleProgress.logger.info("{} BAMs given".format(len(bamFile)))
+	moduleProgress.logger.info("{} workers to be allocated".format(nproc))
+	def init(moduleProgress):
+		moduleProgress.logger.info("Worker {} assigned initiated".format(os.getpid()))
 
-	exec_pool = mp.Pool(nproc, initializer=Start)
+	exec_pool = mp.Pool(nproc, initializer=init, initargs=[moduleProgress])
+	tot_jp = 0
 	for i, res in enumerate(exec_pool.imap(worker, jobs)):
-		#dContigPairs_each = collections.defaultdict(list)
 		dContigPairs_each, nJoinPairs, bamFile = res
-		print len(dContigPairs_each), nJoinPairs, bamFile
+		tot_jp += nJoinPairs
+		moduleProgress.logger.info("{} joining-pairs extracted from {}".format(nJoinPairs, os.path.basename(bamFile)))
 		if i == 0:
 			dContigPairs = collections.defaultdict(list, dContigPairs_each)
 		else:
 			for k, v in dContigPairs_each.iteritems():
 				dContigPairs[k].extend(v)
-		print len(dContigPairs)
 	#check_jp_entirity(dContigPairs, moduleOutDir)
-
 
 	# 2. allocate BAMs in to job queue
 
 	# 3. set up worker to read sam and support break and continue
-	print "finished"
+	moduleProgress.logger.info("{} total joining-pairs extracted from all BAMs".format(tot_jp))
+	moduleProgress.logger.info("[DONE]")
 	sys.exit()
-
-	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.progressMeter" %(prefix))
-	agBAMOutAllJoinPairs = os.path.join(moduleOutDir, "%s.agouti.join_pairs.all.txt" %(prefix))
-	agBAMProgress = agLOG.PROGRESS_METER(moduleName)
-	if not os.path.exists(progressLogFile):
-		agBAMProgress.add_file_handler(progressLogFile)
-		agBAMProgress.logger.info("[BEGIN] Identifying joining pairs")
-	else:
-		if not overwrite:
-			agBAMProgress.add_file_handler(progressLogFile, 'a')
-			dContigPairs = retrieve_joininng_pairs(agBAMProgress, agBAMOutAllJoinPairs)
-			if dContigPairs is not None:
-				return dContigPairs
-			else:
-				agBAMProgress.logger.info("Fail to pick up results from the previous run")
-				agBAMProgress.logger.info("Re-processing the BAM file")
-		else:
-			agBAMProgress.add_file_handler(progressLogFile)
-			agBAMProgress.logger.info("[BEGIN] Identifying joining pairs")
-			agBAMProgress.logger.info("Overwrite results from the previous run")
-
-	agBAMDebug = None
-	if debug:
-		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_join_pairs.debug" %(prefix))
-		agBAMDebug = agLOG.DEBUG(moduleName, debugLogFile)
-
-	# before running samtools, check its availability
-	agBAMProgress.logger.info("check SAMtools")
-	check_samtools(agBAMProgress)
-
-	# runing samtools
-	agBAMProgress.logger.info("run SAMtools")
-
-	try:
-		with open(agBAMOutAllJoinPairs, 'w') as fOUT:
-			agBAMProgress.logger.info("# processed\t| Current Reads ID\t| Elapsed Time")
-			if debug:
-				agBAMDebug.debugger.debug("Reads_ID\tLocationA\tLocationB\tmapQA\tmapQB\tsenseA\tsenseB\treadLenA\treadLenB")
-			startTime = time.time()
-			dContigPairs = collections.defaultdict(list)
-			nJoinPairs = 0
-			nReadsPairs = 0
-			for record in run_samtools(bamFile, agBAMProgress):
-				tmpRecord = record.split("\n")
-				pairA = tmpRecord[0].split("\t")
-				pairB = tmpRecord[1].split("\t")
-				readsID = pairA[0]
-				contigA = pairA[2]
-				contigB = pairB[2]
-				mateCtgB = pairA[6]
-				mateCtgA = pairB[6]
-				nReadsPairs += 1
-				# the first contidition makes sure
-				# single end BAM are gonna have zero
-				# joining-pairs extracted
-				if contigA == "*" or contigB == "*":
-					continue
-				if pairA[0] == pairB[0] and contigA != contigB:
-					alnLenA = getCIGAR(pairA[5])
-					alnLenB = getCIGAR(pairB[5])
-					leftMostPosA = int(pairA[3])		# 1-based in SAM
-					leftMostPosB = int(pairB[3])
-					readLenA = len(pairA[9])
-					readLenB = len(pairB[9])
-					nMismatchesA = getMismatches(pairA[11:])
-					nMismatchesB = getMismatches(pairB[11:])
-					mapQA = int(pairA[4])
-					mapQB = int(pairB[4])
-					flagsA = explainSAMFlag(int(pairA[1]))
-					flagsB = explainSAMFlag(int(pairB[1]))
-					senseA = flagsA[4]
-					senseB = flagsB[4]
-					if debug:
-						agBAMDebug.debugger.debug("%s\t%s\t%s\t%d\t%d\t%d\t%d\t%s\t%s\t%d\t%d"
-												  %(readsID,
-												  contigA+":"+str(leftMostPosA),
-												  contigB+":"+str(leftMostPosB),
-												  int(alnLenA), int(alnLenB),
-												  mapQA, mapQB, senseA, senseB, readLenA, readLenB))
-
-					fracOvlA = alnLenA/readLenA
-					fracOvlB = alnLenB/readLenB
-					fracMismatchA = nMismatchesA/alnLenA
-					fracMismatchB = nMismatchesB/alnLenB
-					if (min(fracOvlA, fracOvlB) >= minFracOvl and				# minimum fraction of overlaps
-						max(fracMismatchA, fracMismatchB) <= maxFracMismatch and	# maximum fraction of mismatches
-						min(mapQA, mapQB) >= minMapQ):				# minimum mapping quality
-						startA = leftMostPosA
-						stopA = startA + int(alnLenA) - 1
-						startB = leftMostPosB
-						stopB = startB + int(alnLenB) - 1
-						nJoinPairs += 1
-						if contigA <= contigB:
-							if (contigA, contigB) not in dContigPairs:
-								dContigPairs[contigA, contigB] = [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
-							else:
-								dContigPairs[contigA, contigB] += [(startA, startB, stopA, stopB, senseA, senseB, readsID)]
-							fOUT.write("%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\n" %(readsID, contigA, startA,
-																				stopA, senseA, contigB,
-																				startB, stopB, senseB))
-						else:
-							if (contigB, contigA) not in dContigPairs:
-								dContigPairs[contigB, contigA] = [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
-							else:
-								dContigPairs[contigB, contigA] += [(startB, startA, stopB, stopA, senseB, senseA, readsID)]
-							fOUT.write("%s\t%s\t%d\t%d\t%s\t%s\t%d\t%d\t%s\n" %(readsID, contigB, startB,
-																		stopB, senseB, contigA,
-																		startA, stopA, senseA))
-				if nReadsPairs % 5000000 == 0:
-					elapsedTime = float((time.time() - startTime)/60)
-					agBAMProgress.logger.info("%d parsed\t| %s\t| %.2f m" %(nReadsPairs, readsID, elapsedTime))
-	except KeyboardInterrupt:
-		agBAMProgress.logger.info("Extract Joining-pairs INTERRUPTED by Keyboard")
-		sys.exit(1)
-
-	agBAMProgress.logger.info("%d reads pairs in the give BAM" %(nReadsPairs))
-	agBAMProgress.logger.info("%d joining pairs parsed" %(nJoinPairs))
-	agBAMProgress.logger.info("%d contig pairs given by these joining pairs" %(len(dContigPairs)))
-	if nJoinPairs == 0:
-		agBAMProgress.logger.error("No joining pairs extracted")
-		agBAMProgress.logger.error("Cannot SCAFFOLD without joining-pairs")
-		sys.exit(1)
-	else:
-		agBAMProgress.logger.info("Succeeded")
 	return dContigPairs
 
 def get_joining_pairs(bamStream, outDir, prefix,
