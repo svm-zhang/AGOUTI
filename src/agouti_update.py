@@ -19,6 +19,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 	progressLogFile = os.path.join(moduleOutDir, "%s.agouti_update.progressMeter" %(prefix))
 	global agUPDATEProgress
 	agUPDATEProgress = agLOG.PROGRESS_METER(moduleName)
+	agUPDATEProgress.add_console_handler()
 	agUPDATEProgress.add_file_handler(progressLogFile)
 	if debug:
 		debugLogFile = os.path.join(moduleOutDir, "%s.agouti_update.debug" %(prefix))
