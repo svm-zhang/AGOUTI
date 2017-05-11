@@ -190,6 +190,7 @@ def run_scaffolder(args):
 
 	paraLogFile = os.path.join(outDir, "%s.parameters.txt" %(args.prefix))
 	para = agLOG.PROGRESS_METER(parse_args.__name__)
+	para.add_console_handler()
 	para.add_file_handler(paraLogFile)
 	para.logger.info("Assembly: %s" %(os.path.realpath(args.assemblyFile)))
 	para.logger.info("Gene Model: %s" %(gffFile))
