@@ -331,7 +331,6 @@ def agouti_sam_main(bamFile, outDir, prefix,
 	# 3. set up worker to read sam and support break and continue
 	moduleProgress.logger.info("{} total joining-pairs extracted from all BAMs".format(tot_jp))
 	moduleProgress.logger.info("[DONE]")
-	sys.exit()
 	return dContigPairs
 
 def get_joining_pairs(bamStream, outDir, prefix,
