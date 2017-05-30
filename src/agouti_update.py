@@ -5,8 +5,9 @@ import collections
 from lib import agouti_log as agLOG
 from lib import agouti_gff as agGFF
 from src import agouti_sequence as agSeq
+from src import agouti_path as agPATH
 
-def agouti_update(agoutiPaths, dSeqs, seqNames,
+def agouti_update(agoutiPaths, dSeqs, vertex2Name,
 				  dSenses, dGFFs,
 				  dCtgPair2GenePair, outDir, prefix,
 				  nFills=1000, debug=0, no_update_gff=0):
@@ -34,6 +35,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 	dUpdateGFFs = collections.defaultdict(list)
 	dMergedGene2Ctgs = collections.defaultdict(list)
 	dMergedGene2Genes = collections.defaultdict(list)
+	scafPaths = []
 	numMergedGene = 0
 	nCtgScaffolded = 0
 	scaffoldedCtgs = {}
@@ -52,9 +54,9 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 		curVertex = path[0]
 		sequence = dSeqs[curVertex]
 		curSense = "+"
-		curCtg = seqNames[curVertex]
+		curCtg = vertex2Name[curVertex]
 		preCtg = ""
-		scafPath = []
+		scafPath = [curVertex]
 		preGeneID, curGeneID = "", ""
 		mergedGene = agGFF.AGOUTI_GFF()
 		preMergedGene = agGFF.AGOUTI_GFF()
@@ -65,13 +67,13 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 		mergedGenesPerPath = []
 		excludeGeneIDs = []
 		for nextVertex in path[1:]:
-			nextCtg = seqNames[nextVertex]
+			nextCtg = vertex2Name[nextVertex]
 
 			if preCtg == "":
 				if debug:
 					agUPDATEDebug.debugger.debug("UPDATE_MAIN\t>scaf_%d - path - %s"
 												 %(scafID,
-												  str([seqNames[vertex] for vertex in path])))
+												  str([vertex2Name[vertex] for vertex in path])))
 			if debug:
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurVertex - %d - %s - nextVertex - %d - %s"
 											 %(curVertex, curCtg, nextVertex, nextCtg))
@@ -94,6 +96,10 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 			if debug:
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafName - %s" %(scafName))
 			FR, FF, RR, RF = get_orientation_counts(curVertex, nextVertex, dSenses)
+			if debug:
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tcurSense=%s" %(curSense))
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tFR=%d - FF=%d - RF=%d - RR=%d"
+											 %(FR, FF, RF, RR))
 			if curSense == "-":
 				temp1 = FR
 				temp2 = FF
@@ -142,6 +148,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 						dUpdateGFFs[scafName][indexMerged] = mergedGene
 					preMergedGene = mergedGene
 				sequence += 'N'*nFills + dSeqs[nextVertex]
+				scafPath += [nextVertex]
 				curSense = "+"
 			elif orientation == "FF":
 				if not no_update_gff:
@@ -167,6 +174,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 						dUpdateGFFs[scafName][indexMerged] = mergedGene
 					preMergedGene = mergedGene
 				sequence += 'N'*nFills + agSeq.rc_seq(dSeqs[nextVertex])
+				scafPath += [-1*nextVertex]
 				curSense = "-"
 			elif orientation == "RR":
 				if not no_update_gff:
@@ -197,6 +205,7 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 					preMergedGene = mergedGene
 				sequence = agSeq.rc_seq(sequence) + \
 						   'N'*nFills + dSeqs[nextVertex]
+				scafPath += [nextVertex]
 				curSense = "+"
 			elif orientation == "RF":
 				if not no_update_gff:
@@ -232,10 +241,11 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 				sequence = agSeq.rc_seq(sequence) + \
 						   'N'*nFills + \
 						   agSeq.rc_seq(dSeqs[nextVertex])
+				scafPath[-1] = -1*scafPath[-1]
+				scafPath += [-1*nextVertex]
 				curSense = "-"
-			scafPath.append(curCtg)
 			if debug:
-				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafPath updates- %s"
+				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafPath in vertices updates- %s"
 											 %(str(scafPath)))
 				agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tdMergedGene2Gene - %s"
 											 %(str(dMergedGene2Genes[mergedGene.geneID])))
@@ -245,12 +255,20 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 			offset = gapStop
 			preCtg = curCtg
 			curVertex = nextVertex
-			curCtg = seqNames[curVertex]
+			curCtg = vertex2Name[curVertex]
 
-		scafPath.append(curCtg)
+		for i in range(len(scafPath)):
+			v = scafPath[i]
+			if v < 0:
+				scafPath[i] = "-"+vertex2Name[-1*v]
+				pass
+			else:
+				scafPath[i] = vertex2Name[v]
+		scafPaths += [scafPath]
 		if debug:
+			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafPath in human-readable updates- %s"
+										 %(str(scafPath)))
 			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tappend last curCtg - %s" %(curCtg))
-		if debug:
 			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t\tscafPath - %s"
 										 %(str(scafPath)))
 		if not no_update_gff:
@@ -272,24 +290,26 @@ def agouti_update(agoutiPaths, dSeqs, seqNames,
 										 %(str(mergedGenesPerPath)))
 			agUPDATEDebug.debugger.debug("UPDATE_MAIN\t-------------------------------------")
 
+	agPATH.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
+
 	# other contigs need to be output
 	agUPDATEProgress.logger.info("Finalizing sequences")
 	numLeft = 0
 	for vertex in dSeqs:
-		if seqNames[vertex] in scaffoldedCtgs:
+		if vertex2Name[vertex] in scaffoldedCtgs:
 			continue
 		numLeft += 1
-		fFASTA.write(">%s\n%s\n" % (seqNames[vertex], dSeqs[vertex]))
-		dScafStats[seqNames[vertex]] = len(dSeqs[vertex])
+		fFASTA.write(">%s\n%s\n" % (vertex2Name[vertex], dSeqs[vertex]))
+		dScafStats[vertex2Name[vertex]] = len(dSeqs[vertex])
 		seqLens.append(len(dSeqs[vertex]))
 	fFASTA.close()
 	n50 = agSeq.get_assembly_NXX(seqLens)
 
 	agUPDATEProgress.logger.info("Outputting updated Gene Moddels")
 	for vertex in dSeqs:
-		if seqNames[vertex] in scaffoldedCtgs:
-			if seqNames[vertex] in dGFFs:
-				del dGFFs[seqNames[vertex]]
+		if vertex2Name[vertex] in scaffoldedCtgs:
+			if vertex2Name[vertex] in dGFFs:
+				del dGFFs[vertex2Name[vertex]]
 	if not no_update_gff:
 		dFinalGFFs = dict(dGFFs, **dUpdateGFFs)
 		numGenes = output_gff(dFinalGFFs, dMergedGene2Ctgs, dMergedGene2Genes,
@@ -314,14 +334,14 @@ def recover_original_scaffold():
 	'''
 	if dOriPaths is None:
 		for vertex in sorted(dSeqs):
-			if seqNames[vertex] not in scaffoldedCtgs:
-				fFASTA.write(">%s\n%s\n" % (seqNames[vertex], dSeqs[vertex]))
+			if vertex2Name[vertex] not in scaffoldedCtgs:
+				fFASTA.write(">%s\n%s\n" % (vertex2Name[vertex], dSeqs[vertex]))
 				seqLens.append(len(dSeqs[vertex]))
 	else:
 		for _, oriPath in dOriPaths.iteritems():
 			if len(oriPath) == 1:
-				index = seqNames.index(oriPath[0])
-				fFASTA.write(">%s\n%s\n" % (seqNames[index], dSeqs[index]))
+				index = vertex2Name.index(oriPath[0])
+				fFASTA.write(">%s\n%s\n" % (vertex2Name[index], dSeqs[index]))
 				seqLens.append(len(dSeqs[index]))
 				continue
 			print oriPath
@@ -329,7 +349,7 @@ def recover_original_scaffold():
 			print untouchedCtgs
 			sequence = ""
 			preCtg = untouchedCtgs[0]
-			preIndex = seqNames.index(preCtg)
+			preIndex = vertex2Name.index(preCtg)
 			sequence = dSeqs[preIndex]
 			for i in range(1, len(untouchedCtgs)):
 				curCtg = untouchedCtgs[i]
@@ -341,8 +361,8 @@ def recover_original_scaffold():
 					sequence = ""
 					preCtg = curCtg
 					continue
-				preIndex = seqNames.index(preCtg)
-				curIndex = seqNames.index(curCtg)
+				preIndex = vertex2Name.index(preCtg)
+				curIndex = vertex2Name.index(curCtg)
 				sequence += gapLen * 'N' + \
 							dSeqs[curIndex]
 				print "preCtg", preCtg, "curCtg", curCtg
