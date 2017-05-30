@@ -14,7 +14,7 @@ def report_scaffold_path(paths, vertex2Name, outDir, prefix):
 	with open(outPathFile, 'w') as fSCAFPATH:
 		for i, path in enumerate(paths):
 			scafName = prefix + "_scaf_%d" %(i+1)
-			fSCAFPATH.write(">%s\n%s\n" %(scafName, ",".join([vertex2Name[k] for k in path])))
+			fSCAFPATH.write(">%s\n%s\n" %(scafName, ",".join([k for k in path])))
 
 def agouti_path_main(agoutiPaths, dSenses, vertex2Name,
 					 dGFFs, dCtgPair2GenePair,
