@@ -477,7 +477,7 @@ def run_scaffolding(vertex2Name, dCtgPairDenoise,
 	scafPaths = graph.start(dCtgPairDenoise, vertex2Name,
 							dCtgPair2GenePair,
 							minSupport)
-	graph.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
+	#graph.report_scaffold_path(scafPaths, vertex2Name, outDir, prefix)
 	graph.graph2dot(scafPaths, vertex2Name, minSupport,
 					outDir, prefix)
 
