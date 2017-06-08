@@ -128,7 +128,7 @@ This produces a shredded assembly: `example.ctg.fasta`, and a file of a format s
 Assuming you have a dataset of paired-end RNA-seq reads, `example.1.fq` and `example.2.fq`, and an assembly generated from either an assembler of your favorite or shredded by AGOUTI, `example.fasta` or `example.ctg.fasta`. You will first need to map the RNA-seq data against the assembly using a short-reads mapper, such as Bowtie2 or BWA. For example,
 
     bwa index example.fasta
-    bwa mem -M example.fasta example.1.fq example.2.fq | samtools view - > example.bam
+    bwa mem -M example.fasta example.1.fq example.2.fq | samtools view -Sb - > example.bam
 
 This produces a mapping results in BAM format. AGOUTI uses this BAM file for scaffolding. More specifically, it reads the file and extracts joining-pairs. A joining-pair is defined as one with both ends mapped to different contigs. AGOUTI uses only uniquely mapped ones by checking mapping quality. Short-reads mappers such as BWA, Bowtie2 uses a non-zero mapping quality to define unique mapping. If the mapper you are using does not use quality to mark ambiguous mapping, then you must first process your SAM/BAM file before running AGOUTI.
 
