@@ -60,20 +60,40 @@ def report_consistency(agoutiPaths, dOriPaths, vertex2Name, outDir, prefix, cont
 		for i in range(1, len(agPath)):
 			curCtg = agPath[i]
 
+			tmpID = preCtg.split('_')
+			preIndex = 0
 			if len(preCtg.split('_')) == 1:
 				preOrigScaf = preCtg
+			elif len(tmpID) == 2 or (len(tmpID) > 2 and tmpID[-2].isdigit()):
+				preIndex = int(tmpID[-1])
+				preOrigScaf = '_'.join(tmpID[0:len(tmpID)-1])
 			else:
-				preIndex = preCtg.split('_')[-1]
-				preOrigScaf = preCtg.rstrip(preIndex).rstrip("_")
+				preOrigScaf = preCtg
+			tmpID = curCtg.split('_')
+			curIndex = 0
 			if len(curCtg.split('_')) == 1:
 				curOrigScaf = curCtg
+			elif len(tmpID) == 2 or (len(tmpID) > 2 and tmpID[-2].isdigit()):
+				curIndex = int(tmpID[-1])
+				curOrigScaf = '_'.join(tmpID[0:len(tmpID)-1])
 			else:
-				curIndex = curCtg.split('_')[-1]
-				curOrigScaf = curCtg.rstrip(curIndex).rstrip("_")
+				curOrigScaf = curCtg
+			#print preCtg, preOrigScaf, preIndex
+			#print curCtg, curOrigScaf, curIndex
+			#if len(preCtg.split('_')) == 1:
+			#	preOrigScaf = preCtg
+			#else:
+			#	preIndex = preCtg.split('_')[-1]
+			#	preOrigScaf = preCtg.rstrip(preIndex).rstrip("_")
+			#if len(curCtg.split('_')) == 1:
+			#	curOrigScaf = curCtg
+			#else:
+			#	curIndex = curCtg.split('_')[-1]
+			#	curOrigScaf = curCtg.rstrip(curIndex).rstrip("_")
 			#print preCtg, preOrigScaf
 			#print curCtg, curOrigScaf
-			curIndex = int(curIndex)
-			preIndex = int(preIndex)
+			#curIndex = int(curIndex)
+			#preIndex = int(preIndex)
 			if preOrigScaf == curOrigScaf:
 				if math.fabs(curIndex-preIndex) == 1:
 					# consistent consecutive
