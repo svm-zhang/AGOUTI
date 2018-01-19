@@ -94,7 +94,7 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 					stop = 1
 					break
 			# skip empty lines and lines starting with '#'
-			if not line.startswith('#') and len(line.strip()) > 0:
+			if not line.startswith('#') and line.strip():
 				tmp_line = line.strip().split("\t")
 				if tmp_line[2] == "gene":
 					geneIndex += 1
