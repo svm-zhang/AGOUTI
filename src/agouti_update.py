@@ -204,6 +204,7 @@ def agouti_update(agoutiPaths, dSeqs, vertex2Name,
 					preMergedGene = mergedGene
 				sequence = agSeq.rc_seq(sequence) + \
 						   'N'*nFills + dSeqs[nextVertex]
+				scafPath[-1] = -1*scafPath[-1]
 				scafPath += [nextVertex]
 				curSense = "+"
 			elif orientation == "RF":
