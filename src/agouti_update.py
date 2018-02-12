@@ -261,7 +261,6 @@ def agouti_update(agoutiPaths, dSeqs, vertex2Name,
 			v = scafPath[i]
 			if v < 0:
 				scafPath[i] = "-"+vertex2Name[-1*v]
-				pass
 			else:
 				scafPath[i] = vertex2Name[v]
 		scafPaths += [scafPath]
@@ -294,11 +293,9 @@ def agouti_update(agoutiPaths, dSeqs, vertex2Name,
 
 	# other contigs need to be output
 	agUPDATEProgress.logger.info("Finalizing sequences")
-	numLeft = 0
 	for vertex in dSeqs:
-		if vertex2Name[vertex] in scaffoldedCtgs:
+		if vertex2Name[vertex] in scaffoldedCtgs or "-"+vertex2Name[vertex] in scaffoldedCtgs:
 			continue
-		numLeft += 1
 		fFASTA.write(">%s\n%s\n" % (vertex2Name[vertex], dSeqs[vertex]))
 		dScafStats[vertex2Name[vertex]] = len(dSeqs[vertex])
 		seqLens.append(len(dSeqs[vertex]))
@@ -321,7 +318,6 @@ def agouti_update(agoutiPaths, dSeqs, vertex2Name,
 	agUPDATEProgress.logger.info("-----------Summary-----------")
 	agUPDATEProgress.logger.info("number of contigs scaffoled: %d" %(nCtgScaffolded))
 	agUPDATEProgress.logger.info("number of scaffolds: %d" %(scafID))
-#	agUPDATEProgress.logger.info("number of contigs found no links: %d" %(numLeft))
 	agUPDATEProgress.logger.info("number of contigs in the final assembly: %d" %(len(seqLens)))
 	agUPDATEProgress.logger.info("Final assembly N50: %d" %(n50))
 	if not no_update_gff:
@@ -399,6 +395,8 @@ def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
 		fOUTGFF.write("##gff-version3\n")
 		fOUTGFF.write("# This output was generated with AGOUTI (version 0.3.1)\n")
 		for k, v in dGeneModels.iteritems():
+			if k not in dScafStats:
+				continue
 			if k not in dSeen:
 				fOUTGFF.write("%s\tAGOUTI\tscaffold\t1\t%d\t.\t.\t.\tID=%s\n"
 							  %(k, dScafStats[k], k))

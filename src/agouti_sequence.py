@@ -18,7 +18,7 @@ def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 	agSeqProgress.logger.info("[BEGIN] Reading the initial assembly")
 	dSeqs = {}
 	dHeaders = {}
-	contigs = []
+	contigs = ["NONE"]		# add dummny contig to make sure contig index staring with 1, not 0
 	seqLens = []
 	seqIndex = 0
 	for header, seq in read_fasta(assemblyFile):
