@@ -77,8 +77,7 @@ Zhang, S. V, Zhuo, L., & Hahn, M. W. (2016). AGOUTI: improving genome
 assembly and annotation using transcriptome data. GigaScience, 5(1),
 1.12. doi:10.1186/s13742-016-0136-3
 
-**Important: please report your problem either issuing a ticket here or
-send email to svm.zhang@gmail.com.**
+**Important: please submit your problem through GitHub issue tracker.**
 
 Obtain AGOUTI
 -------------
