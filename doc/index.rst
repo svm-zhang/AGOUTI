@@ -33,7 +33,6 @@ Table of Contents
 
 -  `Break-and-Continue <#break-and-continue>`__
 -  `Graph Visualization <#graph-visualization>`__
--  `Contributors <#contributors>`__
 -  `Support <#support>`__
 
 Overview
@@ -571,17 +570,9 @@ simply edges that were not traversed. Edges in dotted style represent
 connections with a number of supporting joining-pairs lower than the
 minimum specified.
 
-Contributors
-------------
-
-| Simo Zhang
-| Luting Zhuo
-| Matthew Hahn
-
 Support
 -------
 
-Please feel free to report any issues here on the github page, or to
-send email to svm.zhang@gmail.com
+Please feel free to submit any issues through GitHub issue tracker.
 
 Any comments are welcome as well!
