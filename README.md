@@ -14,4 +14,4 @@ Zhang, S. V, Zhuo, L., & Hahn, M. W. (2016). AGOUTI: improving genome assembly a
 
 ## Support
 
-Please feel free to report any issues here on the github page
+Please submit your problems or questions through GitHub issue tracker.
