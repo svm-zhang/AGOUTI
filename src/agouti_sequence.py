@@ -20,7 +20,7 @@ def agouti_seq_main(assemblyFile, outDir, prefix, debug=0):
 	dHeaders = {}
 	contigs = ["NONE"]		# add dummny contig to make sure contig index staring with 1, not 0
 	seqLens = []
-	seqIndex = 0
+	seqIndex = 1
 	for header, seq in read_fasta(assemblyFile):
 		# split header on any non-alphabetic character
 		# use only the first of the return list
