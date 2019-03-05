@@ -340,9 +340,9 @@ def recover_original_scaffold():
 				fFASTA.write(">%s\n%s\n" % (vertex2Name[index], dSeqs[index]))
 				seqLens.append(len(dSeqs[index]))
 				continue
-			print oriPath
+			print(oriPath)
 			untouchedCtgs = [k for k in oriPath if k not in scaffoldedCtgs]
-			print untouchedCtgs
+			print(untouchedCtgs)
 			sequence = ""
 			preCtg = untouchedCtgs[0]
 			preIndex = vertex2Name.index(preCtg)
@@ -361,8 +361,8 @@ def recover_original_scaffold():
 				curIndex = vertex2Name.index(curCtg)
 				sequence += gapLen * 'N' + \
 							dSeqs[curIndex]
-				print "preCtg", preCtg, "curCtg", curCtg
-				print len(sequence)
+				print("preCtg", preCtg, "curCtg", curCtg)
+				print(len(sequence))
 				preCtg = curCtg
 			if sequence:
 				fFASTA.write(">%s\n%s\n" % ("haha_need_to_fix", sequence))
@@ -459,7 +459,7 @@ def get_gene_index(geneModels, curGeneID, debug=0, reverse=False):
 			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tcurGene - %s - index - %d"
 										 %(curGeneID, curGeneIndex))
 	else:
-		print ">>>> get_gene_index", " ".join([x.geneID for x in geneModels]), "curGeneID", curGeneID
+		print(">>>> get_gene_index", " ".join([x.geneID for x in geneModels]), "curGeneID", curGeneID)
 		curGeneIndex = [x.geneID for x in geneModels].index(curGeneID)
 		if debug:
 			agUPDATEDebug.debugger.debug("GET_GENE_INDEX\t\tgene models - %s"
@@ -468,7 +468,7 @@ def get_gene_index(geneModels, curGeneID, debug=0, reverse=False):
 										 %(curGeneID, curGeneIndex))
 	toLeft = curGeneIndex
 	toRight = len(geneModels) - 1 - curGeneIndex
-	return toLeft, toRight
+	return(toLeft, toRight)
 
 def merge_gene_model(curGene, nextGene, scafName,
 					 numMergedGene, currentOffset, nextOffset,
