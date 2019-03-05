@@ -156,12 +156,12 @@ def parse_args():
 										 help="\t"+usage)
 	updateParser.set_defaults(func=update_local)
 
-	if len(sys.argv) == 1:
+	if(len(sys.argv) == 1):
 		# exit when no command provided
 		parser.print_help()
 		sys.exit(1)
 
-	return parser.parse_args()
+	return(parser.parse_args())
 
 def run_shredder(args):
 	assemblyFile = args.assemblyFile
@@ -178,7 +178,7 @@ def run_scaffolder(args):
 	gffFile = os.path.realpath(args.gff)
 	prefix = args.prefix
 	outDir = os.path.realpath(args.outDir)
-	if not os.path.exists(outDir):
+	if(not os.path.exists(outDir)):
 		os.makedirs(outDir)
 
 	paraLogFile = os.path.join(outDir, "%s.parameters.txt" %(args.prefix))
@@ -186,7 +186,7 @@ def run_scaffolder(args):
 	para.add_file_handler(paraLogFile)
 	para.logger.info("Assembly: %s" %(os.path.realpath(args.assemblyFile)))
 	para.logger.info("Gene Model: %s" %(gffFile))
-	if args.oriScafPath:
+	if(args.oriScafPath):
 		para.logger.info("Original scaffold path: %s" %(args.oriScafPath))
 	para.logger.info("Output directory: %s" %(outDir))
 	para.logger.info("Output prefix: %s" %(prefix))
@@ -214,7 +214,7 @@ def run_scaffolder(args):
 													   dCtgPair2GenePair, outDir, prefix,
 													   args.minSupport, args.debug)
 
-	if args.oriScafPath:
+	if(args.oriScafPath):
 		agoutiPaths, dCtgPair2GenePair, dSenses = agPATH.agouti_path_main(agoutiPaths, dSenses,
 																		  vertex2Name, dGFFs,
 																		  dCtgPair2GenePair,
@@ -238,7 +238,7 @@ def update_local(args):
 	checkGitVersion = "git --version"
 	p = sp.Popen(shlex.split(checkGitVersion), stdout=sp.PIPE, stderr=sp.PIPE)
 	pout, perr = p.communicate()
-	if p.returncode:
+	if(p.returncode):
 		version.logger.info("Please check your PATH for git")
 		version.logger.info("Update unsuccessful")
 		sys.exit(1)
@@ -252,10 +252,10 @@ def update_local(args):
 	tags = []
 	dVersions = {}
 	for line in heads:
-		if line:
+		if(line):
 			tmpLine = line.strip().split("\t")
-			if re.search("refs/tag", tmpLine[1]):
-				if re.search("\^\{\}$", tmpLine[1]):
+			if(re.search("refs/tag", tmpLine[1])):
+				if(re.search("\^\{\}$", tmpLine[1])):
 					dVersions[tmpLine[1].strip("^{}")] = tmpLine[0]
 					continue
 				else:
@@ -263,17 +263,17 @@ def update_local(args):
 				tags.append(tmpLine[1])
 	latesTag = sorted(tags)[-1]
 	latestHash = dVersions[latesTag]
-	if latestHash != localVersion:
+	if(latestHash != localVersion):
 		gitCmd = "git fetch --all"
 		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, cwd=repoDir)
 		pout, perr = p.communicate()
-		if p.returncode:
+		if(p.returncode):
 			version.logger.error("git fetch error: %s" %(perr))
 			sys.exit(1)
 		gitCmd = "git checkout -q %s -b %s" %(latesTag, latesTag.split("/")[-1])
 		p = sp.Popen(shlex.split(gitCmd), stdout=sp.PIPE, stderr=sp.PIPE, cwd=repoDir)
 		pout, perr = p.communicate()
-		if p.returncode:
+		if(p.returncode):
 			version.logger.error("git checkout error: %s" %(perr))
 			sys.exit(1)
 		version.logger.info("Update successful")
@@ -285,4 +285,4 @@ def main():
 	args.func(args)
 
 if __name__ == "__main__":
-	main()
+    main()
