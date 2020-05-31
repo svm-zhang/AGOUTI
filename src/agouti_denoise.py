@@ -126,7 +126,7 @@ def mapping_to_geneModel(geneModelsA, geneModelsB,
 	dMappingSupport = {}
 	dSenses = {}
 	#print "mapping_to_geneModel all senses", collections.Counter(senses)
-	for i in xrange(len(mapIntervalsA)):
+	for i in range(len(mapIntervalsA)):
 		intervalA = mapIntervalsA[i]
 		mergedIntervalA = find_interval_belongings(intervalA, mergedIntervalsA)
 		intervalB = mapIntervalsB[i]
@@ -169,11 +169,12 @@ def mapping_to_geneModel(geneModelsA, geneModelsB,
 	if len(createOnBoth) > 0:
 		# create gene on both contig  using all mapped intervals
 		if len(dIndex2Cluster) == 1:
-			genePair = list(dIndex2Cluster.keys()[0])
-			intervalsA = merge_intervals([cluster[0] for x in dIndex2Cluster.itervalues() for cluster in x])
-			intervalsB = merge_intervals([cluster[1] for x in dIndex2Cluster.itervalues() for cluster in x])
+			genePair = list(list(dIndex2Cluster.keys())[0])
+			#genePair = list(dIndex2Cluster.keys()[0])
+			intervalsA = merge_intervals([cluster[0] for x in dIndex2Cluster.values() for cluster in x])
+			intervalsB = merge_intervals([cluster[1] for x in dIndex2Cluster.values() for cluster in x])
 			tmp = []
-			for k, v in dIndex2Cluster.iteritems():
+			for k, v in dIndex2Cluster.items():
 				#print "k", k, "v", v
 				for i in range(len(v)):
 					tmp += dSenses[v[i]]
@@ -248,7 +249,8 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 	nFailK = 0
 	outDenoiseJPFile = os.path.join(moduleOutDir, "%s.agouti.join_pairs.noise_free.txt" %(prefix))
 	fOUT = open(outDenoiseJPFile, 'w')
-	for ctgPair, pairInfo in dContigPairs.items():
+	for ctgPair, pairInfo in list(dContigPairs.items()):
+	#for ctgPair, pairInfo in dContigPairs.items():
 		if len(pairInfo) < minSupport:
 			nFailK += 1
 			del dContigPairs[ctgPair]
@@ -264,7 +266,7 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 		pairs = []
 		senses = []
 		keep = 0
-		for i in xrange(len(pairInfo)):
+		for i in range(len(pairInfo)):
 			startA, startB, stopA, stopB, senseA, senseB, readID = pairInfo[i]
 			mapIntervalsA += [(startA, stopA)]
 			mapIntervalsB += [(startB, stopB)]
@@ -363,7 +365,7 @@ def denoise_joining_pairs(dContigPairs, dGFFs, vertex2Name,
 				senseA = sense[0]
 				senseB = sense[1]
 				weight = 0
-				for i in xrange(len(pairInfo)):
+				for i in range(len(pairInfo)):
 					startA, startB, stopA, stopB, _, _, readID = pairInfo[i]
 					intervalA = (startA, stopA)
 					intervalB = (startB, stopB)
