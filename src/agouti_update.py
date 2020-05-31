@@ -334,7 +334,7 @@ def recover_original_scaffold():
 				fFASTA.write(">%s\n%s\n" % (vertex2Name[vertex], dSeqs[vertex]))
 				seqLens.append(len(dSeqs[vertex]))
 	else:
-		for _, oriPath in dOriPaths.iteritems():
+		for _, oriPath in dOriPaths.items():
 			if len(oriPath) == 1:
 				index = vertex2Name.index(oriPath[0])
 				fFASTA.write(">%s\n%s\n" % (vertex2Name[index], dSeqs[index]))
@@ -377,7 +377,7 @@ def summarize_gene_path(dMergedGene2Genes, dMergedGene2Ctgs,
 	'''
 	outGenePath = os.path.join(outDir, "%s.agouti.gene_path.txt" %(prefix))
 	with open(outGenePath, 'w') as fGENEPATH:
-		for k, v in sorted(dMergedGene2Ctgs.iteritems()):
+		for k, v in sorted(dMergedGene2Ctgs.items()):
 			# only actually merged gene output
 			if dMergedGene2Genes[k]:
 				fGENEPATH.write(">%s\nCONTIGPATH\t%s\nGENEPATH\t%s\n"
@@ -394,7 +394,7 @@ def output_gff(dGeneModels, dMergedGene2Ctgs, dMergedGene2Genes,
 	with open(outGFF, 'w') as fOUTGFF:
 		fOUTGFF.write("##gff-version3\n")
 		fOUTGFF.write("# This output was generated with AGOUTI (version 0.3.1)\n")
-		for k, v in dGeneModels.iteritems():
+		for k, v in dGeneModels.items():
 			if k not in dScafStats:
 				continue
 			if k not in dSeen:
@@ -575,7 +575,7 @@ def reverse_gene_models(geneModels, lenCtg, debug=0, excludeIDs=[]):
 	if debug:
 		agUPDATEDebug.debugger.debug("REV_GENE_MODELS\t\texcludes to reverse - %s"
 									 %(str(excludeIDs)))
-	for i in xrange(len(geneModels)):
+	for i in range(len(geneModels)):
 		if geneModels[i].geneID not in excludeIDs:
 			geneModels[i] = reverse_gene_model(geneModels[i], lenCtg, debug)
 	return geneModels
@@ -609,7 +609,7 @@ def reverse_gene_model(geneModel, lenCtg, debug=0):
 
 def exclude_gene_model(geneModels, exclude):
 	tmp = []
-	for i in xrange(len(geneModels)):
+	for i in range(len(geneModels)):
 		if geneModels[i].geneID != exclude:
 			tmp.append(geneModels[i])
 	return tmp
