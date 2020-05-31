@@ -34,7 +34,7 @@ class Graph(object):
 		self.agSCAFProgress.logger.info("Building graph from joining reads pairs")
 		if self.debug:
 			buildDebug = agLOG.DEBUG("BUILD", self.debugLogFile)
-		for vertexPair, info in dCtgPairDenoise.iteritems():
+		for vertexPair, info in dCtgPairDenoise.items():
 			vertexA, vertexB = vertexPair
 			weight, sense = info
 			self.add_vertices(vertexA, vertexB)
@@ -118,7 +118,7 @@ class Graph(object):
 			del self.senses[vertexB, vertexA]
 
 	def get_vertices(self):
-		return list(self.graph.iterkeys())
+		return list(self.graph.keys())
 
 	def simplify(self, vertex2Name, minSupport):
 		"""
@@ -190,7 +190,7 @@ class Graph(object):
 					fGRAPH.write("\t%s -- %s[label=\"%d\", weight=\"%d\", color=red, penwidth=3.0]\n"
 								 %(vertex2Name[vertexA], vertex2Name[vertexB], weight, weight))
 
-			for (vertexA, vertexB) in self.weights.iterkeys():
+			for (vertexA, vertexB) in self.weights.keys():
 				weight = self.weights[vertexA, vertexB]
 				if (vertexA, vertexB) not in dPairs:
 					dPairs[vertexA, vertexB] = 1
@@ -240,19 +240,23 @@ class AGOUTI_GRAPH_Graph(Graph):
 #				self.weights[vertex, fromVertex] = 0
 				returnPath += [vertex]
 				visitedDict[vertex] = 1
-				return returnPath, visitedDict
+				return(returnPath, visitedDict)
 			else:
 #				self.weights[fromVertex, vertex] = 0
 #				self.weights[vertex, fromVertex] = 0
 				try:
-					path, visitedDict = self.walk_graph(vertex, vertex2Name, minSupport, dict(visitedDict, **{vertex:""}))
+					#visitedDict.update({vertex: 0})
+					#print(visitedDict)
+					#path, visitedDict = self.walk_graph(vertex, vertex2Name, minSupport, dict(visitedDict, **{vertex:""}))
+					visitedDict.update({vertex:0})
+					path, visitedDict = self.walk_graph(vertex, vertex2Name, minSupport, visitedDict)
 					returnPath += path
 					visitedDict[vertex] = 1
-					return returnPath, visitedDict
+					return(returnPath, visitedDict)
 				except IOError:
 					returnPath += [vertex]
-					return returnPath, visitedDict
-		return returnPath, visitedDict
+					return(returnPath, visitedDict)
+		return(returnPath, visitedDict)
 
 	def scaffolding_v2(self, vertex2Name, dCtgPair2GenePair, minSupport):
 		startTime = time.clock()
@@ -263,7 +267,8 @@ class AGOUTI_GRAPH_Graph(Graph):
 		dVisited = {}
 		startVertices = self.leaves
 		for vertex in startVertices:
-			if dVisited.has_key(vertex):
+			#if dVisited.has_key(vertex):
+			if(vertex in dVisited):
 				pass
 			else:
 				if self.debug:
@@ -313,7 +318,7 @@ class AGOUTI_GRAPH_Graph(Graph):
 		self.agSCAFProgress.logger.info("Scaffolding took %.4f min CPU time" %((time.clock()-startTime)/60))
 
 		dSense = {}
-		for (fVertex, tVertex), senses in self.senses.iteritems():
+		for (fVertex, tVertex), senses in self.senses.items():
 			counter = collections.Counter(senses)
 			sense = sorted(counter.items(), key=operator.itemgetter(1), reverse=True)[0][0]
 			dSense[fVertex, tVertex] = sense
