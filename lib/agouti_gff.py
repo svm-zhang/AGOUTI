@@ -84,7 +84,7 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 			agGFFProgress.logger.error("Found zero genes")
 			agGFFProgress.logger.error("Please check your GFF file")
 			sys.exit(1)
-		lobj_GeneModels = [AGOUTI_GFF() for i in xrange(nGene)]
+		lobj_GeneModels = [AGOUTI_GFF() for i in range(nGene)]
 		geneIndex = -1
 		stop = 0
 		fIN.seek(0)
@@ -145,9 +145,9 @@ def get_gene_models(gff, outDir, prefix, debug=0):
 	for k, v in sorted(dGFFs.items()):
 		genes = [(gene.geneStart, gene.geneStop) for gene in v]
 		# make sure gene model are in ascending order
-		soGenes = sorted(xrange(len(genes)), key=lambda k:genes[k])
+		soGenes = sorted(range(len(genes)), key=lambda k:genes[k])
 		tmpV = []
-		for i in xrange(len(soGenes)):
+		for i in range(len(soGenes)):
 			index = soGenes[i]
 			tmpV.append(v[index])
 		dGFFs[k] = tmpV
