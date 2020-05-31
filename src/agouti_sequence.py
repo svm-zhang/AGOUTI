@@ -53,8 +53,8 @@ def read_fasta(assemblyFile):
 		seqIter = (k[1] for k in itertools.groupby(fASSEMBLY, lambda line: line[0]== ">"))
 		for header in seqIter:
 			#header = re.split("\W+", header.next()[1:].strip())[0]
-			header = header.next()[1:].strip().split()[0]
-			seq = "".join(s.strip() for s in seqIter.next())
+			header = header.__next__()[1:].strip().split()[0]
+			seq = "".join(s.strip() for s in seqIter.__next__())
 			yield header, seq
 
 def rc_seq(seq):
