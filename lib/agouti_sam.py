@@ -133,7 +133,10 @@ def run_samtools(bamFile, agBAMProgress):
 	try:
 		p = sp.Popen(shlex.split(samtoolsCMD), stdout=sp.PIPE, stderr=sp.PIPE, bufsize=1)
 		nRecords = 1
-		for line in p.stdout:
+		while True:
+			line = p.stdout.readline().decode('utf-8')
+			if(not line):
+				break
 			if line.startswith('@'):
 				continue
 			else:
